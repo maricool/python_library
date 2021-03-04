@@ -19,6 +19,11 @@ def array_values_at_indices(array, list_of_array_positions):
       ValueError('Error, this only works in either one or two dimensions at the moment')
       return None
 
+# Sensible arange function
+def arange(min, max):
+   from numpy import arange
+   return arange(min, max+1)
+
 # Return a logarithmically spaced range of numbers
 def logspace(xmin, xmax, nx):
    from numpy import logspace, log10

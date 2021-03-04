@@ -10,6 +10,9 @@ au = 1.496e11 # au [m]
 eV_mass = 1.79e-36 # eV/c^2 [kg]
 year = 365.25*24.*60.*60. # year [s]
 
+# Time
+seconds_in_day = 60*60*24
+
 # Astronomy
 R_Sun = 6.957e8 # Solar radius [m]
 M_Sun = 2.e30 # Solar mass [kg]

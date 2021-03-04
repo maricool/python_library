@@ -13,14 +13,19 @@ def Tophat(x):
 def Gaussian(x, mu, sig):
     return np.exp(-(x-mu)**2/(2.*sig**2))
 
+# Kronecker delta function
+def KroneckerDelta(x1, x2):
+    return np.where(x1==x2, 1., 0.)
+
 # Provides the two real solutions for x for a quadratic a*x^2 + b*x + c = 0 
+# If discriminant is zero then the two solutions will be identical
 # TODO: Expand for complex solutions
 def solve_quadratic(a, b, c):
     des = b**2-4.*a*c
     if (des > 0.):
         root = np.sqrt(b**2-4.*a*c)
     else:
-        print('FUCK')
+        raise ValueError('Quadratic discriminant is negative')
     f1 = (root-b)/(2.*a)
     f2 = (-root-b)/(2.*a)
     return f1, f2
