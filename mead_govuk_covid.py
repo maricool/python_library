@@ -304,13 +304,13 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
     hosp_fac = 5.
     hosp_bar_color = 'forestgreen'
     hosp_line_color = 'g'
-    hosp_line_label = 'Hospital admissions [x%d]'%(int(hosp_fac))
+    hosp_line_label = r'Hospital admissions $[\times %d]$'%(int(hosp_fac))
 
     # Deaths
     death_fac = 10.
     death_bar_color = 'indianred'
     death_line_color = 'r'
-    death_line_label = 'Deaths [x%d]'%(int(death_fac))
+    death_line_label = r'Deaths $[\times %d]$'%(int(death_fac))
 
     # Months
     month_color = 'black'
