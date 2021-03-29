@@ -2,6 +2,7 @@
 def file_length(fname):
 
     with open(fname) as f:
+        i = 0
         for i, _ in enumerate(f):
             pass
     return i + 1
@@ -9,9 +10,9 @@ def file_length(fname):
 # Returns values of the array at the list of array position integers
 def array_values_at_indices(array, list_of_array_positions):
 
-   if (len(array.shape) == 1):
+   if len(array.shape) == 1:
       return array[list_of_array_positions]
-   elif (len(array.shape) == 2):
+   elif len(array.shape) == 2:
       ix, iy = zip(*list_of_array_positions)
       result = array[ix, iy]
       return result
@@ -71,3 +72,13 @@ def loglog_InterpolatedUnivariateSpline(x, y, **kwargs):
     from scipy.interpolate import InterpolatedUnivariateSpline as IUS
     log_IUS = IUS(log(x), log(y), **kwargs)
     return lambda x: exp(log_IUS(log(x)))
+
+# use numpy deg2rad
+#def degrees_to_radians(theta):
+#    from numpy import pi
+#    return theta*pi/180.
+
+# use numpy rad2deg
+#def radians_to_degrees(theta):
+#    from numpy import pi
+#    return theta*180./pi

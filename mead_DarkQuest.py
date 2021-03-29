@@ -3,8 +3,7 @@ import numpy as np
 import sys
 
 # Other imports
-sys.path.append('/Users/Mead/Physics/DarkQuest')
-import darkemu
+from dark_emulator import darkemu
 
 # My imports
 sys.path.append('/Users/Mead/Physics/library/python')
@@ -18,6 +17,9 @@ np_min = 200    # Minimum number of halo particles
 npart = 2048    # Cube root of number of simulation particles
 Lbox_HR = 1000. # Box size for high-resolution simulations [Mpc/h]
 Lbox_LR = 2000. # Box size for low-resolution simulations [Mpc/h]
+
+# Maximum redshift
+zmax = 1.48
 
 # Minimum and maximum values of cosmological parameters in the emulator
 wb_min = 0.0211375
@@ -93,7 +95,7 @@ class cosmology():
         print('Omega_b: %1.4f' % (self.Om_b))      
         print('omega_m: %1.4f' % (self.wm))
         print('h: %1.4f' % (self.h))      
-        print('Omegea_c: %1.4f' % (self.Om_c))
+        print('Omega_c: %1.4f' % (self.Om_c))
         print('Omega_nu: %1.4f' % (self.Om_nu))      
         print('m_nu [eV]: %1.4f' % (self.m_nu))
         print()
@@ -148,6 +150,13 @@ def named_cosmology(name):
             w = w_min+(w_max-w_min)*fac
         else:
             raise ValueError('Cosmology name not recognised')
+    elif name == 'Multidark':
+            wb = 0.0230
+            wc = 0.1093
+            Om_w = 0.73
+            lnAs = 3.195
+            ns = 0.95
+            w = -1.
     else:
         raise ValueError('Cosmology name not recognised')
 
@@ -201,14 +210,14 @@ def Pk_mm(emu, ks, zs, nonlinear=False):
 
     if isinstance(zs, float):
         if nonlinear:
-            Pk = emu.get_pmnl(ks, zs)
+            Pk = emu.get_pknl(ks, zs)
         else:         
             Pk = emu.get_pklin_from_z(ks, zs)
     else:
         Pk = np.zeros((len(zs), len(ks)))
         for iz, z in enumerate(zs):
             if nonlinear:
-                Pk[iz, :] = emu.get_pmnl(ks, z)
+                Pk[iz, :] = emu.get_pknl(ks, z)
             else:         
                 Pk[iz, :] = emu.get_pklin_from_z(ks, z)
 
@@ -323,6 +332,18 @@ def sigma_M(emu, M, z):
     # Result assuming scale-independent growth
     return sigma
 
+# Linear halo bias: b(M, z)
+# Taken from the pre-release version of Dark Quest given to me by Takahiro
+# I am not sure why this functionality was omitted from the final version
+def get_bias_mass(emu, M, redshift):
+    Mp = M * 1.01
+    Mm = M * 0.99
+    logdensp = np.log10(emu.mass_to_dens(Mp, redshift))
+    logdensm = np.log10(emu.mass_to_dens(Mm, redshift))
+    bp = emu.get_bias(logdensp, redshift)
+    bm = emu.get_bias(logdensm, redshift)
+    return (bm * 10**logdensm - bp * 10**logdensp) / (10**logdensm - 10**logdensp)
+
 # Beta_NL function
 def beta_NL(emu, vars, ks, z, var='Mass'):
     
@@ -332,7 +353,7 @@ def beta_NL(emu, vars, ks, z, var='Mass'):
     # ibias = 3: Linear bias from cross-spectrum at large wavenumber
     ibias = 2
 
-    # Force Beta_NL to zero?
+    # Force Beta_NL to zero at large scales?
     # force_BNL_zero = 0: No
     # force_BNL_zero = 1: Yes, via addative correction
     # force_BNL_zero = 2: Yes, via multiplicative correction
@@ -358,42 +379,54 @@ def beta_NL(emu, vars, ks, z, var='Mass'):
     
     # Linear power
     Pk_lin = emu.get_pklin_from_z(ks, z)
-    Pk_lin0 = emu.get_pklin_from_z(klin, z)
+    if force_BNL_zero != 0:
+        Pk_lin0 = emu.get_pklin_from_z(klin, z)
     
     # Calculate beta_NL by looping over mass arrays
     beta = np.zeros((len(Ms), len(Ms), len(ks)))  
-    for im1, M1 in enumerate(Ms):
-        for im2, M2 in enumerate(Ms):
-            
-            # Halo-halo power spectrum
-            Pk_hh = emu.get_phh_mass(ks, M1, M2, z)
-            
-            # Linear halo bias
-            if ibias == 1:
-                b1 = emu.get_bias_mass(M1, z)[0]
-                b2 = emu.get_bias_mass(M2, z)[0]
-            elif ibias == 2:
-                b1 = np.sqrt(emu.get_phh_mass(klin, M1, M1, z)/emu.get_pklin_from_z(klin, z))
-                b2 = np.sqrt(emu.get_phh_mass(klin, M2, M2, z)/emu.get_pklin_from_z(klin, z))
-            elif ibias == 3:
-                b1 = emu.get_phm_mass(klin, M1, z)/emu.get_pklin_from_z(klin, z)
-                b2 = emu.get_phm_mass(klin, M2, z)/emu.get_pklin_from_z(klin, z)
-            else:
-                raise ValueError('Linear bias recipe for beta_NL not recognised')
-                
-            # Create beta_NL
-            beta[im1, im2, :] = Pk_hh/(b1*b2*Pk_lin)-1.
+    for iM1, M1 in enumerate(Ms):
+        for iM2, M2 in enumerate(Ms):
 
-            # Force Beta_NL to be zero at large scales if necessary
-            if force_BNL_zero != 0:
-                Pk_hh0 = emu.get_phh_mass(klin, M1, M2, z)
-                db = Pk_hh0/(b1*b2*Pk_lin0)-1.
-                if force_BNL_zero == 1:
-                    beta[im1, im2, :] = beta[im1, im2, :]-db # Additive correction
-                elif force_BNL_zero == 2:
-                    beta[im1, im2, :] = (beta[im1, im2, :]+1.)/(db+1.)-1. # Multiplicative correction
+            if iM2 < iM1:
+
+                # Use symmetry to not double calculate
+                beta[iM1, iM2, :] = beta[iM2, iM1, :]
+
+            else:
+
+                # Halo-halo power spectrum
+                Pk_hh = emu.get_phh_mass(ks, M1, M2, z)
+                
+                # Linear halo bias
+                if ibias == 1:
+                    # TODO: Convert back to get_bias_mass
+                    #b1 = emu.get_bias_mass(M1, z)[0]
+                    #b2 = emu.get_bias_mass(M2, z)[0]
+                    b1 = get_bias_mass(emu, M1, z)[0]
+                    b2 = get_bias_mass(emu, M2, z)[0]
+                    raise ValueError('Linear bias emulator broken')
+                elif ibias == 2:
+                    b1 = np.sqrt(emu.get_phh_mass(klin, M1, M1, z)/emu.get_pklin_from_z(klin, z))
+                    b2 = np.sqrt(emu.get_phh_mass(klin, M2, M2, z)/emu.get_pklin_from_z(klin, z))
+                elif ibias == 3:
+                    b1 = emu.get_phm_mass(klin, M1, z)/emu.get_pklin_from_z(klin, z)
+                    b2 = emu.get_phm_mass(klin, M2, z)/emu.get_pklin_from_z(klin, z)
                 else:
-                    raise ValueError('force_BNL_zero not set correctly')
+                    raise ValueError('Linear bias recipe for beta_NL not recognised')
+                    
+                # Create beta_NL
+                beta[iM1, iM2, :] = Pk_hh/(b1*b2*Pk_lin)-1.
+
+                # Force Beta_NL to be zero at large scales if necessary
+                if force_BNL_zero != 0:
+                    Pk_hh0 = emu.get_phh_mass(klin, M1, M2, z)
+                    db = Pk_hh0/(b1*b2*Pk_lin0)-1.
+                    if force_BNL_zero == 1:
+                        beta[iM1, iM2, :] = beta[iM1, iM2, :]-db # Additive correction
+                    elif force_BNL_zero == 2:
+                        beta[iM1, iM2, :] = (beta[iM1, iM2, :]+1.)/(db+1.)-1. # Multiplicative correction
+                    else:
+                        raise ValueError('force_BNL_zero not set correctly')
          
     return beta 
 

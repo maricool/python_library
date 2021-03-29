@@ -29,19 +29,19 @@ population_nations = {
 
 # Lockdown dates for Nations and Regions
 lockdowns = {
-    'North East': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5)]],
-    'North West': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5)]],
-    'Yorkshire and The Humber': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5)]],
-    'East Midlands': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5)]],
-    'West Midlands': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5)]],
-    'East of England': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2020, 12, 26)]],
-    'London': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2020, 12, 20)]],
-    'South East': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2020, 12, 20)]],
-    'South West': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5)]],
-    'England': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5)]],
-    'Wales': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 10, 23), dt.date(2020, 11, 9)], [dt.date(2020, 12, 20)]],
-    'Scotland': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 10, 9), dt.date(2020, 10, 25)], [dt.date(2021, 1, 5)]],
-    'Northern Ireland': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 10, 16), dt.date(2020, 11, 20)], [dt.date(2020, 11, 27), dt.date(2020, 12, 11)], [dt.date(2020, 12, 26)]],
+    'North East': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5), dt.date(2021, 3, 29)]],
+    'North West': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5), dt.date(2021, 3, 29)]],
+    'Yorkshire and The Humber': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5), dt.date(2021, 3, 29)]],
+    'East Midlands': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5), dt.date(2021, 3, 29)]],
+    'West Midlands': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5), dt.date(2021, 3, 29)]],
+    'East of England': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2020, 12, 26), dt.date(2021, 3, 29)]],
+    'London': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2020, 12, 20), dt.date(2021, 3, 29)]],
+    'South East': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2020, 12, 20), dt.date(2021, 3, 29)]],
+    'South West': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5), dt.date(2021, 3, 29)]],
+    'England': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5), dt.date(2021, 3, 28)]],
+    'Wales': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 10, 23), dt.date(2020, 11, 9)], [dt.date(2020, 12, 20), dt.date(2021, 3, 26)]],
+    'Scotland': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 10, 9), dt.date(2020, 10, 25)], [dt.date(2021, 1, 5), dt.date(2021, 4, 1)]],
+    'Northern Ireland': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 10, 16), dt.date(2020, 11, 20)], [dt.date(2020, 11, 27), dt.date(2020, 12, 11)], [dt.date(2020, 12, 26), dt.date(2021, 3, 31)]],
 }
 
 # Parameters

@@ -253,7 +253,7 @@ def Pk_hm(hmod, Ms, ks, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigma=None
     # Two-halo term at a specific wavenumber
     def P_2h(hmod, Pk_lin, k, Ms, nus, Wuv, Om_m, low_mass_uv, beta=None):
         if beta is None:
-            I_NL = 0.          
+            I_NL = 0.
         else:
             I_NL = I_beta(hmod, beta, Ms, nus, Wuv, Om_m)
         Iu = I_2h(hmod, Ms, nus, Wuv[0, :], Om_m, low_mass_uv[0])
@@ -300,7 +300,7 @@ def Pk_hm(hmod, Ms, ks, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigma=None
     return Pk_2h_array, Pk_1h_array, Pk_hm_array
 
 # Halo virial radius based on the halo mass and overdensity condition
-def virial_radius(M, Dv, Om_m):   
+def virial_radius(M, Dv, Om_m):
     return cosmo.Radius_M(M, Om_m)/mead.cbrt(Dv)
 
 # Isothermal density profile multiplied by 4*pi*r^2
