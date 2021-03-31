@@ -148,6 +148,6 @@ def write_Bnl(k, BNL, outfile):
     data = []
     for iM1 in range(nM):
         for iM2 in range(nM):
-            dat = list(zip(k, BNL[iM1, iM2, :]))
+            dat = list(zip(k, 1.+BNL[iM1, iM2, :]))
             data.extend(dat)
     np.savetxt(outfile, data)
