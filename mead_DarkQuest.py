@@ -399,7 +399,6 @@ def beta_NL(emu, vars, ks, z, var='Mass'):
                 
                 # Linear halo bias
                 if ibias == 1:
-                    # TODO: Convert back to get_bias_mass
                     #b1 = emu.get_bias_mass(M1, z)[0]
                     #b2 = emu.get_bias_mass(M2, z)[0]
                     b1 = get_bias_mass(emu, M1, z)[0]

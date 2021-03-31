@@ -14,18 +14,11 @@ snaps = [36, 38, 40, 42, 44, 46, 48,
             72, 73, 74, 75, 76, 77, 78, 
             79, 80, 81, 82, 83, 84, 85]
 
-# Dictionary
+# Dictionary mapping snapshots to scale factors
 snaps_scalefacs = dict(zip(snaps, scalefacs))
 
 def z_from_snapshot(snap):
 
-    #if snap == 85:
-    #    z = 0.
-    #elif snap == 52:
-    #    z = 0.5
-    #else:
-    #    raise ValueError('Cannot convert snapshot to redshift')
-    #return z
     a = snaps_scalefacs[snap]
     z = -1.+1./a
     return z
