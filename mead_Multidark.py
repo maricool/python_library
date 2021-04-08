@@ -17,6 +17,8 @@ snaps = [36, 38, 40, 42, 44, 46, 48,
 # Dictionary mapping snapshots to scale factors
 snaps_scalefacs = dict(zip(snaps, scalefacs))
 
+L = 1000. # Box size [Mpc/h]
+
 def z_from_snapshot(snap):
 
     a = snaps_scalefacs[snap]
