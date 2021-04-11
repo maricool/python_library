@@ -339,9 +339,6 @@ def Prho_UPP(r, z, M, r500, cosm):
 
     return f1*f2*p(r/r500)*4.*np.pi
 
-    
-
-
 # Converts a Prho profile to a rho profile
 # Take care evaluating this at zero (which will give infinity)
 def rho_Prho(Prho, r, *args):
@@ -394,6 +391,8 @@ def conc_Duffy(M, z):
     # Appropriate for the full sample defined via M200
     return A*(M/M_piv)**B*(1.+z)**C
 
+# HOD model from Zheng et al. (2005)
+# TODO: These can be non-integer
 def HOD_Zheng(M, Mmin=1e12, sigma=0.15, M0=1e12, M1=1e13, alpha=1.):
     from scipy.special import erf
     Nc = 0.5*(1.+erf(np.log(M/Mmin)/sigma))
