@@ -87,3 +87,12 @@ def loglog_InterpolatedUnivariateSpline(x, y, **kwargs):
 def check_symmetric(a, rtol=1e-05, atol=1e-08):
     from numpy import allclose
     return allclose(a, a.T, rtol=rtol, atol=atol)
+
+# A sum function that returns nan if any of the values to be summed is a nan
+# This should be the default behaviour of the np.sum function
+#def nansum(a, **kwargs):
+#    from numpy import isnan, nan, nansum
+#    if isnan(a).any():
+#        return nan
+#    else:
+#        return nansum(a, **kwargs)

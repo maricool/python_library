@@ -151,26 +151,28 @@ def data_head(df, comment, verbose=False):
 def data_calculations(df, verbose):
     
     # Parameters
-    #days_roll = 7
     days_roll = days_in_roll
-  
-    # Sort data
-    #data_head(df, 'Original data', verbose)
-    #sort_data(df)
-    #data_head(df, 'Sorted data', verbose)
 
     # Calculate rolling cases and deaths (sum over previous week)
-    df['Cases_roll_Mead'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date <= x.date) & (df.date > x.date+relativedelta(days=-days_roll)), 'Cases'].sum(), axis=1)
-    df['Deaths_roll_Mead'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date <= x.date) & (df.date > x.date+relativedelta(days=-days_roll)), 'Deaths'].sum(), axis=1)
-    data_head(df, 'Rolling cases and deaths calculated', verbose)
+    # TODO: These should return NaN if any of the entries to be summed are NaNs (e.g., for hosp) but they do not
+    if 'Cases' in df:
+        df['Cases_roll_Mead'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date <= x.date) & (df.date > x.date+relativedelta(days=-days_roll)), 'Cases'].sum(), axis=1)
+    if 'Deaths' in df:
+        df['Deaths_roll_Mead'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date <= x.date) & (df.date > x.date+relativedelta(days=-days_roll)), 'Deaths'].sum(), axis=1)
+    if 'Hosp' in df:
+        df['Hosp_roll_Mead'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date <= x.date) & (df.date > x.date+relativedelta(days=-days_roll)), 'Hosp'].sum(), axis=1)
+    data_head(df, 'Rolling numbers calculated', verbose)
 
     # Calculate doubling times
-    df['Cases_roll_past'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date == x.date+relativedelta(days=-days_roll)), 'Cases_roll'].sum(), axis=1)
-    df['Cases_double'] = days_roll*np.log(2.)/np.log(df['Cases_roll']/df['Cases_roll_past'])
-    df.drop('Cases_roll_past', inplace=True, axis=1)
-    df['Deaths_roll_past'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date == x.date+relativedelta(days=-days_roll)), 'Deaths_roll'].sum(), axis=1)
-    df['Deaths_double'] = days_roll*np.log(2.)/np.log(df['Deaths_roll']/df['Deaths_roll_past'])
-    df.drop('Deaths_roll_past', inplace=True, axis=1)
+    # TODO: Change to use _Mead calculations?
+    if 'Cases_roll' in df:
+        df['Cases_roll_past'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date == x.date+relativedelta(days=-days_roll)), 'Cases_roll'].sum(), axis=1)
+        df['Cases_double'] = days_roll*np.log(2.)/np.log(df['Cases_roll']/df['Cases_roll_past'])
+        df.drop('Cases_roll_past', inplace=True, axis=1)
+    if 'Deaths_roll' in df:
+        df['Deaths_roll_past'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date == x.date+relativedelta(days=-days_roll)), 'Deaths_roll'].sum(), axis=1)
+        df['Deaths_double'] = days_roll*np.log(2.)/np.log(df['Deaths_roll']/df['Deaths_roll_past'])
+        df.drop('Deaths_roll_past', inplace=True, axis=1)
     data_head(df, 'Doubling times calculated', verbose)
 
 # Useful information
