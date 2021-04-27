@@ -29,3 +29,7 @@ def solve_quadratic(a, b, c):
     f1 = (root-b)/(2.*a)
     f2 = (-root-b)/(2.*a)
     return f1, f2
+
+# Cube root
+def cbrt(x):
+    return x**(1./3.)

@@ -5,6 +5,7 @@ import scipy.integrate as integrate
 
 sys.path.append('/Users/Mead/Physics/library/python')
 import mead_general as mead
+import mead_maths as maths
 import mead_cosmology as cosmo
 
 # Parameters
@@ -301,7 +302,7 @@ def Pk_hm(hmod, Ms, ks, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigma=None
 
 # Halo virial radius based on the halo mass and overdensity condition
 def virial_radius(M, Dv, Om_m):
-    return cosmo.Radius_M(M, Om_m)/mead.cbrt(Dv)
+    return cosmo.Radius_M(M, Om_m)/maths.cbrt(Dv)
 
 # Isothermal density profile multiplied by 4*pi*r^2
 def Prho_isothermal(r, M, rv):

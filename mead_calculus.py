@@ -35,3 +35,11 @@ def integrate_quad_log(func,a,b,\
 def integrate_rectangular(fx,x):
     dx = x[1]-x[0]
     return sum(fx)*dx
+
+# 2D trapezium rule
+def trapz2d(F, x, y):
+    from numpy import zeros, trapz
+    Fmid = zeros((len(y)))
+    for iy, _ in enumerate(y):
+        Fmid[iy] = trapz(F[:, iy], x)
+    return trapz(Fmid, y)

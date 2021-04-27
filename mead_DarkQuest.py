@@ -8,7 +8,9 @@ from dark_emulator import darkemu
 # My imports
 sys.path.append('/Users/Mead/Physics/library/python')
 import mead_constants as const
+#import mead_general as mead
 import mead_cosmology as cosmo
+#import mead_halomodel as halomodel
 
 # Constants
 dc = 1.686      # Collapse threshold for nu definition
@@ -343,6 +345,51 @@ def get_bias_mass(emu, M, redshift):
     bp = emu.get_bias(logdensp, redshift)
     bm = emu.get_bias(logdensm, redshift)
     return (bm * 10**logdensm - bp * 10**logdensp) / (10**logdensm - 10**logdensp)
+
+# Calculate the number density of haloes in the range Mmin to Mmax
+# Result is [(Mpc/h)^-3]
+def ndenshalo(emu, Mmin, Mmax, z):
+
+    # Parameters
+    vol = 1.
+
+    return emu.get_nhalo(Mmin, Mmax, vol, z)
+
+def get_xiauto_mass_averaged(emu, rs, M1min, M1max, M2min, M2max, z):
+
+    from mead_general import logspace
+    from mead_calculus import trapz2d
+
+    # Parameters
+    nM = 10  # Number of points in mass
+    nr = len(rs) # Number of points in R
+
+    # Arrays of halo masses
+    M1s = logspace(M1min, M1max, nM)
+    M2s = logspace(M2min, M2max, nM)
+
+    # Halo number densities
+    n1 = ndenshalo(emu, M1min, M1max, z)
+    n2 = ndenshalo(emu, M2min, M2max, z)
+    print('Number densities:', n1, n2)
+
+    # Mass functions
+    # emu.get_dndM ????
+    #N1s = emu.massfunc()
+    #N2s = emu.massfunc()
+
+    # Calculate the cross correlation
+    # Could speed up because this is symmetric
+    xi = np.zeros((nr, nM, nM))
+    for iM1, M1 in enumerate(M1s):
+        for iM2, M2 in enumerate(M2s):
+            xi[:, iM1, iM2] = emu.get_xiauto_mass(rs, M1, M2, z)
+
+    xi_avg = np.zeros((nr))
+    for ir, _ in enumerate(rs):
+        xi_avg[ir] = trapz2d(xi[ir, :, :], M1s, M2s)
+
+    return xi_avg
 
 # Beta_NL function
 def beta_NL(emu, vars, ks, z, var='Mass'):

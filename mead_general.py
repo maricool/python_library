@@ -1,3 +1,4 @@
+# Count the number of lines in a file
 # https://stackoverflow.com/questions/845058/how-to-get-line-count-cheaply-in-python
 def file_length(fname):
 
@@ -21,6 +22,7 @@ def array_values_at_indices(array, list_of_array_positions):
       return None
 
 # Sensible arange function
+# I hate the inbuilt numpy one with such fury that it frightens me
 def arange(min, max):
    from numpy import arange
    return arange(min, max+1)
@@ -43,36 +45,6 @@ def colour(i):
     color = 'C%d' % i
     return color
 
-# Cube root
-def cbrt(x):
-    return x**(1./3.)
-
-# 2D trapezium rule
-def trapz2d(F, x, y):
-    from numpy import zeros, trapz
-    Fmid = zeros((len(y)))
-    for iy, _ in enumerate(y):
-        Fmid[iy] = trapz(F[:, iy], x)
-    return trapz(Fmid, y)
-
-def logx_InterpolatedUnivariateSpline(x, y, **kwargs):
-    from numpy import log
-    from scipy.interpolate import InterpolatedUnivariateSpline as IUS
-    log_IUS = IUS(log(x), y, **kwargs)
-    return lambda x: log_IUS(log(x))
-
-def logy_InterpolatedUnivariateSpline(x, y, **kwargs):
-    from numpy import log, exp
-    from scipy.interpolate import InterpolatedUnivariateSpline as IUS
-    log_IUS = IUS(x, log(y), **kwargs)
-    return lambda x: exp(log_IUS(x))
-
-def loglog_InterpolatedUnivariateSpline(x, y, **kwargs):
-    from numpy import log, exp
-    from scipy.interpolate import InterpolatedUnivariateSpline as IUS
-    log_IUS = IUS(log(x), log(y), **kwargs)
-    return lambda x: exp(log_IUS(log(x)))
-
 # use numpy deg2rad
 #def degrees_to_radians(theta):
 #    from numpy import pi
@@ -82,11 +54,6 @@ def loglog_InterpolatedUnivariateSpline(x, y, **kwargs):
 #def radians_to_degrees(theta):
 #    from numpy import pi
 #    return theta*180./pi
-
-# Check if a square array is symmetric
-def check_symmetric(a, rtol=1e-05, atol=1e-08):
-    from numpy import allclose
-    return allclose(a, a.T, rtol=rtol, atol=atol)
 
 # A sum function that returns nan if any of the values to be summed is a nan
 # This should be the default behaviour of the np.sum function
