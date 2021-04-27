@@ -24,8 +24,6 @@ def _calculate_rmin_rmax(nn):
     return rmin, rmax
 
 def calculateXi_sim(nn, L, N1, N2=None):
-
-    from numpy import zeros
     
     # Checks
     if (nn.npairs.all() != nn.weight.all()):
@@ -41,9 +39,9 @@ def calculateXi_sim(nn, L, N1, N2=None):
     for i in range(nr):
         V = (4./3.)*np.pi*(rmax[i]**3-rmin[i]**3) # Volume of (possibly thick) shell
         if N2 is None:
-            N12 = (N1**2)*V/L**3 # Expected number of pairs: Autocorrelation
+            N12 = (N1**2)*V/L**3 # Expected number of pairs: Auto-correlation
         else: 
-            N12 = N1*N2*V/L**3 # Expected number of pairs: Cross correlation
+            N12 = N1*N2*V/L**3 # Expected number of pairs: Cross-correlation
         nn.xi[i] = -1.+nn.npairs[i]/N12 # Construct correlation function
         nn.varxi[i] = nn.npairs[i]/N12**2 # Poisson variance in measured correlation function
         
