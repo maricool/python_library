@@ -44,7 +44,7 @@ def calculateXi_sim(nn, L, N1, N2=None):
             N12 = (N1**2)*V/L**3 # Expected number of pairs: Autocorrelation
         else: 
             N12 = N1*N2*V/L**3 # Expected number of pairs: Cross correlation
-        nn.xi[i] = -1.+nn.npairs[i]/N12
-        nn.varxi[i] = nn.npairs[i]/N12**2
+        nn.xi[i] = -1.+nn.npairs[i]/N12 # Construct correlation function
+        nn.varxi[i] = nn.npairs[i]/N12**2 # Poisson variance in measured correlation function
         
     return nn.xi, nn.varxi
