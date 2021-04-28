@@ -23,7 +23,7 @@ def _calculate_rmin_rmax(nn):
     # Return the minimum and maximum limit for each bin
     return rmin, rmax
 
-def calculateXi_sim(nn, L, N1, N2=None):
+def calculateXi_sim(nn, Vsim, N1, N2=None):
     
     # Checks
     if (nn.npairs.all() != nn.weight.all()):
@@ -39,10 +39,10 @@ def calculateXi_sim(nn, L, N1, N2=None):
     for i in range(nr):
         V = (4./3.)*np.pi*(rmax[i]**3-rmin[i]**3) # Volume of (possibly thick) shell
         if N2 is None:
-            N12 = (N1**2)*V/L**3 # Expected number of pairs: Auto-correlation
+            N12 = (N1**2)*V/Vsim # Expected number of pairs: Auto-correlation
         else: 
-            N12 = N1*N2*V/L**3 # Expected number of pairs: Cross-correlation
+            N12 = N1*N2*V/Vsim # Expected number of pairs: Cross-correlation
         nn.xi[i] = -1.+nn.npairs[i]/N12 # Construct correlation function
-        nn.varxi[i] = nn.npairs[i]/N12**2 # Poisson variance in measured correlation function
+        nn.varxi[i] = nn.npairs[i]/N12**2 # Variance in measured correlation function assuming Poisson stats for pair counts
         
     return nn.xi, nn.varxi
