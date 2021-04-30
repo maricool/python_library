@@ -9,9 +9,9 @@ import sys
 # My imports
 sys.path.append('/Users/Mead/Physics/library/python')
 import mead_constants as const
-import mead_maths as maths
+#import mead_maths as maths
 import mead_general as mead
-import mead_interpolation as interpolation
+import mead_interpolate as interpolate
 
 # Parameters
 AW10_future_punishment = 1e6
@@ -180,7 +180,7 @@ class cosmology():
         self.r = np.vectorize(r_vectorize)
 
         # Interpolaton function for rp(a)
-        rp_func = interpolation.log_interp1d(a_tab, rp_tab, kind='cubic', fill_value='extrapolate')
+        rp_func = interpolate.log_interp1d(a_tab, rp_tab, kind='cubic', fill_value='extrapolate')
         def rp_vectorize(a):
             if(a <= small):
                 return 0.
@@ -192,7 +192,7 @@ class cosmology():
         self.rp = np.vectorize(rp_vectorize)
 
         # Interpolaton function for t(a)
-        t_func = interpolation.log_interp1d(a_tab, t_tab, kind='cubic', fill_value='extrapolate')
+        t_func = interpolate.log_interp1d(a_tab, t_tab, kind='cubic', fill_value='extrapolate')
         def t_vectorize(a):
             if(a <= small):
                 return 0.
@@ -256,7 +256,7 @@ class cosmology():
         print('Initialise_growth: Creating interpolators')
 
         # Create interpolation function for g(a)
-        g_func = interpolation.log_interp1d(a_tab, g_tab, kind='cubic', fill_value='extrapolate')
+        g_func = interpolate.log_interp1d(a_tab, g_tab, kind='cubic', fill_value='extrapolate')
         def g_vectorize(a):
             if(a < amin):
                 return a
@@ -268,7 +268,7 @@ class cosmology():
         self.g = np.vectorize(g_vectorize)
 
         # Create interpolation function for f(a) = dln(g)/dln(a)
-        f_func = interpolation.log_interp1d(a_tab, f_tab, kind='cubic', fill_value='extrapolate')
+        f_func = interpolate.log_interp1d(a_tab, f_tab, kind='cubic', fill_value='extrapolate')
         def f_vectorize(a):
             if(a < amin):
                 return 1.
@@ -539,7 +539,8 @@ def sigma_R(R, Power_k):
     def sigma_R_vec(R):
 
         def sigma_integrand(k):
-            return Power_k(k)*(k**2)*maths.Tophat(k*R)**2
+            from mead_special_functions import Tophat_k
+            return Power_k(k)*(k**2)*Tophat_k(k*R)**2
 
         # k range for integration (could be restricted if necessary)
         kmin = 0.

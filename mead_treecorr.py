@@ -34,6 +34,7 @@ def calculateXi_sim(nn, Vsim, N1, N2=None):
     nr = nn.nbins
     
     # Calculate the correlation function from the pair counts
+    # TODO: Should there be N-1/N in variance given that mean is estimated from data?
     nn.xi = np.zeros((nr))
     nn.varxi = np.zeros((nr))
     for i in range(nr):

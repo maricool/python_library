@@ -6,11 +6,9 @@ import sys
 from dark_emulator import darkemu
 
 # My imports
-sys.path.append('/Users/Mead/Physics/library/python')
 import mead_constants as const
-#import mead_general as mead
+import mead_general as mead
 import mead_cosmology as cosmo
-#import mead_halomodel as halomodel
 
 # Constants
 dc = 1.686      # Collapse threshold for nu definition
@@ -251,6 +249,7 @@ def nu_M(emu, M, z):
     nu = dc/sigma_M(emu, M, z)
     return nu
 
+# Lagrangian radius
 def Radius_M(emu, M):
 
     #rhom = comoving_matter_density(emu)
@@ -258,6 +257,11 @@ def Radius_M(emu, M):
     Om_m = emu.cosmo.get_Omega0()
     radius = cosmo.Radius_M(M, Om_m)
     return radius
+
+# Virial radius
+def virial_radius_M(emu, M):
+    from mead_special_functions import cbrt
+    return Radius_M(emu, M)/cbrt(Dv)
 
 def Mass_R(emu, R):
 
@@ -346,6 +350,21 @@ def get_bias_mass(emu, M, redshift):
     bm = emu.get_bias(logdensm, redshift)
     return (bm * 10**logdensm - bp * 10**logdensp) / (10**logdensm - 10**logdensp)
 
+# Return an array of n(M) (dn/dM in Dark Quest notation) at user-specified halo masses
+# Extrapolates if necessary, which is perhaps dangerous
+def get_dndM_mass(emu, Ms, z):
+
+    # Imports
+    from scipy.interpolate import InterpolatedUnivariateSpline as ius
+
+    # Construct an interpolator for n(M) (or dn/dM) from the emulator internals
+    Ms = emu.massfunc.Mlist
+    dndM = emu.massfunc.get_dndM(z)
+    dndM_interp = ius(np.log(Ms), np.log(dndM), ext='extrapolate')
+
+    # Evaluate the interpolator at the desired mass points
+    return np.exp(dndM_interp(np.log(Ms)))
+
 # Calculate the number density of haloes in the range Mmin to Mmax
 # Result is [(Mpc/h)^-3]
 def ndenshalo(emu, Mmin, Mmax, z):
@@ -355,41 +374,77 @@ def ndenshalo(emu, Mmin, Mmax, z):
 
     return emu.get_nhalo(Mmin, Mmax, vol, z)
 
-def get_xiauto_mass_averaged(emu, rs, M1min, M1max, M2min, M2max, z):
+# Calculate the average mass between two limits, weighted by the halo mass function
+# Result is [Msun/h]
+def mass_avg(emu, Mmin, Mmax, z):
 
-    from mead_general import logspace
-    from mead_calculus import trapz2d
+    # Import
+    from scipy.interpolate import InterpolatedUnivariateSpline as ius
+    from scipy.integrate import quad
 
     # Parameters
-    nM = 10  # Number of points in mass
-    nr = len(rs) # Number of points in R
+    epsabs = 1e-5 # Integration accuracy
 
-    # Arrays of halo masses
-    M1s = logspace(M1min, M1max, nM)
-    M2s = logspace(M2min, M2max, nM)
+    # Construct an interpolator for n(M) (or dn/dM) from the emulator internals
+    Ms = emu.massfunc.Mlist
+    dndM = emu.massfunc.get_dndM(z)
+    log_dndM_interp = ius(np.log(Ms), np.log(dndM), ext='extrapolate')
 
-    # Halo number densities
+    # Number density of haloes in the mass range
+    n = ndenshalo(emu, Mmin, Mmax, z) 
+
+    # Integrate to get the average mass
+    Mav, _ = quad(lambda M: M*np.exp(log_dndM_interp(np.log(M))), Mmin, Mmax, epsabs=epsabs)
+
+    return Mav/n
+
+# Averages the halo-halo correlation function over mass ranges to return the weighted by mass function mean version
+def get_xiauto_mass_avg(emu, rs, M1min, M1max, M2min, M2max, z):
+
+    # Import
+    from scipy.interpolate import InterpolatedUnivariateSpline as ius
+    from scipy.interpolate import RectBivariateSpline as rbs
+    from scipy.integrate import dblquad
+
+    # Parameters
+    epsabs = 1e-3 # Integration accuracy
+    nM = 6        # Number of halo-mass bins in each of M1 and M2 directions
+
+    # Calculations
+    nr = len(rs)
+
+    # Number densities of haloes in each sample
     n1 = ndenshalo(emu, M1min, M1max, z)
     n2 = ndenshalo(emu, M2min, M2max, z)
-    print('Number densities:', n1, n2)
 
-    # Mass functions
-    # emu.get_dndM ????
-    #N1s = emu.massfunc()
-    #N2s = emu.massfunc()
+    # Arrays for halo masses
+    M1s = mead.logspace(M1min, M1max, nM)
+    M2s = mead.logspace(M2min, M2max, nM)
+    
+    # Get mass function interpolation
+    Ms = emu.massfunc.Mlist
+    dndM = emu.massfunc.get_dndM(z)
+    log_dndM_interp = ius(np.log(Ms), np.log(dndM))
 
-    # Calculate the cross correlation
-    # Could speed up because this is symmetric
-    xi = np.zeros((nr, nM, nM))
-    for iM1, M1 in enumerate(M1s):
-        for iM2, M2 in enumerate(M2s):
-            xi[:, iM1, iM2] = emu.get_xiauto_mass(rs, M1, M2, z)
+    # Loop over radii
+    xiauto_avg = np.zeros((nr))
+    for ir, r in enumerate(rs):
 
-    xi_avg = np.zeros((nr))
-    for ir, _ in enumerate(rs):
-        xi_avg[ir] = trapz2d(xi[ir, :, :], M1s, M2s)
+        # Get correlation function interpolation
+        # Note that this is not necessarily symmetric because M1, M2 run over different ranges
+        xiauto_mass = np.zeros((nM, nM))
+        for iM1, M1 in enumerate(M1s):
+            for iM2, M2 in enumerate(M2s):
+                xiauto_mass[iM1, iM2] = emu.get_xiauto_mass(r, M1, M2, z)
+        xiauto_interp = rbs(np.log(M1s), np.log(M2s), xiauto_mass)
 
-    return xi_avg
+        # Integrate interpolated functions
+        xiauto_avg[ir], _ = dblquad(lambda M1, M2: xiauto_interp(np.log(M1),np.log(M2))*np.exp(log_dndM_interp(np.log(M1))+log_dndM_interp(np.log(M2))),
+                                    M1min, M1max,
+                                    lambda M1: M2min, lambda M1: M2max,
+                                    epsabs=epsabs)
+
+    return xiauto_avg/(n1*n2)
 
 # Beta_NL function
 def beta_NL(emu, vars, ks, z, var='Mass'):
