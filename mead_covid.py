@@ -477,6 +477,7 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
 
         # Axes limits
         plt.xlim(left=start_date, right=end_date)
+        plt.ylim(bottom=0)
         if Nmax != None: 
             plt.ylim(top=Nmax)
         if pop_norm:

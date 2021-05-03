@@ -446,14 +446,27 @@ def get_xiauto_mass_avg(emu, rs, M1min, M1max, M2min, M2max, z):
 
     return xiauto_avg/(n1*n2)
 
-# Beta_NL function
-def beta_NL(emu, vars, ks, z, var='Mass'):
-    
+def linear_halo_bias(emu, M, z, klin, Pk_klin):
+
     # Source of linear halo bias
     # ibias = 1: Linear bias from emulator
-    # ibias = 2: Linear bias from auto-spectrum at large wavenumber
-    # ibias = 3: Linear bias from cross-spectrum at large wavenumber
+    # ibias = 2: Linear bias from halo-halo spectrum at large wavenumber
+    # ibias = 3: Linear bias from halo-matter spectrum at large wavenumber
     ibias = 2
+
+    if ibias == 1:
+        b = get_bias_mass(emu, M, z)[0]
+    elif ibias == 2:
+        b = np.sqrt(emu.get_phh_mass(klin, M, M, z)/Pk_klin)
+    elif ibias == 3:
+        b = emu.get_phm_mass(klin, M, z)/Pk_klin
+    else:
+        raise ValueError('Linear bias recipe for beta_NL not recognised')
+
+    return b
+
+# Beta_NL function
+def beta_NL(emu, vars, ks, z, var='Mass'):
 
     # Force Beta_NL to zero at large scales?
     # force_BNL_zero = 0: No
@@ -481,39 +494,24 @@ def beta_NL(emu, vars, ks, z, var='Mass'):
     
     # Linear power
     Pk_lin = emu.get_pklin_from_z(ks, z)
-    if force_BNL_zero != 0:
-        Pk_lin0 = emu.get_pklin_from_z(klin, z)
+    Pk_klin = emu.get_pklin_from_z(klin, z)
     
     # Calculate beta_NL by looping over mass arrays
     beta = np.zeros((len(Ms), len(Ms), len(ks)))  
     for iM1, M1 in enumerate(Ms):
+
+        # Linear halo bias
+        b1 = linear_halo_bias(emu, M1, z, klin, Pk_klin)
+
         for iM2, M2 in enumerate(Ms):
 
-            if iM2 < iM1:
+            if iM2 >= iM1:
 
-                # Use symmetry to not double calculate
-                beta[iM1, iM2, :] = beta[iM2, iM1, :]
-
-            else:
+                # Linear halo bias
+                b2 = linear_halo_bias(emu, M2, z, klin, Pk_klin)
 
                 # Halo-halo power spectrum
                 Pk_hh = emu.get_phh_mass(ks, M1, M2, z)
-                
-                # Linear halo bias
-                if ibias == 1:
-                    #b1 = emu.get_bias_mass(M1, z)[0]
-                    #b2 = emu.get_bias_mass(M2, z)[0]
-                    b1 = get_bias_mass(emu, M1, z)[0]
-                    b2 = get_bias_mass(emu, M2, z)[0]
-                    raise ValueError('Linear bias emulator broken')
-                elif ibias == 2:
-                    b1 = np.sqrt(emu.get_phh_mass(klin, M1, M1, z)/emu.get_pklin_from_z(klin, z))
-                    b2 = np.sqrt(emu.get_phh_mass(klin, M2, M2, z)/emu.get_pklin_from_z(klin, z))
-                elif ibias == 3:
-                    b1 = emu.get_phm_mass(klin, M1, z)/emu.get_pklin_from_z(klin, z)
-                    b2 = emu.get_phm_mass(klin, M2, z)/emu.get_pklin_from_z(klin, z)
-                else:
-                    raise ValueError('Linear bias recipe for beta_NL not recognised')
                     
                 # Create beta_NL
                 beta[iM1, iM2, :] = Pk_hh/(b1*b2*Pk_lin)-1.
@@ -521,13 +519,18 @@ def beta_NL(emu, vars, ks, z, var='Mass'):
                 # Force Beta_NL to be zero at large scales if necessary
                 if force_BNL_zero != 0:
                     Pk_hh0 = emu.get_phh_mass(klin, M1, M2, z)
-                    db = Pk_hh0/(b1*b2*Pk_lin0)-1.
+                    db = Pk_hh0/(b1*b2*Pk_klin)-1.
                     if force_BNL_zero == 1:
-                        beta[iM1, iM2, :] = beta[iM1, iM2, :]-db # Additive correction
+                        beta[iM1, iM2, :] = beta[iM1, iM2, :]-db # Addative correction
                     elif force_BNL_zero == 2:
                         beta[iM1, iM2, :] = (beta[iM1, iM2, :]+1.)/(db+1.)-1. # Multiplicative correction
                     else:
                         raise ValueError('force_BNL_zero not set correctly')
+
+            else:
+
+                # Use symmetry to not double calculate
+                beta[iM1, iM2, :] = beta[iM2, iM1, :]
          
     return beta 
 
