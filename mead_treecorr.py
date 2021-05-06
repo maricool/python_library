@@ -59,6 +59,6 @@ def get_Maps(cat, theta_min, theta_max, ntheta, bin_slop):
     gg.process(cat)
 
     theta = gg.meanr
-    Mapsq, _, _, _, varMapsq = gg.calculateMapSq()
+    Mapsq, Mapsq_im, Mxsq, Mxsq_im, varMapsq = gg.calculateMapSq()
 
     return theta, Mapsq, varMapsq

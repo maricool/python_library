@@ -1,13 +1,10 @@
 # Standard
-import numpy as np
-import sys
+import numpy
 
-# Other imports
+# Third-party
 import camb
 
 # My imports
-sys.path.append('/Users/Mead/Physics/library/python')
-import mead_constants as const
 import mead_cosmology as cosmo
 
 # Create my cosmological parameters from a CAMB set

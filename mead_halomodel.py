@@ -1,34 +1,36 @@
 import math
 import numpy as np
-import sys
 import scipy.integrate as integrate
 
 import mead_general as mead
 import mead_cosmology as cosmo
 
 # Parameters
-Dv0 = 18.*np.pi**2
-dc0 = (3./20.)*(12.*np.pi)**(2./3.)
+Dv0 = 18.*np.pi**2 # Delta_v = ~178, EdS halo virial overdensity
+dc0 = (3./20.)*(12.*np.pi)**(2./3.) # delta_c = ~1.686' EdS linear collapse threshold
 Dv_close_rel_tol = 1e-3
 Tinker_z_dep = False
 
-# Halo-model integration scheme
-#halo_integration = integrate.trapezoid
-halo_integration = integrate.simpson
+# Halo-model integration scheme for integration in M
+# NOTE: Cannot use Romberg because integration is done nu, not M, and this will generally be uneven
+# TODO: In HMx I use trapezoid because of fast osciallations, maybe I should also use that here
+halo_integration = integrate.trapezoid
+#halo_integration = integrate.simps
 
 # W(k) integration scheme
+# TODO: Add FFTlog
 #win_integration = integrate.trapezoid
-#win_integration = integrate.simpson
-win_integration = integrate.romb
+#win_integration = integrate.simps
+win_integration = integrate.romb # Needs 2^m+1 (integer m) evenly-spaced samples in R
 
-# Halo model types
+# Halo models for halo mass function and bias
 PS = 'Press & Schecter 1974'
 ST = 'Sheth & Tormen 1999'
 Tinker2010 = 'Tinker 2010'
 
 # Defaults
-hm_def = PS
-Dv_def = 200
+hm_def = Tinker2010
+Dv_def = 200. # Halo overdensity with respect to background matter density
 dc_def = 1.686
 
 class halomod():
@@ -41,7 +43,8 @@ class halomod():
         self.Dv = Dv
 
         if hm == ST:
-            # Sheth-Tormen mass function parameters
+
+            # Sheth & Tormen (1999; ) mass function parameters
             from scipy.special import gamma as Gamma
             p = 0.3
             q = 0.707
@@ -53,11 +56,9 @@ class halomod():
 
             # Tinker et al. (2010; https://arxiv.org/abs/1001.3162)
 
-            # Check Delta_v value
+            # Check Delta_v and delta_c values
             if not math.isclose(Dv, 200., rel_tol=Dv_close_rel_tol):
                 print('Warning, Tinker (2010) only coded up for Dv=200')
-
-            # Check delta_c value
             if not math.isclose(dc, 1.686, rel_tol=Dv_close_rel_tol):
                 print('Warning, dc = 1.686 assumed in Tinker (2010)')
 
@@ -138,18 +139,18 @@ class halomod():
         else:
             raise ValueError('Halo model ihm not recognised in linear_halo_bias')
 
-def get_nus(Ms, dc, Om_m, sigmas=None, sigma=None, Pk_lin=None):
+def _get_nus(Ms, dc, Om_m, sigmas=None, sigma=None, Pk_lin=None):
 
     # Create arrays of R (Lagrangian) and nu values that correspond to the halo mass
     Rs = cosmo.Radius_M(Ms, Om_m)
 
     # Convert R values to nu via sigma(R)
     if sigmas is not None:
-        nus = dc/sigmas
+        nus = dc/sigmas # Use the provided sigma(R) values or...
     elif sigma is not None:
-        nus = dc/sigma(Rs) # Else use the provided sigma(R) function
+        nus = dc/sigma(Rs) # ...otherwise evaluate the provided sigma(R) function or...
     elif Pk_lin is not None:
-        nus = cosmo.nu_R(Rs, Pk_lin, dc) # Uses crappy sigma(R) integration
+        nus = cosmo.nu_R(Rs, Pk_lin, dc) # ...otherwise integrate the linear power.
     else:
         raise ValueError('Error, you need to specify (at least) one of Pk_lin, sigma or sigmas') 
     return nus
@@ -170,34 +171,34 @@ def mean_hm(hmod, Ms, Fs, Om_m, sigmas=None, sigma=None, Pk_lin=None):
     # sigma(R) - Function to get sigma(R) at z of interest
     # nus(M) - Previously calculated array of nu values corresponding to M
 
-    nus = get_nus(Ms, hmod.dc, Om_m, sigmas, sigma, Pk_lin)
+    nus = _get_nus(Ms, hmod.dc, Om_m, sigmas, sigma, Pk_lin)
     integrand = (Fs/Ms)*hmod.halo_mass_function(nus)
-    #return np.trapz(integrand, nus)*cosmo.comoving_matter_density(Om_m)
     return halo_integration(integrand, nus)*cosmo.comoving_matter_density(Om_m)
 
 # Compute the halo window function given a 'density' profile Prho(r) = 4*pi*r^2*rho(r)
-# This should almost certainly be done with a dedicated integration routine
-def halo_window(ks, rs, Prho):
+# TODO: This should almost certainly be done with a dedicated integration routine, FFTlog?
+def _halo_window(ks, rs, Prho):
 
     # ks: array of wavenumbers [h/Mpc]
     # rs: array of radii (usually going from r=0 to r=rv)
     # Prho[rs]: array of Prho values at different radii
 
-    import scipy.integrate as integrate
+    from scipy.integrate import trapezoid, simps, romb
 
     W = np.empty_like(Prho)
     for ik, k in enumerate(ks):
-        integrand = np.sinc(k*rs/np.pi)*Prho # Note that numpy sinc function has an odd definition
-        if win_integration == integrate.romb:
-            dr = (rs[-1]-rs[0])/(len(rs)-1)
+        integrand = np.sinc(k*rs/np.pi)*Prho # Numpy sinc function has unusual definition with pi
+        if win_integration == romb:
+            #dr = (rs[-1]-rs[0])/(len(rs)-1) # Spacing for whole array
+            dr = rs[1]-rs[0] # Spacing between points in r (assumed even)
             W[ik] = win_integration(integrand, dr)
-        elif win_integration in [integrate.trapezoid, integrate.simps]:
+        elif win_integration in [trapezoid, simps]:
             W[ik] = win_integration(integrand, rs)
         else:
             raise ValueError('Halo window function integration method not recognised')
     return W
 
-def Pk_hm(hmod, Ms, ks, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigma=None, low_mass_uv=[False,False], Fourier_uv=[True, True]):
+def Pk_hm(hmod, Ms, ks, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigma=None, low_mass_uv=[False,False], Fourier_uv=[True,True], verbose=True):
 
     # TODO: Remove Pk_lin dependence?
     # hmod - halomodel class
@@ -205,23 +206,23 @@ def Pk_hm(hmod, Ms, ks, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigma=None
     # ks - Array of wavenumbers [h/Mpc]
     # rho_uv(2, Ms, ks/rs) - Array of either Fourier transform of halo profile 'u' and 'v' [u(Mpc/h)^3] or real-space profile from 0 to rv [u]
     # Pk_lin(k) - Function to evaluate the linear power spectrum [(Mpc/h)^3]
-    # Om_m - Cosmological matter density
-    # beta(M1, M2, k) - Array of beta_NL values at points Ms, Ms, ks
-    # sigmas(Ms) - Optional pre-computed array of sigma(M) values corresponding to Ms
+    # Om_m - Cosmological matter density at z=0
+    # beta(M1, M2, k) - Optional array of beta_NL values at points Ms, Ms, ks
+    # sigmas(Ms) - Optional pre-computed array of linear sigma(M) values corresponding to Ms
     # sigma(R) - Optional function to evaluate the linear sigma(R)
     # low_mass_uv - Should a correction be made for low-mass haloes for field 'u'?
     # Fourier_uv - Are haloes for field 'u' provided in Fourier space or real space?
 
-    # Parameters
-    verbose = True
+    from time import time
+
+    t1 = time()
 
     # Create arrays of R (Lagrangian radius) and nu values that correspond to the halo mass
-    nus = get_nus(Ms, hmod.dc, Om_m, sigmas, sigma, Pk_lin)
+    nus = _get_nus(Ms, hmod.dc, Om_m, sigmas, sigma, Pk_lin)
 
     # Calculate the missing halo-bias from the low-mass part of the integral if required
     if low_mass_uv[0] or low_mass_uv[1]:
         integrand = hmod.halo_mass_function(nus)*hmod.linear_halo_bias(nus)
-        #A = 1.-np.trapz(integrand, nus)
         A = 1.-halo_integration(integrand, nus)
         if verbose:
             print('Missing halo-bias-mass from two-halo integrand:', A)
@@ -237,12 +238,11 @@ def Pk_hm(hmod, Ms, ks, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigma=None
             for iM, M in enumerate(Ms):
                 rv = virial_radius(M, hmod.Dv, Om_m)
                 rs = np.linspace(0., rv, nr)
-                Wuv[i, iM, :] = halo_window(ks, rs, rho_uv[i, iM, :])
+                Wuv[i, iM, :] = _halo_window(ks, rs, rho_uv[i, iM, :])
 
     # Evaluate the integral that appears in the two-halo term
     def I_2h(hmod, Ms, nus, W, Om_m, low_mass):
         integrand = W*hmod.linear_halo_bias(nus)*hmod.halo_mass_function(nus)/Ms
-        #I_2h = np.trapz(integrand, nus)
         I_2h = halo_integration(integrand, nus)
         if low_mass:
             I_2h = I_2h+A*W[0]/Ms[0]
@@ -262,26 +262,27 @@ def Pk_hm(hmod, Ms, ks, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigma=None
     # One-halo term at a specific wavenumber
     def P_1h(hmod, Ms, nus, Wuv, Om_m):
         integrand = Wuv[0, :]*Wuv[1, :]*hmod.halo_mass_function(nus)/Ms
-        #P_1h = np.trapz(integrand, nus)
         P_1h = halo_integration(integrand, nus)
         P_1h = P_1h*cosmo.comoving_matter_density(Om_m)
         return P_1h
 
     # Evaluates the beta_NL integral
-    # TODO: Symmetry could be used to speed-up population of integrand by half
     def I_beta(hmod, beta, Ms, nus, Wuv, Om_m):
         integrand = np.zeros((len(nus), len(nus)))
         for iM1, nu1 in enumerate(nus):
             for iM2, nu2 in enumerate(nus):
-                M1 = Ms[iM1]
-                M2 = Ms[iM2]
-                W1 = Wuv[0, iM1]
-                W2 = Wuv[1, iM2]
-                g1 = hmod.halo_mass_function(nu1)
-                g2 = hmod.halo_mass_function(nu2)
-                b1 = hmod.linear_halo_bias(nu1)
-                b2 = hmod.linear_halo_bias(nu2)
-                integrand[iM1, iM2] = beta[iM1, iM2]*W1*W2*g1*g2*b1*b2/(M1*M2)
+                if iM2 >= iM1:
+                    M1 = Ms[iM1]
+                    M2 = Ms[iM2]
+                    W1 = Wuv[0, iM1]
+                    W2 = Wuv[1, iM2]
+                    g1 = hmod.halo_mass_function(nu1)
+                    g2 = hmod.halo_mass_function(nu2)
+                    b1 = hmod.linear_halo_bias(nu1)
+                    b2 = hmod.linear_halo_bias(nu2)
+                    integrand[iM1, iM2] = beta[iM1, iM2]*W1*W2*g1*g2*b1*b2/(M1*M2)
+                else:
+                    integrand[iM1, iM2] = integrand[iM2, iM1]
         return mead.trapz2d(integrand, nus, nus)*cosmo.comoving_matter_density(Om_m)**2
 
     # Combine everything and return
@@ -295,6 +296,11 @@ def Pk_hm(hmod, Ms, ks, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigma=None
             Pk_2h_array[ik] = P_2h(hmod, Pk_lin, k, Ms, nus, Wuv[:, :, ik], Om_m, low_mass_uv, beta[:, :, ik])
         Pk_1h_array[ik] = P_1h(hmod, Ms, nus, Wuv[:, :, ik], Om_m)
         Pk_hm_array[ik] = Pk_2h_array[ik]+Pk_1h_array[ik]
+
+    t2 = time()
+    if verbose:
+        print('Halo model calculation time [s]:', t2-t1)
+        print('')
 
     return Pk_2h_array, Pk_1h_array, Pk_hm_array
 
@@ -380,6 +386,7 @@ def win_NFW(k, rv, c):
 def NFW_factor(c):
     return np.log(1.+c)-c/(1.+c)
 
+# Duffy et al (2008; 0804.2486) c(M) relation for WMAP5, See Table 1
 def conc_Duffy(M, z):
 
     M_piv = 2e12 # Pivot mass [Msun/h]
@@ -392,7 +399,6 @@ def conc_Duffy(M, z):
     return A*(M/M_piv)**B*(1.+z)**C
 
 # HOD model from Zheng et al. (2005)
-# TODO: These can be non-integer
 def HOD_Zheng(M, Mmin=1e12, sigma=0.15, M0=1e12, M1=1e13, alpha=1.):
     from scipy.special import erf
     Nc = 0.5*(1.+erf(np.log(M/Mmin)/sigma))
@@ -406,6 +412,7 @@ def dc_NakamuraSuto(Om_mz):
 
 # LCDM fitting function for virial overdensity from Bryan & Norman (1998; https://arxiv.org/abs/astro-ph/9710107)
 # Note that here Dv is defined relative to background matter density, whereas in paper it is relative to critical density
+# For LCDM Dv ~ 330.
 def Dv_BryanNorman(Om_mz):
     x = Om_mz-1.
     Dv = Dv0+82.*x-39.*x**2

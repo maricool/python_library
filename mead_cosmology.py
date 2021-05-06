@@ -4,12 +4,9 @@ import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 import scipy.integrate as integrate
 from scipy.interpolate import interp1d
-import sys
 
 # My imports
-sys.path.append('/Users/Mead/Physics/library/python')
 import mead_constants as const
-#import mead_maths as maths
 import mead_general as mead
 import mead_interpolate as interpolate
 

@@ -1,6 +1,6 @@
-def get_power(name, z):
+import numpy as np
 
-   import numpy as np
+def get_power(name, z):
 
    k, zs, Pks = get_powers(name)
 
@@ -9,8 +9,6 @@ def get_power(name, z):
    return k, Pks[:,i[0]]
 
 def get_powers(name):
-
-   import numpy as np
 
    indir = '/Users/Mead/Physics/data/VD20'
    infile = indir+'/'+name+'.dat'

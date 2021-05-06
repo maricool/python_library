@@ -1,7 +1,9 @@
 # Import statements
 import numpy as np
-import mead_constants as constants
 from scipy.special import erf as erf
+
+# My imports
+import mead_constants as constants
 
 # Mass flux of dark matter through spherical shell of radius R [kg/s]
 # mu: dark matter wind speed [km/s] 

@@ -9,7 +9,7 @@ def multiplication_practice(rmin, rmax, n):
 
    t1 = time.time()
    nc = 0
-   for i in range(n):
+   for _ in range(n):
 
       a = random.randint(rmin, rmax)
       b = random.randint(rmin, rmax)

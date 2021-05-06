@@ -1,3 +1,4 @@
+# Standard imports
 import numpy as np
 from scipy import integrate
 

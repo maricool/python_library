@@ -1,6 +1,5 @@
 # Standard imports
 import numpy as np
-import sys
 
 # Other imports
 from dark_emulator import darkemu

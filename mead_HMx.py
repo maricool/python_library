@@ -90,10 +90,7 @@ def parameter_file_name(fit, model, chain, z=None):
 def read_parameter_file(file):
 
    # Import statements
-   from sys import path 
    from numpy import genfromtxt, float
-
-   path.append('/Users/Mead/Physics/library/python')
    from mead_strings import read_first_number_from_line_in_file
 
    # Read the file
