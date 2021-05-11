@@ -4,6 +4,8 @@ import treecorr
 
 import mead_general as mead
 
+Map_threads = 4
+
 def calculateXi_sim(nn, Vsim, N1, N2=None):
     
     r"""Calculate the correlation function from the pair counts assuming that
@@ -53,6 +55,7 @@ def get_Maps(cat, theta_min, theta_max, ntheta, bin_slop):
         'bin_slop': bin_slop,
         'sep_units': 'arcmin',
         'verbose': 1,
+        'num_threads': Map_threads,
     }
 
     gg = treecorr.GGCorrelation(**config)
@@ -61,4 +64,4 @@ def get_Maps(cat, theta_min, theta_max, ntheta, bin_slop):
     theta = gg.meanr
     Mapsq, Mapsq_im, Mxsq, Mxsq_im, varMapsq = gg.calculateMapSq()
 
-    return theta, Mapsq, varMapsq
+    return theta, Mapsq, Mapsq_im, Mxsq, Mxsq_im, varMapsq

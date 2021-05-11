@@ -5,9 +5,11 @@ import scipy.integrate as integrate
 import mead_general as mead
 import mead_cosmology as cosmo
 
-# Parameters
+# Constants
 Dv0 = 18.*np.pi**2 # Delta_v = ~178, EdS halo virial overdensity
 dc0 = (3./20.)*(12.*np.pi)**(2./3.) # delta_c = ~1.686' EdS linear collapse threshold
+
+# Parameters
 Dv_close_rel_tol = 1e-3
 Tinker_z_dep = False
 
@@ -175,19 +177,21 @@ def mean_hm(hmod, Ms, Fs, Om_m, sigmas=None, sigma=None, Pk_lin=None):
     integrand = (Fs/Ms)*hmod.halo_mass_function(nus)
     return halo_integration(integrand, nus)*cosmo.comoving_matter_density(Om_m)
 
-# Compute the halo window function given a 'density' profile Prho(r) = 4*pi*r^2*rho(r)
-# TODO: This should almost certainly be done with a dedicated integration routine, FFTlog?
 def _halo_window(ks, rs, Prho):
 
+    # Compute the halo window function given a 'density' profile Prho(r) = 4*pi*r^2*rho(r)
+    # TODO: This should almost certainly be done with a dedicated integration routine, FFTlog?
     # ks: array of wavenumbers [h/Mpc]
     # rs: array of radii (usually going from r=0 to r=rv)
     # Prho[rs]: array of Prho values at different radii
 
     from scipy.integrate import trapezoid, simps, romb
+    from scipy.special import spherical_jn
 
     W = np.empty_like(Prho)
     for ik, k in enumerate(ks):
-        integrand = np.sinc(k*rs/np.pi)*Prho # Numpy sinc function has unusual definition with pi
+        #integrand = np.sinc(k*rs/np.pi)*Prho # Numpy sinc function has unusual definition with pi
+        integrand = spherical_jn(0, k*rs)*Prho # Scipy spherical Bessel is slightly faster
         if win_integration == romb:
             #dr = (rs[-1]-rs[0])/(len(rs)-1) # Spacing for whole array
             dr = rs[1]-rs[0] # Spacing between points in r (assumed even)
@@ -204,6 +208,7 @@ def Pk_hm(hmod, Ms, ks, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigma=None
     # hmod - halomodel class
     # Ms - Array of halo masses [Msun/h]
     # ks - Array of wavenumbers [h/Mpc]
+    # N_uv(2, Ms) - Array of profile normalisations
     # rho_uv(2, Ms, ks/rs) - Array of either Fourier transform of halo profile 'u' and 'v' [u(Mpc/h)^3] or real-space profile from 0 to rv [u]
     # Pk_lin(k) - Function to evaluate the linear power spectrum [(Mpc/h)^3]
     # Om_m - Cosmological matter density at z=0
@@ -304,21 +309,24 @@ def Pk_hm(hmod, Ms, ks, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigma=None
 
     return Pk_2h_array, Pk_1h_array, Pk_hm_array
 
-# Halo virial radius based on the halo mass and overdensity condition
 def virial_radius(M, Dv, Om_m):
+
+    # Halo virial radius based on the halo mass and overdensity condition
     from mead_special_functions import cbrt
     return cosmo.Radius_M(M, Om_m)/cbrt(Dv)
 
-# Isothermal density profile multiplied by 4*pi*r^2
 def Prho_isothermal(r, M, rv):
+    # Isothermal density profile multiplied by 4*pi*r^2
     return M/rv
 
-# NFW density profile multiplied by 4*pi*r^2
 def Prho_NFW(r, M, rv, c):
+    # NFW density profile multiplied by 4*pi*r^2
     rs = rv/c
     return M*r/(NFW_factor(c)*(1.+r/rs)**2*rs**2)
 
 def Prho_UPP(r, z, M, r500, cosm):
+
+    # Universal pressure profile: UPP
 
     alphap = 0.12
     h = cosm.h
@@ -345,49 +353,50 @@ def Prho_UPP(r, z, M, r500, cosm):
 
     return f1*f2*p(r/r500)*4.*np.pi
 
-# Converts a Prho profile to a rho profile
-# Take care evaluating this at zero (which will give infinity)
 def rho_Prho(Prho, r, *args):
+    # Converts a Prho profile to a rho profile
+    # Take care evaluating this at zero (which will give infinity)
     return Prho(r, *args)/(4.*np.pi*r**2)
 
-# Density profile for an isothermal halo
 def rho_isothermal(r, M, rv):
+    # Density profile for an isothermal halo
     return rho_Prho(Prho_isothermal, r, M, rv)
 
-# Density profile for an NFW halo
 def rho_NFW(r, M, rv, c):
+    # Density profile for an NFW halo
     return rho_Prho(Prho_NFW, r, M, rv, c)
 
-# Normalised Fourier tranform for a delta-function profile
 def win_delta():
+    # Normalised Fourier tranform for a delta-function profile
     return 1.
 
-# Normalised Fourier transform for an isothermal profile
 def win_isothermal(k, rv):
-    from scipy.special import sici as SiCi
-    Si, _ = SiCi(k*rv)
+    # Normalised Fourier transform for an isothermal profile
+    from scipy.special import sici
+    Si, _ = sici(k*rv)
     return Si/(k*rv)
 
-# Normalised Fourier transform for an NFW profile
 def win_NFW(k, rv, c):
-    from scipy.special import sici as SiCi
+    # Normalised Fourier transform for an NFW profile
+    from scipy.special import sici
     rs = rv/c
     kv = k*rv
     ks = k*rs
-    Sisv, Cisv = SiCi(ks+kv)
-    Sis, Cis = SiCi(ks)
+    Sisv, Cisv = sici(ks+kv)
+    Sis, Cis = sici(ks)
     f1 = np.cos(ks)*(Cisv-Cis)
     f2 = np.sin(ks)*(Sisv-Sis)
     f3 = np.sin(kv)/(ks+kv)
     f4 = NFW_factor(c)
     return (f1+f2-f3)/f4
 
-# Factor from normalisation that always appears in NFW equations
 def NFW_factor(c):
+    # Factor from normalisation that always appears in NFW equations
     return np.log(1.+c)-c/(1.+c)
 
-# Duffy et al (2008; 0804.2486) c(M) relation for WMAP5, See Table 1
 def conc_Duffy(M, z):
+
+    # Duffy et al (2008; 0804.2486) c(M) relation for WMAP5, See Table 1
 
     M_piv = 2e12 # Pivot mass [Msun/h]
     A = 10.14
@@ -398,22 +407,22 @@ def conc_Duffy(M, z):
     # Appropriate for the full sample defined via M200
     return A*(M/M_piv)**B*(1.+z)**C
 
-# HOD model from Zheng et al. (2005)
 def HOD_Zheng(M, Mmin=1e12, sigma=0.15, M0=1e12, M1=1e13, alpha=1.):
+    # HOD model from Zheng et al. (2005)
     from scipy.special import erf
     Nc = 0.5*(1.+erf(np.log(M/Mmin)/sigma))
     Ns = Nc*np.heaviside(M-M0, 0.5)*((M-M0)/M1)**alpha
     return Nc, Ns
 
-# LCDM fitting function for the critical linear collapse density from Nakamura & Suto (1997; https://arxiv.org/abs/astro-ph/9612074)
-# Cosmology dependence is very weak
 def dc_NakamuraSuto(Om_mz):
+    # LCDM fitting function for the critical linear collapse density from Nakamura & Suto (1997; https://arxiv.org/abs/astro-ph/9612074)
+    # Cosmology dependence is very weak
     return dc0*(1.+0.012299*np.log10(Om_mz))
 
-# LCDM fitting function for virial overdensity from Bryan & Norman (1998; https://arxiv.org/abs/astro-ph/9710107)
-# Note that here Dv is defined relative to background matter density, whereas in paper it is relative to critical density
-# For LCDM Dv ~ 330.
 def Dv_BryanNorman(Om_mz):
+    # LCDM fitting function for virial overdensity from Bryan & Norman (1998; https://arxiv.org/abs/astro-ph/9710107)
+    # Note that here Dv is defined relative to background matter density, whereas in paper it is relative to critical density
+    # For Omega_m = 0.3 LCDM Dv ~ 330.
     x = Om_mz-1.
     Dv = Dv0+82.*x-39.*x**2
     return Dv/Om_mz

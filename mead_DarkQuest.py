@@ -222,8 +222,9 @@ def Pk_mm(emu, ks, zs, nonlinear=False):
 
     return Pk
 
-# Minimum halo mass for the set of cosmological parameters
 def minimum_halo_mass(emu):
+
+    # Minimum halo mass for the set of cosmological parameters
 
     Mbox_HR = comoving_matter_density(emu)*Lbox_HR**3
     mmin = Mbox_HR*np_min/npart**3
@@ -464,8 +465,19 @@ def linear_halo_bias(emu, M, z, klin, Pk_klin):
 
     return b
 
-# Beta_NL function
+def R_hh(emu, ks, M1, M2, z):
+
+    # Cross correlation coefficient between halo masses
+
+    P12 = emu.get_phh_mass(ks, M1, M2, z)
+    P11 = emu.get_phh_mass(ks, M1, M1, z)
+    P22 = emu.get_phh_mass(ks, M2, M2, z)
+
+    return P12/np.sqrt(P11*P22)
+
 def beta_NL(emu, vars, ks, z, var='Mass'):
+
+    # Beta_NL function
 
     # Force Beta_NL to zero at large scales?
     # force_BNL_zero = 0: No
