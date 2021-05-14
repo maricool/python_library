@@ -45,7 +45,17 @@ w_fid = -1.
 # Parameters
 log_interp_sigma = True
 
+# Accuracy
+acc_hh = 0.04
+acc_hm = 0.02
+
+# Distance from low/high boundary when varying cosmology along a parameter-cube direction
+low_fac = 0.15 
+high_fac = 0.85
+
 class cosmology():
+
+    # My version of a Dark Quest cosmology class
 
     def __init__(self, wb=wb_fid, wc=wc_fid, Om_w=Om_w_fid, lnAs=lnAs_fid, ns=ns_fid, w=w_fid):
 
@@ -99,8 +109,9 @@ class cosmology():
         print('m_nu [eV]: %1.4f' % (self.m_nu))
         print()
 
-# Random cosmological parameters from the Dark Quest hypercube
 def random_cosmology():
+
+    # (Uniform) random cosmological parameters from within the Dark Quest hypercube
 
     wb = np.random.uniform(wb_min, wb_max)
     wc = np.random.uniform(wc_min, wc_max)
@@ -113,10 +124,6 @@ def random_cosmology():
     return cpar
 
 def named_cosmology(name):
-
-    # Parameters
-    low_fac = 0.15
-    high_fac = 0.85
 
     # Start from fiducial cosmology
     wb = wb_fid
@@ -162,8 +169,9 @@ def named_cosmology(name):
     cpar = cosmology(wb=wb, wc=wc, Om_w=Om_w, lnAs=lnAs, ns=ns, w=w)
     return cpar
 
-# Create a set of my cosmological parameters from a Dark Quest set
 def create_mead_cosmology(cpar, verbose=False):
+
+    # Create a set of Mead cosmological parameters from a Dark Quest set
 
     # Make a mead cosmology
     cosm = cosmo.cosmology(Om_m=cpar.Om_m, Om_b=cpar.Om_b, Om_w=cpar.Om_w, h=cpar.h, 
@@ -175,8 +183,9 @@ def create_mead_cosmology(cpar, verbose=False):
 
     return cosm
 
-# Convert my cosmology into a Dark Quest cosmology
 def convert_mead_cosmology(cosm):
+
+    # Convert Mead cosmology into a Dark Quest cosmology
 
     # Get Dark Quest parameters from my structure
     wb = cosm.w_b
@@ -189,8 +198,9 @@ def convert_mead_cosmology(cosm):
 
     return  cpar
 
-# Initialise the emulator for a given set of cosmological parameters
 def init_emulator(cpar):
+
+    # Initialise the emulator for a given set of cosmological parameters
 
     # Start Dark Quest
     print('Initialize Dark Quest')
@@ -204,8 +214,9 @@ def init_emulator(cpar):
 
     return emu
 
-# Matter power spectrum
 def Pk_mm(emu, ks, zs, nonlinear=False):
+
+    # Matter power spectrum from emulator; either linear or non-linear
 
     if isinstance(zs, float):
         if nonlinear:
@@ -230,11 +241,11 @@ def minimum_halo_mass(emu):
     mmin = Mbox_HR*np_min/npart**3
     return mmin
 
-    # Comoving matter density
 def comoving_matter_density(emu):
 
+    # Comoving matter density
+
     Om_m = emu.cosmo.get_Omega0()
-    #rhom = const.rhoc*Om_m
     rhom = cosmo.comoving_matter_density(Om_m)
     return rhom
 
@@ -249,24 +260,24 @@ def nu_M(emu, M, z):
     nu = dc/sigma_M(emu, M, z)
     return nu
 
-# Lagrangian radius
 def Radius_M(emu, M):
 
-    #rhom = comoving_matter_density(emu)
-    #radius = (3.*M/(4.*np.pi*rhom))**(1./3.)
+    # Lagrangian radius of a halo of mass M [Mpc/h]
+
     Om_m = emu.cosmo.get_Omega0()
     radius = cosmo.Radius_M(M, Om_m)
     return radius
 
-# Virial radius
+
 def virial_radius_M(emu, M):
+
+    # Virial radius of a halo of mass M [Mpc/h]
+
     from mead_special_functions import cbrt
     return Radius_M(emu, M)/cbrt(Dv)
 
 def Mass_R(emu, R):
 
-    #rhom = comoving_matter_density(emu)
-    #Mass = 4.*np.pi*(R**3)*rhom/3.
     Om_m = emu.cosmo.get_Omega0()
     Mass = cosmo.Mass_R(R, Om_m)
     return Mass
@@ -338,10 +349,12 @@ def sigma_M(emu, M, z):
     # Result assuming scale-independent growth
     return sigma
 
-# Linear halo bias: b(M, z)
-# Taken from the pre-release version of Dark Quest given to me by Takahiro
-# I am not sure why this functionality was omitted from the final version
 def get_bias_mass(emu, M, redshift):
+
+    # Linear halo bias: b(M, z)
+    # Taken from the pre-release version of Dark Quest given to me by Takahiro
+    # I am not sure why this functionality was omitted from the final version
+
     Mp = M * 1.01
     Mm = M * 0.99
     logdensp = np.log10(emu.mass_to_dens(Mp, redshift))
@@ -350,9 +363,10 @@ def get_bias_mass(emu, M, redshift):
     bm = emu.get_bias(logdensm, redshift)
     return (bm * 10**logdensm - bp * 10**logdensp) / (10**logdensm - 10**logdensp)
 
-# Return an array of n(M) (dn/dM in Dark Quest notation) at user-specified halo masses
-# Extrapolates if necessary, which is perhaps dangerous
 def get_dndM_mass(emu, Ms, z):
+
+    # Return an array of n(M) (dn/dM in Dark Quest notation) at user-specified halo masses
+    # Extrapolates if necessary, which is perhaps dangerous
 
     # Imports
     from scipy.interpolate import InterpolatedUnivariateSpline as ius
@@ -365,18 +379,19 @@ def get_dndM_mass(emu, Ms, z):
     # Evaluate the interpolator at the desired mass points
     return np.exp(dndM_interp(np.log(Ms)))
 
-# Calculate the number density of haloes in the range Mmin to Mmax
-# Result is [(Mpc/h)^-3]
 def ndenshalo(emu, Mmin, Mmax, z):
+
+    # Calculate the number density of haloes in the range Mmin to Mmax
+    # Result is [(Mpc/h)^-3]
 
     # Parameters
     vol = 1.
 
     return emu.get_nhalo(Mmin, Mmax, vol, z)
 
-# Calculate the average mass between two limits, weighted by the halo mass function
-# Result is [Msun/h]
 def mass_avg(emu, Mmin, Mmax, z):
+
+    # Calculate the average halo mass between two limits, weighted by the halo mass function [Msun/h]
 
     # Import
     from scipy.interpolate import InterpolatedUnivariateSpline as ius
@@ -398,8 +413,9 @@ def mass_avg(emu, Mmin, Mmax, z):
 
     return Mav/n
 
-# Averages the halo-halo correlation function over mass ranges to return the weighted by mass function mean version
 def get_xiauto_mass_avg(emu, rs, M1min, M1max, M2min, M2max, z):
+
+    # Averages the halo-halo correlation function over mass ranges to return the weighted-by-mass-function mean version
 
     # Import
     from scipy.interpolate import InterpolatedUnivariateSpline as ius
@@ -545,7 +561,32 @@ def beta_NL(emu, vars, ks, z, var='Mass'):
          
     return beta 
 
+def beta_match_metric(beta1, beta2):
+
+    # Single number to quantify how well two different betas match across k, M
+    # Clearly the result will depend on the spacing of the M and k values
+    # Probably should compute an RMS integral
+
+    diff = (beta1-beta2)**2
+    sigma = np.sqrt(diff.sum()/diff.size)
+    return sigma
+
+def beta_match_metric_k(beta1, beta2):
+
+    # Single number to quantify how well two different betas match across M for each k
+    # Clearly result will depend on the spacing of the M values
+    # Probably should compute an RMS integral
+
+    diff = (beta1-beta2)**2
+    nk = len(diff[1, 1, :])
+    sigma = np.zeros(nk)
+    for ik in range(nk):
+        sigma[ik] = np.sqrt(diff[:, :, ik].sum()/diff[:, :, ik].size)
+    return sigma
+
 def calculate_rescaling_params(emu_ori, emu_tgt, z_tgt, M1_tgt, M2_tgt):
+
+    # Calculates the AW10 rescaling parameters to go from the original cosmology to the target cosmology
     
     R1_tgt = Radius_M(emu_tgt, M1_tgt)
     R2_tgt = Radius_M(emu_tgt, M2_tgt)
@@ -556,4 +597,6 @@ def calculate_rescaling_params(emu_ori, emu_tgt, z_tgt, M1_tgt, M2_tgt):
                                                          emu_ori.cosmo.get_Omega0(),
                                                          emu_tgt.cosmo.get_Omega0(),
                                                         )
+    print('')
+
     return s, sm, z

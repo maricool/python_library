@@ -188,28 +188,41 @@ def _halo_window(ks, rs, Prho):
     from scipy.integrate import trapezoid, simps, romb
     from scipy.special import spherical_jn
 
+    # Spacing between points for Romberg integration
+    #dr = (rs[-1]-rs[0])/(len(rs)-1) # Spacing for whole array
+    dr = rs[1]-rs[0] # Spacing between points in r (assumed even)
+
+    # Calculate profile mean
+    integrand = Prho
+    if win_integration == romb:
+        W0 = win_integration(integrand, dr)
+    elif win_integration in [trapezoid, simps]:
+        W0 = win_integration(integrand, rs)
+    else:
+        raise ValueError('Halo window function integration method not recognised')
+
+    # Calculate profile Fourier transform
     W = np.empty_like(Prho)
     for ik, k in enumerate(ks):
         #integrand = np.sinc(k*rs/np.pi)*Prho # Numpy sinc function has unusual definition with pi
         integrand = spherical_jn(0, k*rs)*Prho # Scipy spherical Bessel is slightly faster
         if win_integration == romb:
-            #dr = (rs[-1]-rs[0])/(len(rs)-1) # Spacing for whole array
-            dr = rs[1]-rs[0] # Spacing between points in r (assumed even)
             W[ik] = win_integration(integrand, dr)
         elif win_integration in [trapezoid, simps]:
             W[ik] = win_integration(integrand, rs)
         else:
             raise ValueError('Halo window function integration method not recognised')
-    return W
 
-def Pk_hm(hmod, Ms, ks, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigma=None, low_mass_uv=[False,False], Fourier_uv=[True,True], verbose=True):
+    return W/W0
+
+def Pk_hm(hmod, Ms, ks, N_uv, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigma=None, low_mass_uv=[False,False], Fourier_uv=[True,True], verbose=True):
 
     # TODO: Remove Pk_lin dependence?
     # hmod - halomodel class
     # Ms - Array of halo masses [Msun/h]
     # ks - Array of wavenumbers [h/Mpc]
     # N_uv(2, Ms) - Array of profile normalisations
-    # rho_uv(2, Ms, ks/rs) - Array of either Fourier transform of halo profile 'u' and 'v' [u(Mpc/h)^3] or real-space profile from 0 to rv [u]
+    # rho_uv(2, Ms, ks/rs) - Array of either normalised Fourier transform of halo profile 'u' and 'v' [u(Mpc/h)^3] or real-space profile from 0 to rv [u]
     # Pk_lin(k) - Function to evaluate the linear power spectrum [(Mpc/h)^3]
     # Om_m - Cosmological matter density at z=0
     # beta(M1, M2, k) - Optional array of beta_NL values at points Ms, Ms, ks
@@ -239,11 +252,13 @@ def Pk_hm(hmod, Ms, ks, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigma=None
         if Fourier_uv[i]:
             Wuv[i, :, :] = rho_uv[i, :, :]
         else:
-            nr = rho_uv.shape[2] # This is nk, but I suppose it need not be
+            nr = rho_uv.shape[2] # nr=nk always, but I suppose it need not be
             for iM, M in enumerate(Ms):
                 rv = virial_radius(M, hmod.Dv, Om_m)
                 rs = np.linspace(0., rv, nr)
                 Wuv[i, iM, :] = _halo_window(ks, rs, rho_uv[i, iM, :])
+        for iM, _ in enumerate(Ms):
+                Wuv[i, iM, :] = N_uv[i, iM]*Wuv[i, iM, :]
 
     # Evaluate the integral that appears in the two-halo term
     def I_2h(hmod, Ms, nus, W, Om_m, low_mass):
@@ -271,7 +286,7 @@ def Pk_hm(hmod, Ms, ks, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigma=None
         P_1h = P_1h*cosmo.comoving_matter_density(Om_m)
         return P_1h
 
-    # Evaluates the beta_NL integral
+    # Evaluates the beta_NL double integral
     def I_beta(hmod, beta, Ms, nus, Wuv, Om_m):
         integrand = np.zeros((len(nus), len(nus)))
         for iM1, nu1 in enumerate(nus):
@@ -304,7 +319,7 @@ def Pk_hm(hmod, Ms, ks, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigma=None
 
     t2 = time()
     if verbose:
-        print('Halo model calculation time [s]:', t2-t1)
+        print('Halomodel calculation time [s]:', t2-t1)
         print('')
 
     return Pk_2h_array, Pk_1h_array, Pk_hm_array

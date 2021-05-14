@@ -1,16 +1,14 @@
-# Count the number of lines in a file
-# https://stackoverflow.com/questions/845058/how-to-get-line-count-cheaply-in-python
 def file_length(fname):
-
+    # Count the number of lines in a file
+    # https://stackoverflow.com/questions/845058/how-to-get-line-count-cheaply-in-python
     with open(fname) as f:
         i = 0
         for i, _ in enumerate(f):
             pass
     return i + 1
 
-# Returns values of the array at the list of array position integers
 def array_values_at_indices(array, list_of_array_positions):
-
+    # Returns values of the array at the list of array position integers
    if len(array.shape) == 1:
       return array[list_of_array_positions]
    elif len(array.shape) == 2:
@@ -21,29 +19,40 @@ def array_values_at_indices(array, list_of_array_positions):
       ValueError('Error, this only works in either one or two dimensions at the moment')
       return None
 
-# Sensible arange function
-# I hate the inbuilt numpy one with such fury that it frightens me
 def arange(min, max):
+    # Sensible arange function
+    # I hate the inbuilt numpy one with such fury that it frightens me
    from numpy import arange
    return arange(min, max+1)
 
-# Return a logarithmically spaced range of numbers
 def logspace(xmin, xmax, nx):
+    # Return a logarithmically spaced range of numbers
    from numpy import logspace, log10
    return logspace(log10(xmin), log10(xmax), nx)
 
-# Multiply all elements in a list by a constant
 def multiply_list_elements(multiple, list):
+    # Multiply all elements in a list by a constant
    return [multiple*x for x in list]
 
-# Sequential colors
 def seq_color(i, n, cmap):
+    # Sequential colors
     return cmap(i/(n-1))
 
-# Default colours in plotly
 def colour(i):
+    # Default colours in plotly
     color = 'C%d' % i
     return color
+
+def even(num):
+    # True if integer is even
+    if num%2 == 0:
+        return True
+    else:
+        return False
+
+def odd(num):
+    # True if integer is odd
+    return not even(num)
 
 # use numpy deg2rad
 #def degrees_to_radians(theta):
