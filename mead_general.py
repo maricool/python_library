@@ -5,7 +5,7 @@ def file_length(fname):
         i = 0
         for i, _ in enumerate(f):
             pass
-    return i + 1
+    return i+1
 
 def array_values_at_indices(array, list_of_array_positions):
     # Returns values of the array at the list of array position integers

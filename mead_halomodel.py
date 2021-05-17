@@ -322,7 +322,7 @@ def Pk_hm(hmod, Ms, ks, N_uv, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigm
         print('Halomodel calculation time [s]:', t2-t1)
         print('')
 
-    return Pk_2h_array, Pk_1h_array, Pk_hm_array
+    return (Pk_2h_array, Pk_1h_array, Pk_hm_array)
 
 def virial_radius(M, Dv, Om_m):
 

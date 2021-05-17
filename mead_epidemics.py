@@ -222,7 +222,7 @@ def SIR_equations(t, y, R0, f, m):
     n = len(y)
     if (n%3 != 0):
         raise ValueError('Input array must be divisible by 3')
-    n = n//3 # Floor division
+    n = n//3 # // is floor (integer) division
     
     # Allocate arrays
     S = np.zeros(n)

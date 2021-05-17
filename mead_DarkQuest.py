@@ -53,6 +53,25 @@ acc_hm = 0.02
 low_fac = 0.15 
 high_fac = 0.85
 
+## Beta-NL ##
+
+# Source of linear halo bias
+# 1 - From emulator 'bias' function
+# 2 - From emulator halo-halo spectrum at large wavenumber
+# 3 - From emulator halo-matter spectrum at large wavenumber
+ibias_BNL = 2
+
+# Force to zero at large scales?
+# 0 - No
+# 1 - Yes, via addative correction
+# 2 - Yes, via multiplicative correction
+force_zero_BNL = 0
+
+# Large 'linear' scale [h/Mpc]
+klin_BNL = 0.02
+
+## ##
+
 class cosmology():
 
     # My version of a Dark Quest cosmology class
@@ -465,10 +484,7 @@ def get_xiauto_mass_avg(emu, rs, M1min, M1max, M2min, M2max, z):
 def linear_halo_bias(emu, M, z, klin, Pk_klin):
 
     # Source of linear halo bias
-    # ibias = 1: Linear bias from emulator
-    # ibias = 2: Linear bias from halo-halo spectrum at large wavenumber
-    # ibias = 3: Linear bias from halo-matter spectrum at large wavenumber
-    ibias = 2
+    ibias = ibias_BNL
 
     if ibias == 1:
         b = get_bias_mass(emu, M, z)[0]
@@ -495,14 +511,9 @@ def beta_NL(emu, vars, ks, z, var='Mass'):
 
     # Beta_NL function
 
-    # Force Beta_NL to zero at large scales?
-    # force_BNL_zero = 0: No
-    # force_BNL_zero = 1: Yes, via addative correction
-    # force_BNL_zero = 2: Yes, via multiplicative correction
-    force_BNL_zero = 0
-
     # Parameters
-    klin = 0.02  # Large 'linear' scale [h/Mpc]
+    force_to_zero = force_zero_BNL
+    klin = np.array([klin_BNL]) # klin must be a numpy array
 
     # Set array name sensibly
     if var == 'Mass':
@@ -515,9 +526,6 @@ def beta_NL(emu, vars, ks, z, var='Mass'):
         Ms = Mass_nu(emu, nus, z)
     else:
         raise ValueError('Error, mass variable for beta_NL not recognised')
-    
-    # klin must be a numpy array for this to work later
-    klin = np.array([klin]) 
     
     # Linear power
     Pk_lin = emu.get_pklin_from_z(ks, z)
@@ -544,12 +552,12 @@ def beta_NL(emu, vars, ks, z, var='Mass'):
                 beta[iM1, iM2, :] = Pk_hh/(b1*b2*Pk_lin)-1.
 
                 # Force Beta_NL to be zero at large scales if necessary
-                if force_BNL_zero != 0:
+                if force_to_zero != 0:
                     Pk_hh0 = emu.get_phh_mass(klin, M1, M2, z)
                     db = Pk_hh0/(b1*b2*Pk_klin)-1.
-                    if force_BNL_zero == 1:
+                    if force_to_zero == 1:
                         beta[iM1, iM2, :] = beta[iM1, iM2, :]-db # Addative correction
-                    elif force_BNL_zero == 2:
+                    elif force_to_zero == 2:
                         beta[iM1, iM2, :] = (beta[iM1, iM2, :]+1.)/(db+1.)-1. # Multiplicative correction
                     else:
                         raise ValueError('force_BNL_zero not set correctly')
@@ -599,4 +607,4 @@ def calculate_rescaling_params(emu_ori, emu_tgt, z_tgt, M1_tgt, M2_tgt):
                                                         )
     print('')
 
-    return s, sm, z
+    return (s, sm, z)

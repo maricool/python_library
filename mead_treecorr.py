@@ -44,7 +44,7 @@ def calculateXi_sim(nn, Vsim, N1, N2=None):
         nn.xi[i] = -1.+nn.npairs[i]/N12 # Construct correlation function
         nn.varxi[i] = nn.npairs[i]/N12**2 # Variance in measured correlation function assuming Poisson stats for pair counts
         
-    return nn.xi, nn.varxi
+    return (nn.xi, nn.varxi)
 
 def get_Maps(cat, theta_min, theta_max, ntheta, bin_slop):
 
@@ -64,4 +64,4 @@ def get_Maps(cat, theta_min, theta_max, ntheta, bin_slop):
     theta = gg.meanr
     Mapsq, Mapsq_im, Mxsq, Mxsq_im, varMapsq = gg.calculateMapSq()
 
-    return theta, Mapsq, Mapsq_im, Mxsq, Mxsq_im, varMapsq
+    return (theta, Mapsq, Mapsq_im, Mxsq, Mxsq_im, varMapsq)
