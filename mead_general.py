@@ -86,6 +86,7 @@ def print_array_attributes(x):
 def print_array_statistics(x):
     # Print useful array statistics
     print('Array statistics')
+    print('size:', x.size)
     print('sum:', x.sum())
     print('min:', x.min())
     print('max:', x.max())

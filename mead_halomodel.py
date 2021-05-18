@@ -44,26 +44,24 @@ class halomod():
         self.dc = dc
         self.Dv = Dv
 
-        if hm == ST:
-
-            # Sheth & Tormen (1999; ) mass function parameters
+        if hm == PS:
+            # No initialisation required for Press & Schecter (1974)
+            pass
+        elif hm == ST:
+            # Sheth & Tormen (1999; https://arxiv.org/abs/astro-ph/9901122) mass function parameters
             from scipy.special import gamma as Gamma
             p = 0.3
             q = 0.707
             self.p_ST = p
             self.q_ST = q
             self.A_ST = np.sqrt(2.*q)/(np.sqrt(np.pi)+Gamma(0.5-p)/2**p) # A ~ 0.21
-
         elif hm == Tinker2010:
-
             # Tinker et al. (2010; https://arxiv.org/abs/1001.3162)
-
             # Check Delta_v and delta_c values
             if not math.isclose(Dv, 200., rel_tol=Dv_close_rel_tol):
                 print('Warning, Tinker (2010) only coded up for Dv=200')
             if not math.isclose(dc, 1.686, rel_tol=Dv_close_rel_tol):
                 print('Warning, dc = 1.686 assumed in Tinker (2010)')
-
             # Mass function from Table 4
             alpha = 0.368
             beta = 0.589
@@ -80,7 +78,6 @@ class halomod():
             self.gamma_Tinker = gamma
             self.phi_Tinker = phi
             self.eta_Tinker = eta
-
             # Calibrated halo bias (not from peak-background split) from Table 2
             y = np.log10(self.Dv)
             exp = np.exp(-(4./y)**4)
@@ -90,12 +87,13 @@ class halomod():
             self.b_Tinker = 1.5
             self.C_Tinker = 0.019+0.107*y+0.19*exp
             self.c_Tinker = 2.4
+        else:
+            raise ValueError('Halo model not recognised')
 
     def halo_mass_function(self, nu):
 
         # Halo mass function g(nu) with nu=delta_c/sigma(M)
         # Integral of g(nu) over all nu is unity
-
         if self.hm == PS:
             return np.sqrt(2./np.pi)*np.exp(-(nu**2)/2.)
         elif self.hm == ST:
@@ -114,13 +112,12 @@ class halomod():
             f3 = np.exp(-gamma*nu**2/2.)
             return alpha*f1*f2*f3
         else:
-            raise ValueError('Halo model ihm not recognised in halo_mass_function')
+            raise ValueError('Halo model not recognised in halo_mass_function')
 
     def linear_halo_bias(self, nu):
 
         # Halo linear bias b(nu) with nu=delta_c/sigma(M)
         # Integral of b(nu)*g(nu) over all nu is unity
-
         if self.hm == PS:
             return 1.+(nu**2-1.)/self.dc
         elif self.hm == ST:
@@ -190,7 +187,7 @@ def _halo_window(ks, rs, Prho):
 
     # Spacing between points for Romberg integration
     #dr = (rs[-1]-rs[0])/(len(rs)-1) # Spacing for whole array
-    dr = rs[1]-rs[0] # Spacing between points in r (assumed even)
+    dr = rs[1]-rs[0] # Spacing between points in r for Romberg integration (assumed even)
 
     # Calculate profile mean
     integrand = Prho
@@ -260,8 +257,8 @@ def Pk_hm(hmod, Ms, ks, N_uv, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigm
         for iM, _ in enumerate(Ms):
                 Wuv[i, iM, :] = N_uv[i, iM]*Wuv[i, iM, :]
 
-    # Evaluate the integral that appears in the two-halo term
     def I_2h(hmod, Ms, nus, W, Om_m, low_mass):
+        # Evaluate the integral that appears in the two-halo term
         integrand = W*hmod.linear_halo_bias(nus)*hmod.halo_mass_function(nus)/Ms
         I_2h = halo_integration(integrand, nus)
         if low_mass:
@@ -269,8 +266,8 @@ def Pk_hm(hmod, Ms, ks, N_uv, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigm
         I_2h = I_2h*cosmo.comoving_matter_density(Om_m)
         return I_2h
 
-    # Two-halo term at a specific wavenumber
     def P_2h(hmod, Pk_lin, k, Ms, nus, Wuv, Om_m, low_mass_uv, beta=None):
+        # Two-halo term at a specific wavenumber
         if beta is None:
             I_NL = 0.
         else:
@@ -279,15 +276,15 @@ def Pk_hm(hmod, Ms, ks, N_uv, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigm
         Iv = I_2h(hmod, Ms, nus, Wuv[1, :], Om_m, low_mass_uv[1])
         return Pk_lin(k)*(Iu*Iv+I_NL)
 
-    # One-halo term at a specific wavenumber
     def P_1h(hmod, Ms, nus, Wuv, Om_m):
+        # One-halo term at a specific wavenumber
         integrand = Wuv[0, :]*Wuv[1, :]*hmod.halo_mass_function(nus)/Ms
         P_1h = halo_integration(integrand, nus)
         P_1h = P_1h*cosmo.comoving_matter_density(Om_m)
         return P_1h
 
-    # Evaluates the beta_NL double integral
     def I_beta(hmod, beta, Ms, nus, Wuv, Om_m):
+        # Evaluates the beta_NL double integral
         integrand = np.zeros((len(nus), len(nus)))
         for iM1, nu1 in enumerate(nus):
             for iM2, nu2 in enumerate(nus):
@@ -325,7 +322,6 @@ def Pk_hm(hmod, Ms, ks, N_uv, rho_uv, Pk_lin, Om_m, beta=None, sigmas=None, sigm
     return (Pk_2h_array, Pk_1h_array, Pk_hm_array)
 
 def virial_radius(M, Dv, Om_m):
-
     # Halo virial radius based on the halo mass and overdensity condition
     from mead_special_functions import cbrt
     return cosmo.Radius_M(M, Om_m)/cbrt(Dv)
@@ -340,32 +336,24 @@ def Prho_NFW(r, M, rv, c):
     return M*r/(NFW_factor(c)*(1.+r/rs)**2*rs**2)
 
 def Prho_UPP(r, z, M, r500, cosm):
-
     # Universal pressure profile: UPP
-
     alphap = 0.12
     h = cosm.h
-
     def p(x):
-
         P0 = 6.41
         c500 = 1.81
         alpha = 1.33
         beta = 4.13
         gamma = 0.31
         y = c500*x
-
         f1 = y**(2.-gamma)
         f2 = (1.+y**alpha)**(beta-gamma)/alpha
         p = P0*(h/0.7)**(-3./2.)*f1*(r500/c500)**2/f2
         return p
-
     a = cosmo.scale_factor_z(z)
     H = cosmo.H(cosm, a)
-
     f1 = 1.65*(h/0.7)**2*H**(8./3.)
     f2 = (M/2.1e14)**(2./3.+alphap)
-
     return f1*f2*p(r/r500)*4.*np.pi
 
 def rho_Prho(Prho, r, *args):

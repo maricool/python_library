@@ -2,8 +2,6 @@
 import numpy as np
 from scipy import integrate
 
-# A routine to integrate in log space. 
-# This may actually be pretty useless... not sure. Should do speed tests
 def integrate_quad_log(func,a,b,\
                        args=(),\
                        full_output=0,\
@@ -16,6 +14,9 @@ def integrate_quad_log(func,a,b,\
                        wopts=None,\
                        maxp1=50,\
                        limlst=50):
+    # A routine to integrate in log space. 
+    # This may actually be pretty useless... not sure. Should do speed tests
+    # TODO: Surely can use *args and **kwargs here. This is ugly as fuck.
     loga=np.log(a)
     logb=np.log(b)
     ans=integrate.quad(lambda x, *args: np.exp(x)*func(np.exp(x),*args), loga, logb,\
@@ -32,13 +33,15 @@ def integrate_quad_log(func,a,b,\
                        limlst=limlst)
     return ans
 
-# A very simple rectangular integration that assumes equal sized bins
-def integrate_rectangular(fx,x):
+def integrate_rectangular(fx, x):
+    # A very simple rectangular integration that assumes equal sized bins
+    # This is zeroth order - worse than trapezium rule - but consistent for some binned data
     dx = x[1]-x[0]
     return sum(fx)*dx
 
-# 2D trapezium rule
 def trapz2d(F, x, y):
+    # Two-dimensional trapezium rule
+    # First integrates along x for each y, and then y
     from numpy import zeros, trapz
     Fmid = zeros((len(y)))
     for iy, _ in enumerate(y):

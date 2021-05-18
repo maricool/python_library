@@ -2,51 +2,52 @@
 import numpy as np
 import pandas as pd
 import datetime as dt
+from datetime import date as dte
 from dateutil.relativedelta import relativedelta
 
 # England region populations
 # https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates
 # /bulletins/annualmidyearpopulationestimates/mid2019
 population_regions = {
-    'North East': 2.67e6,
-    'North West': 7.34e6,
-    'Yorkshire and The Humber': 5.50e6,
-    'East Midlands': 4.84e6,
-    'West Midlands': 5.93e6,
-    'East of England': 6.24e6,
-    'London': 8.96e6,
-    'South East': 9.18e6, 
-    'South West': 5.62e6,
+    'North East':2.67e6,
+    'North West':7.34e6,
+    'Yorkshire and The Humber':5.50e6,
+    'East Midlands':4.84e6,
+    'West Midlands':5.93e6,
+    'East of England':6.24e6,
+    'London':8.96e6,
+    'South East':9.18e6, 
+    'South West':5.62e6,
 }
 
 # UK nation populations (from Google)
 population_nations = {
-    'England': 55.98e6,
-    'Scotland': 5.45e6,
-    'Wales': 3.14e6,  
-    'Northern Ireland': 1.89e6,
+    'England':55.98e6,
+    'Scotland':5.45e6,
+    'Wales':3.14e6,  
+    'Northern Ireland':1.89e6,
 }
 
 # Lockdown dates for Nations and Regions
 lockdowns = {
-    'North East': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5), dt.date(2021, 3, 28)]],
-    'North West': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5), dt.date(2021, 3, 28)]],
-    'Yorkshire and The Humber': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5), dt.date(2021, 3, 28)]],
-    'East Midlands': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5), dt.date(2021, 3, 28)]],
-    'West Midlands': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5), dt.date(2021, 3, 28)]],
-    'East of England': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2020, 12, 26), dt.date(2021, 3, 28)]],
-    'London': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2020, 12, 20), dt.date(2021, 3, 28)]],
-    'South East': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2020, 12, 20), dt.date(2021, 3, 28)]],
-    'South West': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5), dt.date(2021, 3, 28)]],
-    'England': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 11, 5), dt.date(2020, 12, 2)], [dt.date(2021, 1, 5), dt.date(2021, 3, 28)]],
-    'Wales': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 10, 23), dt.date(2020, 11, 9)], [dt.date(2020, 12, 20), dt.date(2021, 3, 26)]],
-    'Scotland': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 10, 9), dt.date(2020, 10, 25)], [dt.date(2021, 1, 5), dt.date(2021, 4, 1)]],
-    'Northern Ireland': [[dt.date(2020, 3, 23), dt.date(2020, 3, 23)], [dt.date(2020, 10, 16), dt.date(2020, 11, 20)], [dt.date(2020, 11, 27), dt.date(2020, 12, 11)], [dt.date(2020, 12, 26), dt.date(2021, 3, 31)]],
+    'North East':{(dte(2020, 3, 23), dte(2020, 3, 23)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2021, 1, 5), dte(2021, 3, 28))},
+    'North West':{(dte(2020, 3, 23), dte(2020, 3, 23)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2021, 1, 5), dte(2021, 3, 28))},
+    'Yorkshire and The Humber':{(dte(2020, 3, 23), dte(2020, 3, 23)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2021, 1, 5), dte(2021, 3, 28))},
+    'East Midlands':{(dte(2020, 3, 23), dte(2020, 3, 23)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2021, 1, 5), dte(2021, 3, 28))},
+    'West Midlands':{(dte(2020, 3, 23), dte(2020, 3, 23)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2021, 1, 5), dte(2021, 3, 28))},
+    'East of England':{(dte(2020, 3, 23), dte(2020, 3, 23)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2020, 12, 26), dte(2021, 3, 28))},
+    'London':{(dte(2020, 3, 23), dte(2020, 3, 23)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2020, 12, 20), dte(2021, 3, 28))},
+    'South East':{(dte(2020, 3, 23), dte(2020, 3, 23)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2020, 12, 20), dte(2021, 3, 28))},
+    'South West':{(dte(2020, 3, 23), dte(2020, 3, 23)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2021, 1, 5), dte(2021, 3, 28))},
+    'England':{(dte(2020, 3, 23), dte(2020, 3, 23)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2021, 1, 5), dte(2021, 3, 28))},
+    'Wales':{(dte(2020, 3, 23), dte(2020, 3, 23)), (dte(2020, 10, 23), dte(2020, 11, 9)), (dte(2020, 12, 20), dte(2021, 3, 26))},
+    'Scotland':{(dte(2020, 3, 23), dte(2020, 3, 23)), (dte(2020, 10, 9), dte(2020, 10, 25)), (dte(2021, 1, 5), dte(2021, 4, 1))},
+    'Northern Ireland':{(dte(2020, 3, 23), dte(2020, 3, 23)), (dte(2020, 10, 16), dte(2020, 11, 20)), (dte(2020, 11, 27), dte(2020, 12, 11)), (dte(2020, 12, 26), dte(2021, 3, 31))},
 }
 
 # Parameters
-days_in_roll = 7 # Number of days that contribute to a 'roll' (one week; seven days)
-pop_norm_num = 100000 # Normalisation for y axes (per population; usually 100,000)
+days_in_roll = 7   # Number of days that contribute to a 'roll' (one week; seven days)
+pop_norm_num = 1e5 # Normalisation for y axes (per population; usually 100,000; sometimes 1,000,000)
 
 # Download latest data
 def download_data(area, metrics):
@@ -101,13 +102,13 @@ def read_data(infile, metrics):
         print(type(data))
         print(data)
         print('')
-        
+
     # Convert date column to actual date data type
     data.date = pd.to_datetime(data['date'])
 
     # Remove unnecessary columns
-    data.drop('areaType', inplace=True, axis=1)
-    data.drop('areaCode', inplace=True, axis=1) 
+    for col in ['areaType', 'areaCode']:
+        data.drop(col, inplace=True, axis=1)
     
     # Rename columns
     data.rename(columns={'areaName': 'Region'}, inplace=True, errors="raise")
@@ -119,7 +120,7 @@ def read_data(infile, metrics):
         print(data)
         print('')
 
-    # Sort  
+    # Sort
     if verbose: data_head(data, 'Original data')
     sort_data(data)
     if verbose: data_head(data, 'Sorted data')
@@ -154,25 +155,20 @@ def data_calculations(df, verbose):
     days_roll = days_in_roll
 
     # Calculate rolling cases and deaths (sum over previous week)
-    # TODO: These should return NaN if any of the entries to be summed are NaNs (e.g., for hosp) but they do not
-    if 'Cases' in df:
-        df['Cases_roll_Mead'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date <= x.date) & (df.date > x.date+relativedelta(days=-days_roll)), 'Cases'].sum(), axis=1)
-    if 'Deaths' in df:
-        df['Deaths_roll_Mead'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date <= x.date) & (df.date > x.date+relativedelta(days=-days_roll)), 'Deaths'].sum(), axis=1)
-    if 'Hosp' in df:
-        df['Hosp_roll_Mead'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date <= x.date) & (df.date > x.date+relativedelta(days=-days_roll)), 'Hosp'].sum(), axis=1)
+    for col in ['Cases', 'Deaths', 'Hosp']:
+        if col in df:
+            print('Calculating:', col+'_roll_Mead')
+            df[col+'_roll_Mead'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date <= x.date) & (df.date > x.date+relativedelta(days=-days_roll)), col].sum(skipna=False), axis=1)
     data_head(df, 'Rolling numbers calculated', verbose)
 
     # Calculate doubling times
-    # TODO: Change to use _Mead calculations?
-    if 'Cases_roll' in df:
-        df['Cases_roll_past'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date == x.date+relativedelta(days=-days_roll)), 'Cases_roll'].sum(), axis=1)
-        df['Cases_double'] = days_roll*np.log(2.)/np.log(df['Cases_roll']/df['Cases_roll_past'])
-        df.drop('Cases_roll_past', inplace=True, axis=1)
-    if 'Deaths_roll' in df:
-        df['Deaths_roll_past'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date == x.date+relativedelta(days=-days_roll)), 'Deaths_roll'].sum(), axis=1)
-        df['Deaths_double'] = days_roll*np.log(2.)/np.log(df['Deaths_roll']/df['Deaths_roll_past'])
-        df.drop('Deaths_roll_past', inplace=True, axis=1)
+    # TODO: Surely can avoid creating col_roll_past using offsetting somehow?
+    for col in ['Cases', 'Deaths']:
+        if col+'_roll_Mead' in df:
+            print('Calculating:', col+'_double')
+            df[col+'_roll_past'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date == x.date+relativedelta(days=-days_roll)), col+'_roll_Mead'].sum(), axis=1)
+            df[col+'_double'] = days_roll*np.log(2.)/np.log(df[col+'_roll_Mead']/df[col+'_roll_past'])
+            df.drop(col+'_roll_past', inplace=True, axis=1)
     data_head(df, 'Doubling times calculated', verbose)
 
 # Useful information
@@ -183,7 +179,6 @@ def useful_info(regions, data):
 
     # File info
     print('Today\'s date:', dt.date.today())
-    #print('File date:', file_date)
     latest = data['date'].max().strftime("%Y-%m-%d")
     print('Latest date in file:', latest)
     print()
@@ -204,60 +199,62 @@ def useful_info(regions, data):
 
         # Date
         print('Date:', df['date'].iloc[0].strftime("%Y-%m-%d"))
+
+        # Daily tally
+        for col in ['Cases', 'Deaths']:
+            if col in df:
+                daily = df[col].iloc[0]
+                norm_daily = daily*fac
+                print('Daily new '+col.lower()+': %d, or per 100,000 population: %.1f.' % (daily, norm_daily))
+
+        # Weekly tally
+        for col in ['Cases', 'Deaths']:
+            if col+'_roll' in df:
+                weekly = df[col+'_roll'].iloc[0]
+                if col+'_roll_Mead' in df:
+                    my_weekly = df[col+'_roll_Mead'].iloc[0]    
+                    if weekly != my_weekly:
+                        raise ValueError('My calculation of weekly roll disagrees with official')
+                norm_weekly = weekly*fac
+                print('Weekly '+col.lower()+': %d, or per 100,000 population: %.1f.' % (weekly, norm_weekly))
         
-        # Daily cases
-        if 'Cases' in df:
-            daily_cases = df['Cases'].iloc[0]
-            norm_daily_cases = daily_cases*fac
-            print('Daily new cases: %d, or per 100,000 population: %.1f.' % (daily_cases, norm_daily_cases))
-        
-        # Weekly cases
-        if 'Cases_roll' in df:
-            weekly_cases = df['Cases_roll'].iloc[0]
-            if 'Cases_roll_Mead' in df:
-                my_weekly_cases = df['Cases_roll_Mead'].iloc[0]    
-                if weekly_cases != my_weekly_cases:
-                    raise ValueError('My calculation of weekly cases disagrees with official')
-            norm_weekly_cases = weekly_cases*fac
-            print('Weekly cases: %d, or per 100,000 population: %.1f.' % (weekly_cases, norm_weekly_cases))
-        
-        # Daily deaths
-        if 'Deaths' in df:
-            daily_deaths = df['Deaths'].iloc[0]
-            norm_daily_deaths = daily_deaths*fac
-            print('Daily new deaths: %d, or per 100,000 population: %.1f.' % (daily_deaths, norm_daily_deaths))
-        
-        # Weekly deaths
-        if 'Deaths_roll' in df:
-            weekly_deaths = df['Deaths_roll'].iloc[0]
-            if 'Deaths_roll_Meead' in df:
-                my_weekly_deaths = df['Deaths_roll_Mead'].iloc[0]    
-                if weekly_deaths != my_weekly_deaths:
-                    raise ValueError('My calculation of weekly deaths disagrees with official')
-            norm_weekly_deaths = weekly_deaths*fac
-            print('Weekly deaths: %d, or per 100,000 population: %.1f.' % (weekly_deaths, norm_weekly_deaths))
-        
-        # Cases doubling time
-        if 'Cases_double' in df:
-            cases_double = df['Cases_double'].iloc[0]
-            if cases_double > 0:
-                print('Cases doubling time [days]: %.1f' % (cases_double))
-            else:
-                print('Cases halving time [days]: %.1f' % (-cases_double))
-        print()
+        # Doubling times
+        for col in ['Cases']:
+            if col+'_double' in df:
+                cases_double = df[col+'_double'].iloc[0]
+                if cases_double > 0:
+                    print(col+' doubling time [days]: %.1f' % (cases_double))
+                else:
+                    print(col+' halving time [days]: %.1f' % (-cases_double))
+            print()
+
+def sort_month_axis(plt):
+
+    import matplotlib.dates as mdates
+    import matplotlib.ticker as mticker
+
+    locator_monthstart = mdates.MonthLocator() # Start of every month
+    locator_monthmid = mdates.MonthLocator(bymonthday=15) # Middle of every month
+    fmt = mdates.DateFormatter('%b') # Specify the format - %b gives us Jan, Feb...
+
+    X = plt.gca().xaxis
+    X.set_major_locator(locator_monthstart)
+    X.set_minor_locator(locator_monthmid)
+    X.set_major_formatter(mticker.NullFormatter())
+    X.set_minor_formatter(fmt)
+    plt.tick_params(axis='x', which='minor', bottom=False, labelbottom=True)
+    plt.xlabel('')
 
 def plot_month_spans(plt):
 
     month_color = 'black'
     month_alpha = 0.05
 
-    for im in [2, 4, 6, 8, 10, 12]:
-        plt.axvspan(dt.date(2020, im, 1), dt.date(2020, im, 1)+relativedelta(months=+1), 
-                    alpha=month_alpha, 
-                    color=month_color)
-        plt.axvspan(dt.date(2021, im, 1), dt.date(2021, im, 1)+relativedelta(months=+1), 
-                    alpha=month_alpha, 
-                    color=month_color)
+    for year in [2020, 2021]:
+        for month in [2, 4, 6, 8, 10, 12]:
+            plt.axvspan(dt.date(year, month, 1), dt.date(year, month, 1)+relativedelta(months=+1), 
+                        alpha=month_alpha, 
+                        color=month_color)
 
 def plot_lockdown_spans(plt, data, region):
 
@@ -272,7 +269,7 @@ def plot_lockdown_spans(plt, data, region):
         elif len(dates) == 2:
             lockdown_end_date = dates[1]
         else:
-            raise TypeError('Something went wrong with lockdown dates')
+            raise TypeError('Lockdown dates should have either one or two entries')
         if id == 0:
             label = lockdown_lab
         else:
@@ -288,8 +285,6 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
     # Imports
     import matplotlib
     import matplotlib.pyplot as plt
-    import matplotlib.dates as mdates
-    import matplotlib.ticker as mticker
     import seaborn as sns
     
     # Parameters
@@ -297,6 +292,7 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
     pop_num = pop_norm_num
     bar_width = 0.9
     use_seaborn = True
+    dpi = 200 # 100 is default
 
     ### Figure options ###
 
@@ -355,20 +351,15 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
     ### ###
 
     # Relaxations
-    #plot_relax = False
     #Christmas_date = dt.date(2020, 12, 25)
 
     # Lockdowns
     plot_lockdowns = True
-
-    # Months
     plot_months = True
-    locator_monthstart = mdates.MonthLocator() # Start of every month
-    locator_monthmid = mdates.MonthLocator(bymonthday=15) # Middle of every month
-    fmt = mdates.DateFormatter('%b') # Specify the format - %b gives us Jan, Feb...
-    
-    # Plot
-    _, ax = plt.subplots(figsize=(figx, figy), sharex=True, dpi=200)
+    #plot_relax = False
+
+    # Initialise plot
+    plt.subplots(figsize=(figx, figy), sharex=True, sharey=True, dpi=dpi)
     
     # Loop over regions
     for i, region in enumerate(regions):
@@ -415,54 +406,50 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
         # Plot data
         q = "Region == '%s'" % (region) # Query to isolate regions
 
-        # Cases
-        if 'Cases' in data:
-            plt.bar(data.query(q)['date'],
-                    data.query(q)['Cases']*pop_fac,
-                    width=bar_width,
-                    color=case_bar_color,
-                    linewidth=0.)
-        if 'Cases_roll' in data:
-            plt.plot(data.query(q)['date'],
-                     data.query(q)['Cases_roll']*pop_fac/days_roll,
-                     color=case_line_color, 
-                     label=case_line_label)
+        # Bar chart for numbers per day
+        for col in ['Cases', 'Hosp', 'Deaths']:
+            if col in data:
+                if col == 'Cases':
+                    fac = pop_fac
+                    bar_color = case_bar_color
+                elif col == 'Hosp':
+                    fac = pop_fac*hosp_fac
+                    bar_color = hosp_bar_color
+                elif col == 'Deaths':
+                    fac = pop_fac*death_fac
+                    bar_color = death_bar_color
+                else:
+                    raise ValueError('Something went wrong')
+                plt.bar(data.query(q)['date'],
+                        data.query(q)[col]*fac,
+                        width=bar_width,
+                        color=bar_color,
+                        linewidth=0.)
 
-        # Hospitalisations
-        if 'Hosp' in data:
-            plt.bar(data.query(q)['date'],
-                    data.query(q)['Hosp']*hosp_fac*pop_fac, 
-                    width=bar_width,
-                    color=hosp_bar_color,
-                    linewidth=0.)
-        if 'Hosp_roll' in data:
-            plt.plot(data.query(q)['date'],
-                     data.query(q)['Hosp_roll']*hosp_fac*pop_fac/days_roll,
-                     color=hosp_line_color, 
-                     label=hosp_line_label)
-
-        # Deaths
-        if 'Deaths' in data:
-            plt.bar(data.query(q)['date'], 
-                    data.query(q)['Deaths']*death_fac*pop_fac,
-                    width=bar_width,
-                    color=death_bar_color,
-                    linewidth=0.)
-        if 'Deaths_roll' in data:
-            plt.plot(data.query(q).date, 
-                     data.query(q)['Deaths_roll']*death_fac*pop_fac/days_roll, 
-                     color=death_line_color, 
-                     label=death_line_label)
+        # Lines for weekly average
+        for col in ['Cases_roll', 'Hosp_roll', 'Deaths_roll']:
+            if col in data:
+                if col == 'Cases_roll':
+                    fac = pop_fac/days_roll
+                    line_color = case_line_color
+                    line_label = case_line_label
+                elif col == 'Hosp_roll':
+                    fac = pop_fac*hosp_fac/days_roll
+                    line_color = hosp_line_color
+                    line_label = hosp_line_label
+                elif col == 'Deaths_roll':
+                    fac = pop_fac*death_fac/days_roll
+                    line_color = death_line_color
+                    line_label = death_line_label
+                else:
+                    raise ValueError('Something went wrong')
+                plt.plot(data.query(q)['date'],
+                        data.query(q)[col]*fac,
+                        color=line_color, 
+                        label=line_label)
 
         # Ticks and month arragement on x axis
-        X = plt.gca().xaxis
-        X.set_major_locator(locator_monthstart)
-        X.set_major_formatter(fmt)
-        X.set_minor_locator(locator_monthmid)
-        X.set_major_formatter(mticker.NullFormatter())
-        X.set_minor_formatter(fmt)
-        plt.tick_params(axis='x', which='minor', bottom=False, labelbottom=True)
-        plt.xlabel('')
+        sort_month_axis(plt)
 
         # Axes limits
         plt.xlim(left=start_date, right=end_date)
@@ -490,18 +477,18 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
     plt.show(block = False)
 
 # Plot daily data
-def plot_rolling_data(data, date, start_date, end_date, regions, pop_norm=True, plot_type='Cases'):
+def plot_rolling_data(data, date, start_date, end_date, regions, pop_norm=True, plot_type='Cases', log=True):
 
     import matplotlib
     import matplotlib.pyplot as plt
     import matplotlib.dates as mdates
-    import matplotlib.ticker as mticker
     import seaborn as sns
     
     # Parameters
     days_roll = days_in_roll
     pop_num = pop_norm_num
     use_seaborn = True
+    lockdown_region = 'London'
 
     ### Figure options ###
 
@@ -512,16 +499,11 @@ def plot_rolling_data(data, date, start_date, end_date, regions, pop_norm=True, 
         sns.reset_orig
         matplotlib.rc_file_defaults()
 
-    if (plot_type == 'Cases_log') or (plot_type == 'Deaths_log'):
-        log = True
-    else:
-        log = False
-
     if log:
         plot = plt.semilogy
-        if plot_type == 'Cases_log':
+        if plot_type == 'Cases':
             ymin = 1.
-        elif plot_type == 'Deaths_log':
+        elif plot_type == 'Deaths':
             ymin = 1e-2
         else:
             raise ValueError('Plot_type not recognised')
@@ -539,12 +521,9 @@ def plot_rolling_data(data, date, start_date, end_date, regions, pop_norm=True, 
 
     # Months
     plot_months = True
-    locator_monthstart = mdates.MonthLocator() # Start of every month
-    locator_monthmid = mdates.MonthLocator(bymonthday=15) # Middle of every month
-    fmt = mdates.DateFormatter('%b') # Specify the format - %b gives us Jan, Feb...
 
     # Plot
-    _, ax = plt.subplots(figsize=(figx, figy))
+    plt.subplots(figsize=(figx, figy))
 
     # Months shading
     if plot_months:
@@ -552,7 +531,7 @@ def plot_rolling_data(data, date, start_date, end_date, regions, pop_norm=True, 
 
     # Lockdowns
     if plot_lockdowns:
-        plot_lockdown_spans(plt, data, 'London')
+        plot_lockdown_spans(plt, data, lockdown_region)
 
     # Loop over regions
     for i, region in enumerate(regions):
@@ -565,53 +544,38 @@ def plot_rolling_data(data, date, start_date, end_date, regions, pop_norm=True, 
         # Plot data
         q = "Region == '%s'"%(region) # Query to isolate regions      
 
-        # Cases
-        if (plot_type == 'Cases') or (plot_type == 'Cases_log'):
-            plot(data.query(q)['date'],
-                     data.query(q)['Cases_roll']*pop_fac/days_roll,
-                     color='C{}'.format(i), 
-                     label=region)
-            plt.title('Daily new positive cases: %s' % (date.strftime("%Y-%m-%d")))
-
-        # Deaths
-        elif (plot_type == 'Deaths') or (plot_type == 'Deaths_log'):
-            plot(data.query(q)['date'], 
-                     data.query(q)['Deaths_roll']*pop_fac/days_roll, 
-                     color='C{}'.format(i), 
-                     label=region)
-            plt.title('Daily new deaths: %s' % (date.strftime("%Y-%m-%d")))
+        plot(data.query(q)['date'],
+            data.query(q)[plot_type+'_roll']*pop_fac/days_roll,
+            color='C{}'.format(i), 
+            label=region)
+        plt.title('Daily new '+plot_type.lower()+': %s' % (date.strftime("%Y-%m-%d")))
 
         # Cases doubling
-        elif plot_type == 'Cases_double':
-            plot.plot(data.query(q)['date'],
-                     data.query(q)['Cases_double'],
-                     color='C{}'.format(i),
-                     ls='-',
-                     label=region)
-            plt.plot(data.query(q)['date'],
-                     -data.query(q)['Cases_double'],
-                     color='C{}'.format(i),
-                     ls='--')
-            plt.title('Cases doubling or halving time: %s' % (date.strftime("%Y-%m-%d")))
+        #elif plot_type == 'Cases_double':
+        #    plot.plot(data.query(q)['date'],
+        #             data.query(q)['Cases_double'],
+        #             color='C{}'.format(i),
+        #             ls='-',
+        #             label=region)
+        #    plt.plot(data.query(q)['date'],
+        #             -data.query(q)['Cases_double'],
+        #             color='C{}'.format(i),
+        #             ls='--')
+        #    plt.title('Cases doubling or halving time: %s' % (date.strftime("%Y-%m-%d")))
 
         # Deaths doubling
-        elif plot_type == 'Deaths_double':
-            plt.plot(data.query(q)['date'],
-                     data.query(q)['Deaths_double'],
-                     color='C{}'.format(i), 
-                     label=region)
-            plt.title('Deaths doubling or halving time: %s' % (date.strftime("%Y-%m-%d")))
+        #elif plot_type == 'Deaths_double':
+        #    plt.plot(data.query(q)['date'],
+        #             data.query(q)['Deaths_double'],
+        #             color='C{}'.format(i), 
+        #             label=region)
+        #    plt.title('Deaths doubling or halving time: %s' % (date.strftime("%Y-%m-%d")))
 
-        else:
-            raise ValueError('plot_type specified incorrectly')
+        #else:
+        #    raise ValueError('plot_type specified incorrectly')
 
     # Ticks and month arragement on x axis
-    X = plt.gca().xaxis
-    X.set_major_locator(locator_monthstart)
-    X.set_minor_locator(locator_monthmid)
-    X.set_major_formatter(mticker.NullFormatter())
-    X.set_minor_formatter(fmt)
-    plt.tick_params(axis='x', which='minor', bottom=False, labelbottom=True)
+    sort_month_axis(plt)
 
     # Axes limits
     plt.xlim(left=start_date, right=end_date)
