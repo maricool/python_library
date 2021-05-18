@@ -27,6 +27,7 @@ def arange(min, max):
 
 def logspace(xmin, xmax, nx):
     # Return a logarithmically spaced range of numbers
+    # Numpy version is specifically base10, which is insane since log spacing is independent of base
    from numpy import logspace, log10
    return logspace(log10(xmin), log10(xmax), nx)
 
@@ -40,8 +41,7 @@ def seq_color(i, n, cmap):
 
 def colour(i):
     # Default colours in plotly
-    color = 'C%d' % i
-    return color
+    return 'C%d'%i
 
 def even(num):
     # True if integer is even
@@ -85,15 +85,41 @@ def print_array_attributes(x):
 
 def print_array_statistics(x):
     # Print useful array statistics
+    from numpy import sqrt
     print('Array statistics')
-    print('size:', x.size)
+    n = x.size
+    print('size:', n)
     print('sum:', x.sum())
     print('min:', x.min())
     print('max:', x.max())
-    print('mean:', x.mean())
-    print('std:', x.std())
-    print('std (Bessel corrected):', x.std(ddof=1))
+    mean = x.mean()
+    print('mean:', mean)
+    std = x.std()
+    var = std**2
+    #std_bc = x.std(ddof=1) # Avoiding this to prevent multiple similar calculations
+    std_bc = std*sqrt(n/(n-1))
+    var_bc = std_bc**2
+    print('std:', std)
+    print('std (Bessel corrected):', std_bc)
+    print('variance:', var)
+    print('variance (Bessel corrected):', var_bc**2)
+    print('<x^2>:', mean**2+var)
     print()
+
+def print_full_array(xs):
+    # Print full array (with indices) to screen
+    for ix, x in enumerate(xs):
+        print(ix, x)
+
+def nans(shape, **kwargs):
+    # Initialise an array of nans
+    from numpy import empty, nan
+    return nan*empty(shape, **kwargs)
+
+def remove_nans(x):
+    # Remove nans from array x
+    from numpy import isnan
+    return x[~isnan(x)]
 
 # use numpy deg2rad() or radians()
 #def degrees_to_radians(theta):
