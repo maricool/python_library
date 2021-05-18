@@ -246,6 +246,42 @@ def useful_info(regions, data):
                 print('Cases halving time [days]: %.1f' % (-cases_double))
         print()
 
+def plot_month_spans(plt):
+
+    month_color = 'black'
+    month_alpha = 0.05
+
+    for im in [2, 4, 6, 8, 10, 12]:
+        plt.axvspan(dt.date(2020, im, 1), dt.date(2020, im, 1)+relativedelta(months=+1), 
+                    alpha=month_alpha, 
+                    color=month_color)
+        plt.axvspan(dt.date(2021, im, 1), dt.date(2021, im, 1)+relativedelta(months=+1), 
+                    alpha=month_alpha, 
+                    color=month_color)
+
+def plot_lockdown_spans(plt, data, region):
+
+    lockdown_color = 'red'
+    lockdown_alpha = 0.25
+    lockdown_lab = 'Lockdown'
+
+    for id, dates in enumerate(lockdowns.get(region)):
+        lockdown_start_date = dates[0]
+        if len(dates) == 1:
+            lockdown_end_date = max(data.date)
+        elif len(dates) == 2:
+            lockdown_end_date = dates[1]
+        else:
+            raise TypeError('Something went wrong with lockdown dates')
+        if id == 0:
+            label = lockdown_lab
+        else:
+            label = None
+        plt.axvspan(lockdown_start_date, lockdown_end_date, 
+                alpha=lockdown_alpha, 
+                color=lockdown_color, 
+                label=label)
+
 # Plot daily data
 def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_norm=True, Nmax=None, plot_type='Square'):
 
@@ -259,18 +295,15 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
     # Parameters
     days_roll = days_in_roll
     pop_num = pop_norm_num
-    bar_width = 0.6
-    use_seaborn = False
+    bar_width = 0.9
+    use_seaborn = True
 
     ### Figure options ###
 
     # Seaborn
-    #if (use_seaborn):
-    #    sns.set()
-    #else:
-    #    sns.reset_orig
-    #    matplotlib.rc_file_defaults()
-    if not use_seaborn:
+    if use_seaborn:
+        sns.set_theme(style='ticks')
+    else:
         sns.reset_orig
         matplotlib.rc_file_defaults()
 
@@ -304,8 +337,8 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
 
     # Hospitalisations 
     hosp_fac = 5.
-    hosp_bar_color = 'forestgreen'
-    hosp_line_color = 'g'
+    hosp_bar_color = 'g'
+    hosp_line_color = 'forestgreen'
     hosp_line_label = r'Hospital admissions $[\times %d]$'%(int(hosp_fac))
 
     # Deaths
@@ -314,26 +347,16 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
     death_line_color = 'r'
     death_line_label = r'Deaths $[\times %d]$'%(int(death_fac))
 
-    # Months
-    month_color = 'black'
-    month_alpha = 0.10
-
-    # Lockdowns
-    lockdown_color = 'red'
-    lockdown_alpha = 0.25
-    lockdown_lab = 'Lockdown'
-
     # Special dates
-    #special_date_color = 'black'
-    relax_color = 'green'
-    relax_alpha = lockdown_alpha
-    relax_lab = 'Relaxation'
+    #relax_color = 'green'
+    #relax_alpha = 0.25
+    #relax_lab = 'Relaxation'
 
     ### ###
 
     # Relaxations
-    plot_relax = False
-    Christmas_date = dt.date(2020, 12, 25)
+    #plot_relax = False
+    #Christmas_date = dt.date(2020, 12, 25)
 
     # Lockdowns
     plot_lockdowns = True
@@ -345,8 +368,7 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
     fmt = mdates.DateFormatter('%b') # Specify the format - %b gives us Jan, Feb...
     
     # Plot
-    _, ax = plt.subplots(figsize=(figx, figy), sharex=True)
-    #plt.tick_params(axis='x', which='minor', bottom=False)
+    _, ax = plt.subplots(figsize=(figx, figy), sharex=True, dpi=200)
     
     # Loop over regions
     for i, region in enumerate(regions):
@@ -377,54 +399,29 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
           
         # Months shading
         if plot_months:
-            for im in [2, 4, 6, 8, 10, 12]:
-                plt.axvspan(dt.date(2020, im, 1), dt.date(2020, im, 1)+relativedelta(months=+1), 
-                            alpha=month_alpha, 
-                            color=month_color)
-                plt.axvspan(dt.date(2021, im, 1), dt.date(2021, im, 1)+relativedelta(months=+1), 
-                            alpha=month_alpha, 
-                            color=month_color)
+            plot_month_spans(plt)
 
         # Lockdowns
         if plot_lockdowns:
-            for id, dates in enumerate(lockdowns.get(region)):
-                lockdown_start_date = dates[0]
-                if len(dates) == 1:
-                    lockdown_end_date = max(data.date)
-                elif len(dates) == 2:
-                    lockdown_end_date = dates[1]
-                else:
-                    raise TypeError('Something went wrong with lockdown dates')
-                if id == 0:
-                    label = lockdown_lab
-                else:
-                    label = None
-                plt.axvspan(lockdown_start_date, lockdown_end_date, 
-                        alpha=lockdown_alpha, 
-                        color=lockdown_color, 
-                        label=label)
+            plot_lockdown_spans(plt, data, region)
 
         # Important individual dates
-        if plot_relax:
-            plt.axvspan(Christmas_date, Christmas_date+relativedelta(days=+1), 
-                        color=relax_color, 
-                        alpha=relax_alpha, 
-                        label=relax_lab)
+        #if plot_relax:
+        #    plt.axvspan(Christmas_date, Christmas_date+relativedelta(days=+1), 
+        #                color=relax_color, 
+        #                alpha=relax_alpha, 
+        #                label=relax_lab)
 
         # Plot data
         q = "Region == '%s'" % (region) # Query to isolate regions
 
         # Cases
         if 'Cases' in data:
-            if use_seaborn:
-                sns.barplot(x=data.query(q)['date'], 
-                            y=data.query(q)['Cases']*pop_fac,
-                            color=case_bar_color)
-            else:
-                plt.bar(data.query(q)['date'],
-                        data.query(q)['Cases']*pop_fac,
-                        width=bar_width,
-                        color=case_bar_color)
+            plt.bar(data.query(q)['date'],
+                    data.query(q)['Cases']*pop_fac,
+                    width=bar_width,
+                    color=case_bar_color,
+                    linewidth=0.)
         if 'Cases_roll' in data:
             plt.plot(data.query(q)['date'],
                      data.query(q)['Cases_roll']*pop_fac/days_roll,
@@ -433,15 +430,11 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
 
         # Hospitalisations
         if 'Hosp' in data:
-            if use_seaborn:
-                sns.barplot(x=data.query(q)['date'], 
-                            y=data.query(q)['Hosp']*hosp_fac*pop_fac,                
-                            color=hosp_bar_color)
-            else:
-                plt.bar(data.query(q)['date'], 
-                        data.query(q)['Hosp']*hosp_fac*pop_fac, 
-                        width=bar_width,       
-                        color=hosp_bar_color)
+            plt.bar(data.query(q)['date'],
+                    data.query(q)['Hosp']*hosp_fac*pop_fac, 
+                    width=bar_width,
+                    color=hosp_bar_color,
+                    linewidth=0.)
         if 'Hosp_roll' in data:
             plt.plot(data.query(q)['date'],
                      data.query(q)['Hosp_roll']*hosp_fac*pop_fac/days_roll,
@@ -450,15 +443,11 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
 
         # Deaths
         if 'Deaths' in data:
-            if use_seaborn:
-                sns.barplot(x=data.query(q)['date'], 
-                            y=data.query(q)['Deaths']*death_fac*pop_fac,
-                            color=death_bar_color)
-            else:
-                plt.bar(data.query(q)['date'], 
-                        data.query(q)['Deaths']*death_fac*pop_fac,
-                        width=bar_width,
-                        color=death_bar_color)
+            plt.bar(data.query(q)['date'], 
+                    data.query(q)['Deaths']*death_fac*pop_fac,
+                    width=bar_width,
+                    color=death_bar_color,
+                    linewidth=0.)
         if 'Deaths_roll' in data:
             plt.plot(data.query(q).date, 
                      data.query(q)['Deaths_roll']*death_fac*pop_fac/days_roll, 
@@ -472,7 +461,7 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
         X.set_minor_locator(locator_monthmid)
         X.set_major_formatter(mticker.NullFormatter())
         X.set_minor_formatter(fmt)
-        ax.tick_params(axis='x', which='minor', bottom=False)
+        plt.tick_params(axis='x', which='minor', bottom=False, labelbottom=True)
         plt.xlabel('')
 
         # Axes limits
@@ -492,28 +481,36 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
             plt.title(region, x=0.03, y=0.88, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
         if (n == 4 or n == 9) and i == 0:
             plt.title(date.strftime("%Y-%m-%d"), x=0.97, y=0.88, loc='Right', bbox=dict(facecolor='w', edgecolor='k'))
-        if (n == 9 and i == 1) or (n == 4 and i == 1) or (n==1 and region == 'North East'): 
+        if (n == 9 and i == 2) or (n == 4 and i == 1) or (n==1 and region=='North East'): 
             legend = plt.legend(loc='upper right', framealpha=1.)
             legend.get_frame().set_edgecolor('k')
 
-    if(outfile != None):    
-        plt.savefig(outfile, dpi=80)
-    plt.show(block = False)   
+    if(outfile != None):
+        plt.savefig(outfile)
+    plt.show(block = False)
 
 # Plot daily data
 def plot_rolling_data(data, date, start_date, end_date, regions, pop_norm=True, plot_type='Cases'):
 
+    import matplotlib
     import matplotlib.pyplot as plt
     import matplotlib.dates as mdates
     import matplotlib.ticker as mticker
     import seaborn as sns
-    sns.set()
     
     # Parameters
     days_roll = days_in_roll
     pop_num = pop_norm_num
+    use_seaborn = True
 
     ### Figure options ###
+
+    # Seaborn
+    if use_seaborn:
+        sns.set_theme(style='ticks')
+    else:
+        sns.reset_orig
+        matplotlib.rc_file_defaults()
 
     if (plot_type == 'Cases_log') or (plot_type == 'Deaths_log'):
         log = True
@@ -535,34 +532,10 @@ def plot_rolling_data(data, date, start_date, end_date, regions, pop_norm=True, 
     # Size
     figx = 17.; figy = 6.
 
-    # Months
-    month_color = 'black'
-    month_alpha = 0.10
-
-    # Lockdowns
-    lockdown_color = 'red'
-    lockdown_alpha = 0.25
-    lockdown_lab = 'Lockdown'
-
-    # Special dates
-    relax_color = 'green'
-    relax_alpha = lockdown_alpha
-    relax_lab = 'Relaxation'
-
     ### ###
-
-    # Relaxations
-    plot_relax = False
-    Christmas_date = dt.date(2020, 12, 25)
 
     # Lockdowns
     plot_lockdowns = True
-    Mar_lockdown_start_date = dt.date(2020, 3, 23)
-    Mar_lockdown_end_date = dt.date(2020, 7, 5)
-    Nov_lockdown_start_date = dt.date(2020, 11, 5)
-    Nov_lockdown_end_date = dt.date(2020, 12, 2)
-    Jan_lockdown_start_date = dt.date(2021, 1, 5)
-    Jan_lockdown_end_date = data.date.iloc[0]
 
     # Months
     plot_months = True
@@ -575,34 +548,12 @@ def plot_rolling_data(data, date, start_date, end_date, regions, pop_norm=True, 
 
     # Months shading
     if plot_months:
-        for im in [2, 4, 6, 8, 10, 12]:
-            plt.axvspan(dt.date(2020, im, 1), dt.date(2020, im, 1)+relativedelta(months=+1), 
-                        alpha=month_alpha, 
-                        color=month_color)
-            plt.axvspan(dt.date(2021, im, 1), dt.date(2021, im, 1)+relativedelta(months=+1), 
-                        alpha=month_alpha, 
-                        color=month_color)
-            
+        plot_month_spans(plt)
+
     # Lockdowns
     if plot_lockdowns:
-        plt.axvspan(Mar_lockdown_start_date, Mar_lockdown_end_date, 
-                    alpha=lockdown_alpha, 
-                    color=lockdown_color, 
-                    label=lockdown_lab)
-        plt.axvspan(Nov_lockdown_start_date, Nov_lockdown_end_date, 
-                    alpha=lockdown_alpha, 
-                    color=lockdown_color)
-        plt.axvspan(Jan_lockdown_start_date, Jan_lockdown_end_date, 
-                    alpha=lockdown_alpha, 
-                    color=lockdown_color)
-        
-    # Important individual dates
-    if plot_relax:
-        plt.axvspan(Christmas_date, Christmas_date+relativedelta(days=+1), 
-                    color=relax_color, 
-                    alpha=relax_alpha, 
-                    label=relax_lab)
-        
+        plot_lockdown_spans(plt, data, 'London')
+
     # Loop over regions
     for i, region in enumerate(regions):
         
@@ -657,13 +608,10 @@ def plot_rolling_data(data, date, start_date, end_date, regions, pop_norm=True, 
     # Ticks and month arragement on x axis
     X = plt.gca().xaxis
     X.set_major_locator(locator_monthstart)
-    X.set_major_formatter(fmt)
     X.set_minor_locator(locator_monthmid)
-    #ax.xaxis.set_major_formatter(mticker.NullFormatter())
-    #ax.xaxis.set_minor_formatter(fmt)
     X.set_major_formatter(mticker.NullFormatter())
     X.set_minor_formatter(fmt)
-    ax.tick_params(axis='x', which='minor', bottom=False)
+    plt.tick_params(axis='x', which='minor', bottom=False, labelbottom=True)
 
     # Axes limits
     plt.xlim(left=start_date, right=end_date)
@@ -680,5 +628,5 @@ def plot_rolling_data(data, date, start_date, end_date, regions, pop_norm=True, 
         raise ValueError('plot_type specified incorrectly') 
 
     # Finalise
-    plt.legend(loc='upper left')
+    plt.legend()#loc='upper left')
     plt.show()

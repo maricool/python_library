@@ -20,3 +20,7 @@ def KroneckerDelta(x1, x2):
 # Cube root
 def cbrt(x):
     return x**(1./3.)
+
+# Logarithm to the base n
+def logn(x, n):
+    return np.log(x)/np.log(n)

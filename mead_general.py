@@ -54,12 +54,52 @@ def odd(num):
     # True if integer is odd
     return not even(num)
 
-# use numpy deg2rad
+def is_power_of_two(i):
+    #from math import isclose
+    #from numpy import log2, rint
+    #lg2 = log2(i)
+    #if isclose(lg2, rint(lg2)):
+    #    return True
+    #else:
+    #    return False
+    return is_power_of_n(i, 2)
+
+def is_power_of_n(i, n):
+    from math import isclose
+    from numpy import rint
+    from mead_special_functions import logn
+    lg = logn(i, n)
+    if isclose(lg, rint(lg)):
+        return True
+    else:
+        return False
+
+def print_array_attributes(x):
+    # Print useful array attributes
+    print('Array attributes')
+    print('ndim:', x.ndim)
+    print('shape:', x.shape)
+    print('size:', x.size)
+    print('dtype:', x.dtype)
+    print('')
+
+def print_array_statistics(x):
+    # Print useful array statistics
+    print('Array statistics')
+    print('sum:', x.sum())
+    print('min:', x.min())
+    print('max:', x.max())
+    print('mean:', x.mean())
+    print('std:', x.std())
+    print('std (Bessel corrected):', x.std(ddof=1))
+    print()
+
+# use numpy deg2rad() or radians()
 #def degrees_to_radians(theta):
 #    from numpy import pi
 #    return theta*pi/180.
 
-# use numpy rad2deg
+# use numpy rad2deg or degrees()
 #def radians_to_degrees(theta):
 #    from numpy import pi
 #    return theta*180./pi
