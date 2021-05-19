@@ -49,8 +49,9 @@ lockdowns = {
 days_in_roll = 7   # Number of days that contribute to a 'roll' (one week; seven days)
 pop_norm_num = 1e5 # Normalisation for y axes (per population; usually 100,000; sometimes 1,000,000)
 
-# Download latest data
 def download_data(area, metrics):
+
+    # Download latest data
     
     import requests
     
@@ -88,8 +89,9 @@ def download_data(area, metrics):
         print('Download complete')
         print('')
 
-# Read in data, no manipulations apart from renaming and deleting columns
 def read_data(infile, metrics):
+
+    # Read in data, no manipulations apart from renaming and deleting columns
     
     # Parameters
     verbose = False
@@ -137,19 +139,20 @@ def read_data(infile, metrics):
     # Return the massaged pandas data frame
     return data
 
-# Sort
 def sort_data(df):
+    # Sort
     df.sort_values(['Region', 'date'], ascending=[True, False], inplace=True)
 
-# Utility function for writing out subset of dataframe with comment
 def data_head(df, comment, verbose=False):
+    # Utility function for writing out subset of dataframe with comment
     if verbose:
         print(comment)
         print(df.head(15))
         print()
 
-# Perform calculations on data (assumes organised in date from high to low for each region)
 def data_calculations(df, verbose):
+
+    # Perform calculations on data (assumes organised in date from high to low for each region)
     
     # Parameters
     days_roll = days_in_roll
@@ -170,9 +173,10 @@ def data_calculations(df, verbose):
             df[col+'_double'] = days_roll*np.log(2.)/np.log(df[col+'_roll_Mead']/df[col+'_roll_past'])
             df.drop(col+'_roll_past', inplace=True, axis=1)
     data_head(df, 'Doubling times calculated', verbose)
-
-# Useful information
+ 
 def useful_info(regions, data):
+
+    # Print useful information
 
     # Parameters
     norm_pop = 100000
@@ -230,6 +234,8 @@ def useful_info(regions, data):
 
 def sort_month_axis(plt):
 
+    # Get the months axis of a plot looking nice
+
     import matplotlib.dates as mdates
     import matplotlib.ticker as mticker
 
@@ -247,6 +253,8 @@ def sort_month_axis(plt):
 
 def plot_month_spans(plt):
 
+    # Plot the spans between months
+
     month_color = 'black'
     month_alpha = 0.05
 
@@ -254,9 +262,13 @@ def plot_month_spans(plt):
         for month in [2, 4, 6, 8, 10, 12]:
             plt.axvspan(dt.date(year, month, 1), dt.date(year, month, 1)+relativedelta(months=+1), 
                         alpha=month_alpha, 
-                        color=month_color)
+                        color=month_color,
+                        lw=0.,
+                        )
 
 def plot_lockdown_spans(plt, data, region):
+
+    # Plot the spans of lockdown
 
     lockdown_color = 'red'
     lockdown_alpha = 0.25
@@ -277,10 +289,13 @@ def plot_lockdown_spans(plt, data, region):
         plt.axvspan(lockdown_start_date, lockdown_end_date, 
                 alpha=lockdown_alpha, 
                 color=lockdown_color, 
-                label=label)
+                label=label,
+                lw=0.,
+                )
 
-# Plot daily data
 def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_norm=True, Nmax=None, plot_type='Square'):
+
+    # Plot daily data and bar/line charts
 
     # Imports
     import matplotlib
@@ -476,12 +491,12 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
         plt.savefig(outfile)
     plt.show(block = False)
 
-# Plot daily data
 def plot_rolling_data(data, date, start_date, end_date, regions, pop_norm=True, plot_type='Cases', log=True):
+
+    # Plot rolling daily data to directly compare region-to-region
 
     import matplotlib
     import matplotlib.pyplot as plt
-    import matplotlib.dates as mdates
     import seaborn as sns
     
     # Parameters
