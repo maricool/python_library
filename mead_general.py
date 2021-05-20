@@ -83,29 +83,6 @@ def print_array_attributes(x):
     print('dtype:', x.dtype)
     print('')
 
-def print_array_statistics(x):
-    # Print useful array statistics
-    from numpy import sqrt
-    print('Array statistics')
-    n = x.size
-    print('size:', n)
-    print('sum:', x.sum())
-    print('min:', x.min())
-    print('max:', x.max())
-    mean = x.mean()
-    print('mean:', mean)
-    std = x.std()
-    var = std**2
-    #std_bc = x.std(ddof=1) # Avoiding this to prevent multiple similar calculations
-    std_bc = std*sqrt(n/(n-1))
-    var_bc = std_bc**2
-    print('std:', std)
-    print('std (Bessel corrected):', std_bc)
-    print('variance:', var)
-    print('variance (Bessel corrected):', var_bc**2)
-    print('<x^2>:', mean**2+var)
-    print()
-
 def print_full_array(xs):
     # Print full array (with indices) to screen
     for ix, x in enumerate(xs):

@@ -2,49 +2,58 @@
 import numpy as np
 from scipy.integrate import quad
 
-def normalisation(f,x1,x2,*args):
-    # Calculate the normalisation via integration
-    norm,_ = quad(lambda x: f(x,*args), x1, x2)
+def normalisation(f, x1, x2, *args):
+    # Calculate the normalisation of a probability distribution via integration
+    # f: f(x) probability distribution function
+    # x1, x2: Limits over which to normalise (could be -inf to +inf)
+    # *args: Arguments to be passed to function
+    norm, _ = quad(lambda x: f(x, *args), x1, x2)
     return norm
 
-def cumulative(x,f,x1,*args):
+def cumulative(x, f, x1, *args):
     # Cumulative distribution function via integration
-    C,_ = quad(lambda x: f(x,*args), x1, x)
+    C, _ = quad(lambda x: f(x,*args), x1, x)
     return C
 cumulative = np.vectorize(cumulative)
 
 def draw_from_distribution(x, Cx):
-    # Draw a random number given a cumulative probability   
+    # Draw a random number given an cumulative probability function
+    # x: array of x values
+    # C(x): array for cumulative probability
     r = np.random.uniform(Cx[0], Cx[-1])
     xi = np.interp(r, Cx, x)    
     return xi
 
-def moment(n,f,x1,x2,*args):
-    # Calculate the n-th moment of distribution f
-    norm = normalisation(f,x1,x2,*args)
-    m,_ = quad(lambda x: (x**n)*f(x,*args)/norm, x1, x2)
+def moment(n, f, x1, x2, *args):
+    # Calculate the n-th moment of a continuous distribution
+    # n: order of moment
+    # f: f(x)
+    # x1, x2: low and high limits
+    # *args: arguments to be passed to function
+    norm = normalisation(f, x1, x2, *args)
+    m, _ = quad(lambda x: (x**n)*f(x, *args)/norm, x1, x2)
     return m
 
 def variance(f, x1, x2, *args):
-    # Calculate the variance of distribution f
+    # Calculate the variance of a continuous distribution
     m1 = moment(1, f, x1, x2, *args)
     m2 = moment(2, f, x1, x2, *args)
     return m2-m1**2
 
-def draw_from_1D(n,f,x1,x2,nx,*args):
+def draw_from_1D(n, f, x1, x2, nx, *args):
     # Draw random numbers from a 1D distribution
-    # n - number of draws to make from f
-    # f - f(x,y) to draw from
-    # x1,x2 - limits on x axis
-    # nx - number of points along x axis
-    x = np.linspace(x1,x2,nx)    
-    C = cumulative(x,f,x1,*args)
+    # n: number of draws to make from f
+    # f: f(x) array to draw from
+    # x1, x2: limits on x axis
+    # nx: number of points to use along x axis
+    x = np.linspace(x1, x2, nx)    
+    C = cumulative(x, f, x1, *args)
     xi = np.zeros(n)
     for i in range(n):
-        xi[i] = draw_from_distribution(x,C)
+        xi[i] = draw_from_distribution(x, C)
     return xi
 
-def draw_from_2D(n,f,x1,x2,nx,y1,y2,ny):
+def draw_from_2D(n, f, x1, x2, nx, y1, y2, ny):
 
     # Draw random numbers from a 2D distribution
     # n - number of draws to make from f
@@ -59,17 +68,17 @@ def draw_from_2D(n,f,x1,x2,nx,y1,y2,ny):
     dy = (y2-y1)/np.real(ny)
 
     # Linearly spaced arrays of values corresponding to pixel centres
-    x = np.linspace(x1+dx/2.,x2-dx/2.,nx)
-    y = np.linspace(y1+dy/2.,y2-dy/2.,ny)
+    x = np.linspace(x1+dx/2., x2-dx/2., nx)
+    y = np.linspace(y1+dy/2., y2-dy/2., ny)
 
     # Make a grid of xy coordinate pairs
-    xy = np.array(np.meshgrid(x,y))
-    xy = xy.reshape(2,nx*ny) # Reshape the grid (2 here coresponds to 2 coordinates: x,y)
+    xy = np.array(np.meshgrid(x, y))
+    xy = xy.reshape(2, nx*ny) # Reshape the grid (2 here coresponds to 2 coordinates: x, y)
     xy = np.transpose(xy).tolist() # Convert to a long list
     
     # Make array of function values corresponding to the xy coordinates
-    X,Y = np.meshgrid(x,y)
-    z = f(X,Y)      # Array of function values
+    X, Y = np.meshgrid(x, y)
+    z = f(X, Y)      # Array of function values
     z = z.flatten() # Flatten array to create a long list of function values
     z = z/sum(z)    # Force normalisation
 
@@ -84,22 +93,23 @@ def draw_from_2D(n,f,x1,x2,nx,y1,y2,ny):
     xs = []
     ys = []
     for i in range(n):
-        xi,yi = xy[j[i]]
+        xi, yi = xy[j[i]]
         xs.append(xi)
         ys.append(yi)
 
     # Random numbers for inter-pixel displacement
-    dxs = np.random.uniform(-dx/2.,dx/2.,n) 
-    dys = np.random.uniform(-dy/2.,dy/2.,n)
+    dxs = np.random.uniform(-dx/2., dx/2., n) 
+    dys = np.random.uniform(-dy/2., dy/2., n)
 
     # Apply uniform-random displacement within a pixel
     xs = xs+dxs
     ys = ys+dys
         
-    return xs,ys
+    return xs, ys
 
-# Calculate a correlation matrix from a covariance matrix
 def correlation_matrix(cov):
+
+    # Calculate a correlation matrix from a covariance matrix
     
     shape = cov.shape
     n = shape[0]

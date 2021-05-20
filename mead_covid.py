@@ -257,7 +257,7 @@ def sort_month_axis(plt):
     X.set_major_formatter(mticker.NullFormatter())
     X.set_minor_formatter(fmt)
     plt.tick_params(axis='x', which='minor', bottom=False, labelbottom=True)
-    plt.xlabel('')
+    plt.xlabel(None)
 
 def plot_month_spans(plt):
 
@@ -424,7 +424,7 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
         #                label=relax_lab)
 
         # Plot data
-        q = "Region == '%s'" % (region) # Query to isolate regions
+        q = "Region == '%s'"%(region) # Query to isolate regions
 
         # Bar chart for numbers per day
         for col in ['Cases', 'Hosp', 'Deaths']:
