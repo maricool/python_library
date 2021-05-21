@@ -5,6 +5,9 @@ import datetime as dt
 from datetime import date as dte
 from dateutil.relativedelta import relativedelta
 
+import mead_general as mead
+import mead_pandas as mpd
+
 # England region populations
 # https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates
 # /bulletins/annualmidyearpopulationestimates/mid2019
@@ -49,7 +52,7 @@ lockdowns = {
 days_in_roll = 7      # Number of days that contribute to a 'roll' (one week; seven days)
 pop_norm_num = 1e5    # Normalisation for y axes (per population; usually 100,000; sometimes 1,000,000)
 infect_duration = 10. # Number of days an average person is infectious for
-rolling_offset = 4.   # Number of days to offset rolling data
+rolling_offset = 3    # Number of days to offset rolling data
 
 def download_data(area, metrics):
 
@@ -99,58 +102,51 @@ def read_data(infile, metrics):
     verbose = False
     
     # Read data into a pandas data frame
-    data = pd.read_csv(infile)
+    df = pd.read_csv(infile)
 
     # Print data to screen
     if verbose:
-        print(type(data))
-        print(data)
+        print(type(df))
+        print(df)
         print('')
 
     # Convert date column to actual date data type
-    data.date = pd.to_datetime(data['date'])
+    df.date = pd.to_datetime(df['date'])
 
     # Remove unnecessary columns
     for col in ['areaType', 'areaCode']:
-        data.drop(col, inplace=True, axis=1)
+        df.drop(col, inplace=True, axis=1)
     
     # Rename columns
-    data.rename(columns={'areaName': 'Region'}, inplace=True, errors="raise")
-    data.rename(columns=metrics, inplace=True, errors="raise")
+    df.rename(columns={'areaName': 'Region'}, inplace=True, errors="raise")
+    df.rename(columns=metrics, inplace=True, errors="raise")
 
     # Print data to screen again
     if verbose:
-        print(type(data))
-        print(data)
+        print(type(df))
+        print(df)
         print('')
 
     # Sort
-    if verbose: data_head(data, 'Original data')
-    sort_data(data)
-    if verbose: data_head(data, 'Sorted data')
+    if verbose: mpd.data_head(df, 'Original data')
+    sort_data(df)
+    if verbose: mpd.data_head(df, 'Sorted data')
 
     # Print specific columns to screen
     # TODO: This is probably wrong
     if verbose:      
-        print(data['date'])
+        print(df['date'])
         print('')
         for metric in metrics:
-            print(data[metrics[metric]])
+            print(df[metrics[metric]])
             print('')
     
     # Return the massaged pandas data frame
-    return data
+    return df
 
 def sort_data(df):
     # Sort data by region and by date
     df.sort_values(['Region', 'date'], ascending=[True, False], inplace=True)
-
-def data_head(df, comment, verbose=False):
-    # Utility function for writing out subset of dataframe with comment
-    if verbose:
-        print(comment)
-        print(df.head(15))
-        print()
 
 def data_calculations(df, verbose):
 
@@ -164,7 +160,7 @@ def data_calculations(df, verbose):
         if col in df:
             print('Calculating:', col+'_roll_Mead')
             df[col+'_roll_Mead'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date <= x.date) & (df.date > x.date+relativedelta(days=-days_roll)), col].sum(skipna=False), axis=1)
-    data_head(df, 'Weekly rolling numbers calculated', verbose)
+    mpd.data_head(df, 'Weekly rolling numbers calculated', verbose)
 
     # Calculate doubling times and R estimates
     # TODO: Surely can avoid creating col_roll_past using offsetting somehow?
@@ -175,7 +171,7 @@ def data_calculations(df, verbose):
             df[col+'_double'] = days_roll*np.log(2.)/np.log(df[col+'_roll_Mead']/df[col+'_roll_past'])
             df[col+'_R'] = 1.+infect_duration/df[col+'_double']
             df.drop(col+'_roll_past', inplace=True, axis=1)
-    data_head(df, 'Doubling times and R values calculated', verbose)
+    mpd.data_head(df, 'Doubling times and R values calculated', verbose)
  
 def useful_info(regions, data):
 
@@ -298,7 +294,7 @@ def plot_lockdown_spans(plt, data, region):
                     lw=0.,
                    )
 
-def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_norm=True, Nmax=None, plot_type='Square'):
+def plot_bar_data(df, date, start_date, end_date, regions, outfile=None, pop_norm=True, Nmax=None, plot_type='Square'):
 
     # Plot daily data and bar/line charts
 
@@ -331,7 +327,7 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
         if plot_type == 'Square':
             figx = 17.; figy = 13.
         elif plot_type == 'Long':
-            figx = 17.; figy = 50
+            figx = 17.; figy = 50.
         else:
             raise ValueError('plot_type must be either Square or Long')
     elif n == 4:
@@ -389,32 +385,20 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
         else:
             pop_fac = 1.
         
-        if n == 9:
-            if plot_type == 'Square':
-                plt.subplot(3, 3, i+1)
-            elif plot_type == 'Long':
-                plt.subplot(9, 1, i+1)
-            else:
-                raise ValueError('Something went wrong with plot_type')
-        elif n == 4:
-            if plot_type == 'Square':
-                plt.subplot(2, 2, i+1)
-            elif plot_type == 'Long':
-                plt.subplot(4, 1, i+1)
-            else:
-                raise ValueError('Something went wrong with plot_type')
-        elif n == 1:
-            plt.subplot(1, 1, 1)
+        # Sort layout
+        if plot_type == 'Long':
+            plt.subplot(n, 1, i+1)
+        elif plot_type == 'Square':
+            if not mead.is_perfect_square(n):
+                raise ValueError('Need a square number of plots for square plot')
+            r = int(np.sqrt(n))
+            plt.subplot(r, r, i+1)
         else:
-            raise ValueError('Only supports either one or nine regions')
+            raise ValueError('plot_type not understood')
           
-        # Months shading
-        if plot_months:
-            plot_month_spans(plt)
-
-        # Lockdowns
-        if plot_lockdowns:
-            plot_lockdown_spans(plt, data, region)
+        # Spans
+        if plot_months: plot_month_spans(plt)
+        if plot_lockdowns: plot_lockdown_spans(plt, df, region)
 
         # Important individual dates
         #if plot_relax:
@@ -428,7 +412,7 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
 
         # Bar chart for numbers per day
         for col in ['Cases', 'Hosp', 'Deaths']:
-            if col in data:
+            if col in df:
                 if col == 'Cases':
                     fac = pop_fac
                     bar_color = case_bar_color
@@ -440,15 +424,15 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
                     bar_color = death_bar_color
                 else:
                     raise ValueError('Something went wrong')
-                plt.bar(data.query(q)['date'],
-                        data.query(q)[col]*fac,
+                plt.bar(df.query(q)['date'],
+                        df.query(q)[col]*fac,
                         width=bar_width,
                         color=bar_color,
                         linewidth=0.)
 
         # Lines for weekly average
         for col in ['Cases_roll', 'Hosp_roll', 'Deaths_roll']:
-            if col in data:
+            if col in df:
                 if col == 'Cases_roll':
                     fac = pop_fac/days_roll
                     line_color = case_line_color
@@ -463,9 +447,8 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
                     line_label = death_line_label
                 else:
                     raise ValueError('Something went wrong')
-                #print('Type:', type(pd.to_datetime(data.query(q)['date'])))
-                plt.plot(pd.to_datetime(data.query(q)['date'])-dt.timedelta(rolling_offset),
-                         data.query(q)[col]*fac,
+                plt.plot(pd.to_datetime(df.query(q)['date'])-dt.timedelta(rolling_offset),
+                         df.query(q)[col]*fac,
                          color=line_color, 
                          label=line_label
                         )
@@ -498,7 +481,7 @@ def plot_bar_data(data, date, start_date, end_date, regions, outfile=None, pop_n
         plt.savefig(outfile)
     plt.show(block = False)
 
-def plot_rolling_data(data, date, start_date, end_date, regions, pop_norm=True, plot_type='Cases', log=True):
+def plot_rolling_data(df, date, start_date, end_date, regions, pop_norm=True, plot_type='Cases', log=True):
 
     # Plot rolling daily data to directly compare region-to-region
 
@@ -537,7 +520,7 @@ def plot_rolling_data(data, date, start_date, end_date, regions, pop_norm=True, 
     # Plot
     plt.subplots(figsize=(figx, figy))
     if plot_months: plot_month_spans(plt)
-    if plot_lockdowns: plot_lockdown_spans(plt, data, lockdown_region)
+    if plot_lockdowns: plot_lockdown_spans(plt, df, lockdown_region)
 
     # Loop over regions
     for i, region in enumerate(regions):
@@ -546,8 +529,8 @@ def plot_rolling_data(data, date, start_date, end_date, regions, pop_norm=True, 
         else:
             pop_fac = 1.
         q = "Region == '%s'"%(region) # Query to isolate regions
-        plt.plot(data.query(q)['date'],
-                 data.query(q)[plot_type+'_roll']*pop_fac/days_roll,
+        plt.plot(df.query(q)['date'],
+                 df.query(q)[plot_type+'_roll']*pop_fac/days_roll,
                  color='C{}'.format(i), 
                  label=region
                 )
@@ -565,7 +548,7 @@ def plot_rolling_data(data, date, start_date, end_date, regions, pop_norm=True, 
     plt.legend()#loc='upper left')
     plt.show()
 
-def plot_doubling_times(data, date, start_date, end_date, regions, plot_type='Cases'):
+def plot_doubling_times(df, date, start_date, end_date, regions, plot_type='Cases'):
 
     # Plot doubling-time (or halving time) data to directly compare region-to-region
 
@@ -593,7 +576,7 @@ def plot_doubling_times(data, date, start_date, end_date, regions, plot_type='Ca
     # Plot
     plt.subplots(figsize=(figx, figy))
     if plot_months: plot_month_spans(plt)
-    if plot_lockdowns: plot_lockdown_spans(plt, data, lockdown_region)
+    if plot_lockdowns: plot_lockdown_spans(plt, df, lockdown_region)
 
     # Loop over regions
     for i, region in enumerate(regions):
@@ -607,8 +590,8 @@ def plot_doubling_times(data, date, start_date, end_date, regions, plot_type='Ca
             else:
                 ls = '--'
                 label=None
-            plt.plot(data.query(q)['date'],
-                     f*data.query(q)[plot_type+'_double'],
+            plt.plot(df.query(q)['date'],
+                     f*df.query(q)[plot_type+'_double'],
                      color='C{}'.format(i),
                      ls=ls,
                      label=label,
@@ -623,7 +606,7 @@ def plot_doubling_times(data, date, start_date, end_date, regions, plot_type='Ca
     plt.legend()#loc='upper left')
     plt.show()
 
-def plot_R_estimates(data, date, start_date, end_date, regions, plot_type='Cases'):
+def plot_R_estimates(df, date, start_date, end_date, regions, plot_type='Cases'):
 
     # Plot rolling daily data to directly compare region-to-region
 
@@ -650,14 +633,14 @@ def plot_R_estimates(data, date, start_date, end_date, regions, plot_type='Cases
     # Plot
     plt.subplots(figsize=(figx, figy))
     if plot_months: plot_month_spans(plt)
-    if plot_lockdowns: plot_lockdown_spans(plt, data, lockdown_region)
+    if plot_lockdowns: plot_lockdown_spans(plt, df, lockdown_region)
     plt.axhline(1., color='black')
 
     # Loop over regions
     for i, region in enumerate(regions):
         q = "Region == '%s'"%(region) # Query to isolate regions      
-        plt.plot(data.query(q)['date'],
-                 data.query(q)[plot_type+'_R'],
+        plt.plot(df.query(q)['date'],
+                 df.query(q)[plot_type+'_R'],
                  color='C{}'.format(i), 
                  label=region,
                 )

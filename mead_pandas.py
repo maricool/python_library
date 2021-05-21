@@ -1,8 +1,20 @@
-import pandas as pd
+#import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+def data_head(df, comment, verbose=False):
+    '''
+    Utility function for writing out subset of dataframe with comment
+    '''
+    if verbose:
+        print(comment)
+        print(df.head(15))
+        print()
+
 def column_statistics(df, feature):
+    '''
+    Computes useful statistics of one pandas column (called feature here)
+    '''
     d = df[feature]
     print('Feature:', feature)
     print('Number:', len(d))
@@ -14,8 +26,16 @@ def column_statistics(df, feature):
 
 def feature_triangle(df, disc, features):
 
-    sns.set_theme(style='ticks')
+    '''
+    Triangle plot of list of features split by some characteristic. Histogram distributions along diagonal
+    df: pandas data frame
+    disc: sting, name of one column, usually the (discrete) thing you are interested in predicting (e.g., species) 
+    features: list of strings corresponding to feature columns
+    '''
 
+    density = True
+    bins = 'auto'
+    sns.set_theme(style='ticks')
     n = len(features)
 
     _, axs = plt.subplots(n, n, figsize=(10,10), sharex=True, sharey=True)
@@ -31,7 +51,7 @@ def feature_triangle(df, disc, features):
             if i1 == i2:
                 for thing in list(set(df[disc])):
                     q = "%s == '%s'"%(disc, thing)
-                    plt.hist(df.query(q)[feature1], bins='auto', density=True, label=thing)
+                    plt.hist(df.query(q)[feature1], bins=bins, density=density, label=thing)
             else:           
                 sns.scatterplot(x=df[feature2], y=df[feature1], 
                                 hue=df[disc], 

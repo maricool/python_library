@@ -220,6 +220,7 @@ def convert_mead_cosmology(cosm):
 def init_emulator(cpar):
 
     # Initialise the emulator for a given set of cosmological parameters
+    # cpar: My verion of Dark Quest cosmology object
 
     # Start Dark Quest
     print('Initialize Dark Quest')
@@ -230,6 +231,9 @@ def init_emulator(cpar):
     cparam = np.array([cpar.wb, cpar.wc, cpar.Om_w, cpar.lnAs, cpar.ns, cpar.w])   
     cpar.print()
     emu.set_cosmology(cparam) # I think that this does a load of emulator init steps
+    cpar.sig8 = emu.get_sigma8()
+    print('Derived sigma_8:', cpar.sig8)
+    print()
 
     return emu
 

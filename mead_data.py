@@ -1,7 +1,9 @@
 import numpy as np
 
 def print_array_statistics(x):
-    # Print useful array statistics
+    '''
+    Print useful array statistics
+    '''
     from numpy import sqrt
     print('Array statistics')
     n = x.size
