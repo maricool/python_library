@@ -129,9 +129,9 @@ class cosmology():
         print()
 
 def random_cosmology():
-
-    # (Uniform) random cosmological parameters from within the Dark Quest hypercube
-
+    '''
+    (Uniform) random cosmological parameters from within the Dark Quest hypercube
+    '''
     wb = np.random.uniform(wb_min, wb_max)
     wc = np.random.uniform(wc_min, wc_max)
     Om_w = np.random.uniform(Om_w_min, Om_w_max)
@@ -152,7 +152,7 @@ def named_cosmology(name):
     ns = ns_fid
     w = w_fid 
 
-    # Vary
+    # Vary some parameters
     if name in ['low w_b', 'low w_c', 'low Om_w', 'low lnAs', 'low ns', 'low w', 
         'high w_b', 'high w_c', 'high Om_w', 'high lnAs', 'high ns', 'high w']:
         if name in ['low w_b', 'low w_c', 'low Om_w', 'low lnAs', 'low ns', 'low w']:
@@ -185,27 +185,25 @@ def named_cosmology(name):
     else:
         raise ValueError('Cosmology name not recognised')
 
+    # Create my version of the Dark Quest cosmology object
     cpar = cosmology(wb=wb, wc=wc, Om_w=Om_w, lnAs=lnAs, ns=ns, w=w)
     return cpar
 
 def create_mead_cosmology(cpar, verbose=False):
-
-    # Create a set of Mead cosmological parameters from a Dark Quest set
-
-    # Make a mead cosmology
+    '''
+    Create a set of Mead cosmological parameters from a Dark Quest set
+    '''
+    # Make a Mead cosmology
     cosm = cosmo.cosmology(Om_m=cpar.Om_m, Om_b=cpar.Om_b, Om_w=cpar.Om_w, h=cpar.h, 
                            As=cpar.As, ns=cpar.ns, w=cpar.w, m_nu=cpar.m_nu)
-
-    # Print to screen
-    if verbose:
+    if verbose: # Print to screen
         cosm.print()
-
     return cosm
 
 def convert_mead_cosmology(cosm):
-
-    # Convert Mead cosmology into a Dark Quest cosmology
-
+    '''
+    Convert Mead cosmology into a Dark Quest cosmology
+    '''
     # Get Dark Quest parameters from my structure
     wb = cosm.w_b
     wc = cosm.w_c
@@ -214,23 +212,22 @@ def convert_mead_cosmology(cosm):
     ns = cosm.ns
     w = cosm.w
     cpar = cosmology(wb=wb, wc=wc, Om_w=Om_w, lnAs=lnAs, ns=ns, w=w)
-
     return  cpar
 
 def init_emulator(cpar):
-
-    # Initialise the emulator for a given set of cosmological parameters
-    # cpar: My verion of Dark Quest cosmology object
-
+    '''
+    Initialise the emulator for a given set of cosmological parameters
+    cpar: My verion of Dark Quest cosmology object
+    '''
     # Start Dark Quest
     print('Initialize Dark Quest')
     emu = darkemu.base_class()
     print('')
 
     # Initialise emulator
-    cparam = np.array([cpar.wb, cpar.wc, cpar.Om_w, cpar.lnAs, cpar.ns, cpar.w])   
+    cparam = np.array([cpar.wb, cpar.wc, cpar.Om_w, cpar.lnAs, cpar.ns, cpar.w]) # Surely this should be a dictionary 
     cpar.print()
-    emu.set_cosmology(cparam) # I think that this does a load of emulator init steps
+    emu.set_cosmology(cparam) # This does a load of emulator init steps
     cpar.sig8 = emu.get_sigma8()
     print('Derived sigma_8:', cpar.sig8)
     print()
@@ -238,9 +235,9 @@ def init_emulator(cpar):
     return emu
 
 def Pk_mm(emu, ks, zs, nonlinear=False):
-
-    # Matter power spectrum from emulator; either linear or non-linear
-
+    '''
+    Matter power spectrum from emulator; either linear or non-linear
+    '''
     if isinstance(zs, float):
         if nonlinear:
             Pk = emu.get_pknl(ks, zs)
@@ -257,17 +254,17 @@ def Pk_mm(emu, ks, zs, nonlinear=False):
     return Pk
 
 def minimum_halo_mass(emu):
-
-    # Minimum halo mass for the set of cosmological parameters
-
+    '''
+    Minimum halo mass for the set of cosmological parameters
+    '''
     Mbox_HR = comoving_matter_density(emu)*Lbox_HR**3
     mmin = Mbox_HR*np_min/npart**3
     return mmin
 
 def comoving_matter_density(emu):
-
-    # Comoving matter density
-
+    '''
+    Comoving matter density
+    '''
     Om_m = emu.cosmo.get_Omega0()
     rhom = cosmo.comoving_matter_density(Om_m)
     return rhom
@@ -284,18 +281,18 @@ def nu_M(emu, M, z):
     return nu
 
 def Radius_M(emu, M):
-
-    # Lagrangian radius of a halo of mass M [Mpc/h]
-
+    '''
+    Lagrangian radius of a halo of mass M [Mpc/h]
+    '''
     Om_m = emu.cosmo.get_Omega0()
     radius = cosmo.Radius_M(M, Om_m)
     return radius
 
 
 def virial_radius_M(emu, M):
-
-    # Virial radius of a halo of mass M [Mpc/h]
-
+    '''
+    Virial radius of a halo of mass M [Mpc/h]
+    '''
     from mead_special_functions import cbrt
     return Radius_M(emu, M)/cbrt(Dv)
 
@@ -373,11 +370,11 @@ def sigma_M(emu, M, z):
     return sigma
 
 def get_bias_mass(emu, M, redshift):
-
-    # Linear halo bias: b(M, z)
-    # Taken from the pre-release version of Dark Quest given to me by Takahiro
-    # I am not sure why this functionality was omitted from the final version
-
+    '''
+    Linear halo bias: b(M, z)
+    Taken from the pre-release version of Dark Quest given to me by Takahiro
+    I am not sure why this functionality was omitted from the final version
+    '''
     Mp = M * 1.01
     Mm = M * 0.99
     logdensp = np.log10(emu.mass_to_dens(Mp, redshift))
@@ -387,11 +384,10 @@ def get_bias_mass(emu, M, redshift):
     return (bm * 10**logdensm - bp * 10**logdensp) / (10**logdensm - 10**logdensp)
 
 def get_dndM_mass(emu, Ms, z):
-
-    # Return an array of n(M) (dn/dM in Dark Quest notation) at user-specified halo masses
-    # Extrapolates if necessary, which is perhaps dangerous
-
-    # Imports
+    '''
+    Return an array of n(M) (dn/dM in Dark Quest notation) at user-specified halo masses
+    Extrapolates if necessary, which is perhaps dangerous
+    '''
     from scipy.interpolate import InterpolatedUnivariateSpline as ius
 
     # Construct an interpolator for n(M) (or dn/dM) from the emulator internals
@@ -403,20 +399,17 @@ def get_dndM_mass(emu, Ms, z):
     return np.exp(dndM_interp(np.log(Ms)))
 
 def ndenshalo(emu, Mmin, Mmax, z):
-
-    # Calculate the number density of haloes in the range Mmin to Mmax
-    # Result is [(Mpc/h)^-3]
-
-    # Parameters
-    vol = 1.
-
+    '''
+    Calculate the number density of haloes in the range Mmin to Mmax
+    Result is [(Mpc/h)^-3]
+    '''
+    vol = 1. # Fix to unity
     return emu.get_nhalo(Mmin, Mmax, vol, z)
 
 def mass_avg(emu, Mmin, Mmax, z):
-
-    # Calculate the average halo mass between two limits, weighted by the halo mass function [Msun/h]
-
-    # Import
+    '''
+    Calculate the average halo mass between two limits, weighted by the halo mass function [Msun/h]
+    '''
     from scipy.interpolate import InterpolatedUnivariateSpline as ius
     from scipy.integrate import quad
 
@@ -437,10 +430,9 @@ def mass_avg(emu, Mmin, Mmax, z):
     return Mav/n
 
 def get_xiauto_mass_avg(emu, rs, M1min, M1max, M2min, M2max, z):
-
-    # Averages the halo-halo correlation function over mass ranges to return the weighted-by-mass-function mean version
-
-    # Import
+    '''
+    Averages the halo-halo correlation function over mass ranges to return the weighted-by-mass-function mean version
+    '''
     from scipy.interpolate import InterpolatedUnivariateSpline as ius
     from scipy.interpolate import RectBivariateSpline as rbs
     from scipy.integrate import dblquad
@@ -486,10 +478,10 @@ def get_xiauto_mass_avg(emu, rs, M1min, M1max, M2min, M2max, z):
     return xiauto_avg/(n1*n2)
 
 def linear_halo_bias(emu, M, z, klin, Pk_klin):
-
-    # Source of linear halo bias
-    ibias = ibias_BNL
-
+    '''
+    Linear halo bias
+    '''
+    ibias = ibias_BNL # Source of linear halo bias
     if ibias == 1:
         b = get_bias_mass(emu, M, z)[0]
     elif ibias == 2:
@@ -498,35 +490,34 @@ def linear_halo_bias(emu, M, z, klin, Pk_klin):
         b = emu.get_phm_mass(klin, M, z)/Pk_klin
     else:
         raise ValueError('Linear bias recipe for beta_NL not recognised')
-
     return b
 
 def R_hh(emu, ks, M1, M2, z):
-
-    # Cross correlation coefficient between halo masses
-
+    '''
+    Cross correlation coefficient between halo masses
+    '''
     P12 = emu.get_phh_mass(ks, M1, M2, z)
     P11 = emu.get_phh_mass(ks, M1, M1, z)
     P22 = emu.get_phh_mass(ks, M2, M2, z)
-
     return P12/np.sqrt(P11*P22)
 
-def beta_NL(emu, vars, ks, z, var='Mass'):
-
-    # Beta_NL function
-
+def beta_NL(emu, mass, ks, z, mass_variable='Mass'):
+    '''
+    Beta_NL function, function: B^NL(M1, M2, k)
+    TODO: Change to accept two separate mass arguments and merge with beta_NL_1D?
+    '''
     # Parameters
     force_to_zero = force_zero_BNL
     klin = np.array([klin_BNL]) # klin must be a numpy array
 
     # Set array name sensibly
-    if var == 'Mass':
-        Ms = vars
-    elif var == 'Radius':
-        Rs = vars
+    if mass_variable == 'Mass':
+        Ms = mass
+    elif mass_variable == 'Radius':
+        Rs = mass
         Ms = Mass_R(emu, Rs)
-    elif var == 'nu':
-        nus = vars
+    elif mass_variable == 'nu':
+        nus = mass
         Ms = Mass_nu(emu, nus, z)
     else:
         raise ValueError('Error, mass variable for beta_NL not recognised')
@@ -536,7 +527,7 @@ def beta_NL(emu, vars, ks, z, var='Mass'):
     Pk_klin = emu.get_pklin_from_z(klin, z)
     
     # Calculate beta_NL by looping over mass arrays
-    beta = np.zeros((len(Ms), len(Ms), len(ks)))  
+    beta = np.zeros((len(Ms), len(Ms), len(ks)))
     for iM1, M1 in enumerate(Ms):
 
         # Linear halo bias
@@ -546,14 +537,10 @@ def beta_NL(emu, vars, ks, z, var='Mass'):
 
             if iM2 >= iM1:
 
-                # Linear halo bias
-                b2 = linear_halo_bias(emu, M2, z, klin, Pk_klin)
-
-                # Halo-halo power spectrum
-                Pk_hh = emu.get_phh_mass(ks, M1, M2, z)
-                    
                 # Create beta_NL
-                beta[iM1, iM2, :] = Pk_hh/(b1*b2*Pk_lin)-1.
+                b2 = linear_halo_bias(emu, M2, z, klin, Pk_klin)
+                Pk_hh = emu.get_phh_mass(ks, M1, M2, z)
+                beta[iM1, iM2, :] = -1.+Pk_hh/(b1*b2*Pk_lin)
 
                 # Force Beta_NL to be zero at large scales if necessary
                 if force_to_zero != 0:
@@ -573,22 +560,75 @@ def beta_NL(emu, vars, ks, z, var='Mass'):
          
     return beta 
 
+def beta_NL_1D(emu, Mh, mass, ks, z, mass_variable='Mass'):
+    '''
+    One-dimensional Beta_NL function, function: B^NL(Mh, M, k)
+    TODO: Change two-dimensional version to accept two separate mass arguments and get rid of this version
+    '''
+    # Parameters
+    force_to_zero = force_zero_BNL
+    klin = np.array([klin_BNL]) # klin must be a numpy array
+    Mmin = minimum_halo_mass(emu)
+
+    # Set array name sensibly
+    if mass_variable == 'Mass':
+        Ms = mass
+    elif mass_variable == 'Radius':
+        Rs = mass
+        Ms = Mass_R(emu, Rs)
+    elif mass_variable == 'nu':
+        nus = mass
+        Ms = Mass_nu(emu, nus, z)
+    else:
+        raise ValueError('Error, mass variable for beta_NL not recognised')
+
+    # Linear power
+    Pk_lin = emu.get_pklin_from_z(ks, z)
+    Pk_klin = emu.get_pklin_from_z(klin, z)
+    bh = linear_halo_bias(emu, Mh, z, klin, Pk_klin)
+    
+    # Calculate beta_NL by looping over mass arrays
+    beta = np.zeros((len(Ms), len(ks)))  
+    for iM, M in enumerate(Ms):
+
+        if M < Mmin:
+            beta[iM, :] = 0.
+        else:
+            
+            # Calculate beta_NL
+            b = linear_halo_bias(emu, M, z, klin, Pk_klin)
+            Pk_hh = emu.get_phh_mass(ks, Mh, M, z)
+            beta[iM, :] = -1.+Pk_hh/(bh*b*Pk_lin)
+
+            # Force Beta_NL to be zero at large scales if necessary
+            if force_to_zero != 0:
+                Pk_hh0 = emu.get_phh_mass(klin, Mh, M, z)
+                db = Pk_hh0/(bh*b*Pk_klin)-1.
+                if force_to_zero == 1:
+                    beta[iM, :] = beta[iM, :]-db # Addative correction
+                elif force_to_zero == 2:
+                    beta[iM, :] = (beta[iM, :]+1.)/(db+1.)-1. # Multiplicative correction
+                else:
+                    raise ValueError('force_BNL_zero not set correctly')
+
+    return beta 
+
 def beta_match_metric(beta1, beta2):
-
-    # Single number to quantify how well two different betas match across k, M
-    # Clearly the result will depend on the spacing of the M and k values
-    # Probably should compute an RMS integral
-
+    '''
+    Single number to quantify how well two different betas match across k, M
+    Clearly the result will depend on the spacing of the M and k values
+    TODO: Probably should compute an RMS integral, but hopefully sum is sufficient
+    '''
     diff = (beta1-beta2)**2
     sigma = np.sqrt(diff.sum()/diff.size)
     return sigma
 
 def beta_match_metric_k(beta1, beta2):
-
-    # Single number to quantify how well two different betas match across M for each k
-    # Clearly result will depend on the spacing of the M values
-    # Probably should compute an RMS integral
-
+    '''
+    Single number to quantify how well two different betas match across M for each k
+    Clearly result will depend on the spacing of the M values
+    TODO: Probably should compute an RMS integral, but hopefully sum is sufficient
+    '''
     diff = (beta1-beta2)**2
     nk = len(diff[1, 1, :])
     sigma = np.zeros(nk)
@@ -597,14 +637,14 @@ def beta_match_metric_k(beta1, beta2):
     return sigma
 
 def calculate_rescaling_params(emu_ori, emu_tgt, z_tgt, M1_tgt, M2_tgt):
-
-    # Calculates the AW10 rescaling parameters to go from the original cosmology to the target cosmology
-    
+    '''
+    Calculates the AW10 rescaling parameters to go from the original cosmology to the target cosmology
+    '''
     R1_tgt = Radius_M(emu_tgt, M1_tgt)
     R2_tgt = Radius_M(emu_tgt, M2_tgt)
 
     s, sm, z = cosmo.calculate_AW10_rescaling_parameters(z_tgt, R1_tgt, R2_tgt, 
-                                                         lambda Ri, zi: sigma_R(emu_ori, Ri, zi), 
+                                                         lambda Ri, zi: sigma_R(emu_ori, Ri, zi),
                                                          lambda Ri, zi: sigma_R(emu_tgt, Ri, zi),
                                                          emu_ori.cosmo.get_Omega0(),
                                                          emu_tgt.cosmo.get_Omega0(),

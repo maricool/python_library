@@ -37,6 +37,8 @@ hm_def = Tinker2010
 Dv_def = 200.  # Halo overdensity with respect to background matter density
 dc_def = 1.686 # Linear collapse threshold relating nu = delta_c/sigma(M)
 
+### Class definition ###
+
 class halomod():
 
     def __init__(self, z, Om_m, hm=hm_def, Dv=Dv_def, dc=dc_def):
@@ -147,6 +149,10 @@ class halomod():
         else:
             raise ValueError('Halo model ihm not recognised in linear_halo_bias')
 
+### ###
+
+### Halo model ###
+
 def _get_nus(Ms, dc, Om_m, sigmas=None, sigma=None, Pk_lin=None):
 
     '''
@@ -190,7 +196,6 @@ def Dv_BryanNorman(Om_mz):
     return Dv/Om_mz
 
 def mean_hm(hmod, Ms, fs, sigmas=None, sigma=None, Pk_lin=None):
-
     '''
     Calculate the mean of some f(M) over halo mass <f>: int f(M)n(M)dM where n(M) = dn/dM in some notations
     Note that the units of n(M) are [(Msun/h)^{-1} (Mpc/h)^{-3}] so the units of the result are [F (Mpc/h)^{-3}]
@@ -207,13 +212,11 @@ def mean_hm(hmod, Ms, fs, sigmas=None, sigma=None, Pk_lin=None):
     sigma(R): Optional function to get sigma(R) at z of interest
     Pk_lin(k): Optional function to get linear power at z of interest
     '''
-
     nus = _get_nus(Ms, hmod.dc, hmod.Om_m, sigmas, sigma, Pk_lin)
     integrand = (fs/Ms)*hmod.halo_mass_function(nus)
     return halo_integration(integrand, nus)*cosmo.comoving_matter_density(hmod.Om_m)
 
 def Pk_hm(hmod, Ms, ks, N_uv, rho_uv, Pk_lin, beta=None, sigmas=None, sigma=None, lowmass_uv=[False,False], Fourier_uv=[True,True], verbose=True):
-
     '''
     TODO: Remove Pk_lin dependence?
     Inputs
@@ -230,7 +233,6 @@ def Pk_hm(hmod, Ms, ks, N_uv, rho_uv, Pk_lin, beta=None, sigmas=None, sigma=None
     lowmass_uv - Should a correction be made for low-mass haloes for field 'u'?
     Fourier_uv - Are haloes for field 'u' provided in Fourier space or real space?
     '''
-
     from time import time
     t1 = time() # Initial time
 
@@ -247,8 +249,7 @@ def Pk_hm(hmod, Ms, ks, N_uv, rho_uv, Pk_lin, beta=None, sigmas=None, sigma=None
     integrand = hmod.halo_mass_function(nus)*hmod.linear_halo_bias(nus)
     A = 1.-halo_integration(integrand, nus)
     if verbose:
-        print('Missing halo-bias-mass from two-halo integrand:', A)
-        print('')
+        print('Missing halo-bias-mass from two-halo integrand:', A, '\n')
 
     # Calculate the halo profile Fourier transforms if necessary
     W_uv = []
@@ -280,13 +281,11 @@ def Pk_hm(hmod, Ms, ks, N_uv, rho_uv, Pk_lin, beta=None, sigmas=None, sigma=None
     t2 = time() # Final time
 
     if verbose:  
-        print('Halomodel calculation time [s]:', t2-t1)
-        print('')
+        print('Halomodel calculation time [s]:', t2-t1, '\n')
 
     return (Pk_2h_array, Pk_1h_array, Pk_hm_array)
 
 def Pk_hm_hu(hmod, M_h, Ms, ks, N_u, rho_u, Pk_lin, beta=None, sigmas=None, sigma=None, lowmass_u=False, Fourier_u=True, verbose=True):
-
     '''
     TODO: Remove Pk_lin dependence?
     Inputs
@@ -298,13 +297,12 @@ def Pk_hm_hu(hmod, M_h, Ms, ks, N_u, rho_u, Pk_lin, beta=None, sigmas=None, sigm
     rho_u[2][Ms, ks/rs]: List of array of either normalised Fourier transform of halo profile 'u' and 'v' [u(Mpc/h)^3] 
     or real-space profile from 0 to rv [u]
     Pk_lin(k): Function to evaluate the linear power spectrum [(Mpc/h)^3]
-    beta(M1, M2, k): Optional array of beta_NL values at points Ms, Ms, ks
+    beta(Ms, ks): Optional array of beta_NL values at points Ms, ks
     sigmas(Ms): Optional pre-computed array of linear sigma(M) values corresponding to Ms
     sigma(R): Optional function to evaluate the linear sigma(R)
     lowmass_u: Should a correction be made for low-mass haloes for field 'u'?
     Fourier_u: Are haloes for field 'u' provided in Fourier space or real space?
     '''
-
     from time import time
     from scipy.interpolate import interp1d
     t1 = time() # Initial time
@@ -316,13 +314,12 @@ def Pk_hm_hu(hmod, M_h, Ms, ks, N_u, rho_u, Pk_lin, beta=None, sigmas=None, sigm
     integrand = hmod.halo_mass_function(nus)*hmod.linear_halo_bias(nus)
     A = 1.-halo_integration(integrand, nus)
     if verbose:
-        print('Missing halo-bias-mass from two-halo integrand:', A)
-        print('')
+        print('Missing halo-bias-mass from two-halo integrand:', A, '\n')
 
     # Calculate the halo profile Fourier transforms if necessary
     W_u = np.empty_like(rho_u)
     if Fourier_u:
-        W_u = rho_u
+        W_u = np.copy(rho_u)
     else:
         nr = rho_u.shape[1] # nr=nk always, but I suppose it need not be
         for iM, M in enumerate(Ms):
@@ -356,8 +353,7 @@ def Pk_hm_hu(hmod, M_h, Ms, ks, N_u, rho_u, Pk_lin, beta=None, sigmas=None, sigm
     t2 = time() # Final time
 
     if verbose:  
-        print('Halomodel calculation time [s]:', t2-t1)
-        print('')
+        print('Halomodel calculation time [s]:', t2-t1, '\n')
 
     return (Pk_2h_array, Pk_1h_array, Pk_hm_array)
 
@@ -383,6 +379,7 @@ def _P_2h_hu(hmod, Pk_lin, k, Ms, nuh, nus, Wu, lowmass, A, beta=None):
         I_NL = _I_beta_hu(hmod, beta, Ms, nuh, nus, Wu)
     Ih = hmod.linear_halo_bias(nuh) # This term is simply the linear bias
     Iu = _I_2h(hmod, Ms, nus, Wu, lowmass, A) # This is the same as in the standard two-halo term
+    #print('k, Ih, Iu, I_NL:', k, Ih, Iu, I_NL) # TODO: Remove
     return Pk_lin(k)*(Ih*Iu+I_NL)
 
 def _I_2h(hmod, Ms, nus, W, lowmass, A):
@@ -401,6 +398,7 @@ def _I_beta(hmod, beta, Ms, nus, Wuv):
     Evaluates the beta_NL double integral
     TODO: Add low-mass correction
     '''
+    from mead_calculus import trapz2d
     integrand = np.zeros((len(nus), len(nus)))
     for iM1, nu1 in enumerate(nus):
         for iM2, nu2 in enumerate(nus):
@@ -416,7 +414,7 @@ def _I_beta(hmod, beta, Ms, nus, Wuv):
                 integrand[iM1, iM2] = beta[iM1, iM2]*W1*W2*g1*g2*b1*b2/(M1*M2)
             else:
                 integrand[iM1, iM2] = integrand[iM2, iM1]
-    return mead.trapz2d(integrand, nus, nus)*cosmo.comoving_matter_density(hmod.Om_m)**2
+    return trapz2d(integrand, nus, nus)*cosmo.comoving_matter_density(hmod.Om_m)**2
 
 def _I_beta_hu(hmod, beta, Ms, nuh, nus, Wu):
     '''
@@ -445,10 +443,26 @@ def _P_1h(hmod, Ms, nus, Wuv):
 
 ### ###
 
-### Functions that deal with haloes and halo profiles ###
+### Beta_NL ###
+
+def interpolate_beta_NL(ks, Ms, Ms_small, beta_NL_small):
+    '''
+    Interpolate beta_NL from a small grid to a large grid for halo-model calculations
+    '''
+    from scipy.interpolate import interp2d
+    beta_NL = np.zeros((len(Ms), len(Ms), len(ks))) # Numpy array for output
+    for ik, _ in enumerate(ks):
+        beta_NL_interp = interp2d(np.log(Ms_small), np.log(Ms_small), beta_NL_small[:, :, ik], kind='linear')
+        for iM1, M1 in enumerate(Ms):
+            for iM2, M2 in enumerate(Ms):
+                beta_NL[iM1, iM2, ik] = beta_NL_interp(np.log(M1), np.log(M2))
+    return beta_NL
+
+### ###
+
+### Haloes and halo profiles ###
 
 def _halo_window(ks, rs, Prho):
-
     '''
     Compute the halo window function given a 'density' profile Prho(r) = 4*pi*r^2*rho(r)
     TODO: This should almost certainly be done with a dedicated integration routine, FFTlog?
@@ -457,7 +471,6 @@ def _halo_window(ks, rs, Prho):
     rs: array of radii usually from r=0 to r=rv [Mpc/h]
     Prho[rs]: array of Prho = 4pir^2*rho(r) values at different radii
     '''
-
     from scipy.integrate import trapezoid, simps, romb
     from scipy.special import spherical_jn
 
@@ -579,20 +592,21 @@ def NFW_factor(c):
     '''
     return np.log(1.+c)-c/(1.+c)
 
-def conc_Duffy(M, z):
-
+def conc_Duffy(M, z, halo_definition='M200'):
     '''
     Duffy et al (2008; 0804.2486) c(M) relation for WMAP5, See Table 1
     '''
-
+    # Appropriate for the full (rather than relaxed) samples
     M_piv = 2e12 # Pivot mass [Msun/h]
-    A = 10.14
-    B = -0.081
-    C = -1.01
-
-    # Equation (4) in 0804.2486, parameters from 10th row of Table 1
-    # Appropriate for the full sample defined via M200
-    return A*(M/M_piv)**B*(1.+z)**C
+    if halo_definition == 'M200':
+        A = 10.14; B = -0.081; C = -1.01
+    elif halo_definition in ['vir', 'virial']:
+        A = 7.85; B = -0.081; C = -0.71
+    elif halo_definition == 'M200c':
+        A = 5.71; B = -0.084; C = -0.47
+    else:
+        raise ValueError('Halo definition not recognised')
+    return A*(M/M_piv)**B*(1.+z)**C # Equation (4) in 0804.2486, parameters from 10th row of Table 1
 
 ### ###
 
