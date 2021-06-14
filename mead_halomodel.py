@@ -175,8 +175,7 @@ def virial_radius(M, Dv, Om_m):
     '''
     Halo virial radius based on the halo mass and overdensity condition
     '''
-    from mead_special_functions import cbrt
-    return cosmo.Radius_M(M, Om_m)/cbrt(Dv)
+    return cosmo.Radius_M(M, Om_m)/np.cbrt(Dv)
 
 def dc_NakamuraSuto(Om_mz):
     '''
@@ -200,6 +199,7 @@ def mean_hm(hmod, Ms, fs, sigmas=None, sigma=None, Pk_lin=None):
     Calculate the mean of some f(M) over halo mass <f>: int f(M)n(M)dM where n(M) = dn/dM in some notations
     Note that the units of n(M) are [(Msun/h)^{-1} (Mpc/h)^{-3}] so the units of the result are [F (Mpc/h)^{-3}]
     Common: <M/rho> = 1 over all halo mass (equivalent to int g(nu)dnu = 1)
+    Common: <M^2/rho> = M_NL non-linear halo mass that maximall contributes to one-halo term (not M*)
     Common: <b(M)M/rho> = 1 over all halo mass (equivalent to int g(nu)b(nu)dnu = 1)
     Common: <N(M)> with N the number of galaxies in each halo of mass M; gives mean number density of galaxies
     Common: <b(M)N(M)>/<N(M)> with N the number of galaxies in each halo of mass M; gives mean bias of galaxies
@@ -364,7 +364,7 @@ def _P_2h(hmod, Pk_lin, k, Ms, nus, W_uv, lowmass_uv, A, beta=None):
     if beta is None:
         I_NL = 0.
     else:
-        I_NL = _I_beta(hmod, beta, Ms, nus, W_uv)
+        I_NL = _I_beta(hmod, beta, Ms, nus, W_uv, lowmass_uv, A)
     Iu = _I_2h(hmod, Ms, nus, W_uv[0], lowmass_uv[0], A)
     Iv = _I_2h(hmod, Ms, nus, W_uv[1], lowmass_uv[1], A)
     return Pk_lin(k)*(Iu*Iv+I_NL)
@@ -376,10 +376,9 @@ def _P_2h_hu(hmod, Pk_lin, k, Ms, nuh, nus, Wu, lowmass, A, beta=None):
     if beta is None:
         I_NL = 0.
     else:
-        I_NL = _I_beta_hu(hmod, beta, Ms, nuh, nus, Wu)
-    Ih = hmod.linear_halo_bias(nuh) # This term is simply the linear bias
-    Iu = _I_2h(hmod, Ms, nus, Wu, lowmass, A) # This is the same as in the standard two-halo term
-    #print('k, Ih, Iu, I_NL:', k, Ih, Iu, I_NL) # TODO: Remove
+        I_NL = _I_beta_hu(hmod, beta, Ms, nuh, nus, Wu, lowmass, A)
+    Ih = hmod.linear_halo_bias(nuh) # Simply the linear bias
+    Iu = _I_2h(hmod, Ms, nus, Wu, lowmass, A) # Same as for the standard two-halo term
     return Pk_lin(k)*(Ih*Iu+I_NL)
 
 def _I_2h(hmod, Ms, nus, W, lowmass, A):
@@ -389,15 +388,15 @@ def _I_2h(hmod, Ms, nus, W, lowmass, A):
     integrand = W*hmod.linear_halo_bias(nus)*hmod.halo_mass_function(nus)/Ms
     I_2h = halo_integration(integrand, nus)
     if lowmass:
-        I_2h = I_2h+A*W[0]/Ms[0]
+        I_2h += A*W[0]/Ms[0]
     I_2h = I_2h*cosmo.comoving_matter_density(hmod.Om_m)
     return I_2h
 
-def _I_beta(hmod, beta, Ms, nus, Wuv):
+def _I_beta(hmod, beta, Ms, nus, Wuv, lowmass_uv, A):
     '''
     Evaluates the beta_NL double integral
-    TODO: Add low-mass correction
     '''
+    from numpy import trapz
     from mead_calculus import trapz2d
     integrand = np.zeros((len(nus), len(nus)))
     for iM1, nu1 in enumerate(nus):
@@ -414,12 +413,31 @@ def _I_beta(hmod, beta, Ms, nus, Wuv):
                 integrand[iM1, iM2] = beta[iM1, iM2]*W1*W2*g1*g2*b1*b2/(M1*M2)
             else:
                 integrand[iM1, iM2] = integrand[iM2, iM1]
-    return trapz2d(integrand, nus, nus)*cosmo.comoving_matter_density(hmod.Om_m)**2
+    integral = trapz2d(integrand, nus, nus)
+    if lowmass_uv[0] and lowmass_uv[1]:
+        integral += (A**2)*Wuv[0][0]*Wuv[1][0]/Ms[0]**2
+    if lowmass_uv[0]:
+        integrand = np.zeros(len(nus))
+        for iM, nu in enumerate(nus):
+            M = Ms[iM]
+            W = Wuv[1][iM]
+            g = hmod.halo_mass_function(nu)
+            b = hmod.linear_halo_bias(nu)
+            integrand[iM] = beta[0, iM]*W*g*b/M
+        integral += (A*Wuv[0][0]/Ms[0])*trapz(integrand, nus)
+    if lowmass_uv[1]:
+        for iM, nu in enumerate(nus):
+            M = Ms[iM]
+            W = Wuv[0][iM]
+            g = hmod.halo_mass_function(nu)
+            b = hmod.linear_halo_bias(nu)
+            integrand[iM] = beta[iM, 0]*W*g*b/M
+        integral += (A*Wuv[1][0]/Ms[0])*trapz(integrand, nus)
+    return integral*cosmo.comoving_matter_density(hmod.Om_m)**2
 
-def _I_beta_hu(hmod, beta, Ms, nuh, nus, Wu):
+def _I_beta_hu(hmod, beta, Ms, nuh, nus, Wu, lowmass, A):
     '''
     Evaluates the beta_NL integral for halo-u
-    TODO: Add low-mass correction
     '''
     from numpy import trapz
     bh = hmod.linear_halo_bias(nuh)
@@ -430,7 +448,10 @@ def _I_beta_hu(hmod, beta, Ms, nuh, nus, Wu):
         g = hmod.halo_mass_function(nu)
         b = hmod.linear_halo_bias(nu)
         integrand[iM] = beta[iM]*W*g*b/M
-    return bh*trapz(integrand, nus)*cosmo.comoving_matter_density(hmod.Om_m)
+    integral = trapz(integrand, nus)
+    if lowmass:
+        integral += A*beta[0]*Wu[0]/Ms[0]
+    return bh*integral*cosmo.comoving_matter_density(hmod.Om_m)
 
 def _P_1h(hmod, Ms, nus, Wuv):
     '''

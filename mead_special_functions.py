@@ -19,9 +19,10 @@ def KroneckerDelta(x1, x2):
     # Kronecker delta function
     return np.where(x1==x2, 1, 0)
 
-def cbrt(x):
-    # Cube root
-    return x**(1./3.)
+# np.cbrt exists
+#def cbrt(x):
+#    # Cube root
+#    return x**(1./3.)
 
 def logn(x, n):
     # Logarithm to the base n

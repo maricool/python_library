@@ -125,7 +125,7 @@ class cosmology():
 
         # Integrand for the r(a) calculations and vectorise
         def r_integrand(a):
-            return 1./(H(self, a)*a**2)
+            return 1./(self.H(a)*a**2)
         r_integrand_vec = np.vectorize(r_integrand)
 
         # Function to integrate to get rp(a) (PARTICLE HORIZON) and vectorise
@@ -144,7 +144,7 @@ class cosmology():
 
         # Integrand for the t(a) calculation and vectorise
         def t_integrand(a):
-            return 1./(H(self, a)*a)
+            return 1./(self.H(a)*a)
         t_integrand_vec = np.vectorize(t_integrand)
 
         # Function to integrate to get r(a) and vectorise
@@ -230,7 +230,7 @@ class cosmology():
 
         # Function to calculate delta'
         def dd(v, d, a):
-            dd = 1.5*Omega_m(self, a)*d/a**2-(2.+AH(self, a)/H(self, a)**2)*v/a
+            dd = 1.5*self.Omega_m(a)*d/a**2-(2.+self.AH(a)/self.H2(a))*v/a
             return dd
 
         # Function to get delta' and v' in the correct format for odeint
@@ -287,207 +287,321 @@ class cosmology():
         print('Initialise_growth: f(1):', self.f(1.))
         print()
 
-## ##
+    ### ###
+
+    ### Functions ###
+
+    def H2(self, a):
+        '''
+        Squared Hubble parameter, $(\dot{a}/a)^2$, normalised to unity at a=1
+        '''
+        H2=(self.Om_r*a**-4)+(self.Om_m*a**-3)+self.Om_w*self.X_de(a)+self.Om_v+(1.-self.Om)*a**-2
+        return H2
+
+    def H(self, a):
+        '''
+        Hubble parameter, $\dot{a}/a$ normalised to unity at a=1
+        '''
+        return np.sqrt(self.H2(a))
+
+    def AH(self, a):
+        '''
+        Acceleration parameter, $\ddot{a}/a$ normalised to unity at a=1
+        '''
+        AH=-0.5*((2.*self.Om_r*a**-4)+(self.Om_m*a**-3)+self.Om_w*(1.+3*self.w_de(a)*self.X_de(a))-2.*self.Om_v)
+        return AH
+
+    def X_de(self, a):
+        '''
+        Dark energy energy density, normalised to unity at a=1
+        '''
+        if(self.ide == 0):
+            return np.full_like(a, 1.) # Make numpy compatible
+        if(self.ide == 1):
+            return a**(-3.*(1.+self.w+self.wa))*np.exp(-3.*self.wa*(1.-a))
+        elif(self.ide == 2):
+            return a**(-3.*(1.+self.w))
+        elif(self.ide == 5):
+            f1=(a/self.a1)**self.nw+1.
+            f2=(1./self.a1)**self.nw+1.
+            f3=(1./self.a2)**self.nw+1.
+            f4=(a/self.a2)**self.nw+1.
+            return ((f1/f2)*(f3/f4))**(-6./self.nw)
+        else:
+            raise ValueError('ide not recognised')
+
+    def w_de(self, a):
+        '''
+        Dark energy equation of state parameter: w = p/rho
+        '''
+        if(self.ide == 0):
+            return np.full_like(a, -1.) # Make numpy compatible
+        elif(self.ide == 1):
+            return self.w+(1.-a)*self.wa
+        elif(self.ide == 2):
+            return np.full_like(a, self.w) # Make numpy compatible
+        elif(self.ide == 5):
+            f1=(a/self.a1)**self.nw-1.
+            f2=(a/self.a1)**self.nw+1.
+            f3=(a/self.a2)**self.nw-1.
+            f4=(a/self.a2)**self.nw+1.
+            return -1.+f1/f2-f3/f4
+        else:
+            raise ValueError('ide not recognised')
+
+    def Omega_r(self, a):
+        '''
+        Cosmological radiataion density as a function of 'a'
+        '''
+        return self.Om_r*(a**-4)/self.H2(a)
+        
+    def Omega_m(self, a):
+        '''
+        Cosmological matter density as a function of 'a'
+        '''
+        return self.Om_m*(a**-3)/self.H2(a)
+
+    def Omega_w(self, a):
+        '''
+        Cosmological dark-energy density as a function of 'a'
+        '''
+        return self.Om_w*self.X_de(a)/self.H2(a)
+
+    def Omega_v(self, a):
+        '''
+        Cosmological vacuumm density as a function of 'a'
+        '''
+        return self.Om_v/self.H2(a)
+
+    def Omega(self, a):
+        '''
+        Cosmological total density as a function of 'a'
+        '''
+        return self.Omega_r(a)+self.Omega_m(a)+self.Omega_w(a)+self.Omega_v(a)
+
+    def physical_critical_density(self, a):
+        '''
+        Physical critical density [(Msun/h)/(Mpc/h)^3]
+        '''
+        return const.rhoc*self.H2(a)
+
+    def comoving_critical_density(self, a):
+        '''
+        Comoving critical density [(Msun/h)/(Mpc/h)^3]
+        '''
+        return self.physical_critical_density(a)*a**3
+
+    def comoving_matter_density(self):
+        '''
+        Comoving matter density, not a function of epoch [(Msun/h)/(Mpc/h)^3]
+        '''
+        return comoving_matter_density(self.Om_m)
+
+    def physical_matter_density(self, a):
+        '''
+        Physical matter density [(Msun/h)/(Mpc/h)^3]
+        '''
+        return physical_matter_density(a, self.Om_m)
+
+    def Mass_R(self, R):
+        '''
+        Mass contained within a sphere of radius 'R' in a homogeneous universe
+        '''
+        return Mass_R(R, self.Om_m)
+
+    def Radius_M(self, M):
+        '''
+        Radius of a sphere containing mass M in a homogeneous universe
+        '''
+        return Radius_M(M, self.Om_m)
+
+    ### ###
+
+    ### Plotting ###
+
+    # Plot Omega_i(a)
+    def plot_Omegas(self):
+
+        # a range
+        amin = 1e-3
+        amax = 1.
+        na = 129
+        a_lintab = np.linspace(amin, amax, na)
+        a_logtab = mead.logspace(amin, amax, na)
+        
+        plt.figure(1, figsize=(20, 6))
+
+        # Omegas - Linear
+        plt.subplot(122)
+        plt.plot(a_logtab, self.Omega_r(a_logtab), label=r'$\Omega_r(a)$')
+        plt.plot(a_logtab, self.Omega_m(a_logtab), label=r'$\Omega_m(a)$')
+        plt.plot(a_logtab, self.Omega_w(a_logtab), label=r'$\Omega_w(a)$')
+        plt.plot(a_logtab, self.Omega_v(a_logtab), label=r'$\Omega_v(a)$')
+        plt.xlabel(r'$a$')
+        plt.ylabel(r'$\Omega_i(a)$')
+        plt.legend()
+
+        # Omegas - Log
+        plt.subplot(121)
+        plt.semilogx(a_logtab, self.Omega_r(a_logtab), label=r'$\Omega_r(a)$')
+        plt.semilogx(a_logtab, self.Omega_m(a_logtab), label=r'$\Omega_m(a)$')
+        plt.semilogx(a_logtab, self.Omega_w(a_logtab), label=r'$\Omega_w(a)$')
+        plt.semilogx(a_logtab, self.Omega_v(a_logtab), label=r'$\Omega_v(a)$')
+        plt.xlabel(r'$a$')
+        plt.ylabel(r'$\Omega_i(a)$')
+        plt.legend()
+
+        plt.figure(2, figsize=(20, 6))
+
+        # w(a) - Linear
+        plt.subplot(121)
+        plt.axhline(0, c='k', ls=':')
+        plt.axhline(1, c='k', ls=':')
+        plt.axhline(-1, c='k', ls=':')
+        plt.plot(a_lintab, self.w_de(a_lintab))
+        plt.xlabel(r'$a$')
+        plt.ylabel(r'$w(a)$')
+        plt.ylim((-1.05, 1.05))
+
+        # w(a) - Log
+        plt.subplot(122)
+        plt.axhline(0, c='k', ls=':')
+        plt.axhline(1, c='k', ls=':')
+        plt.axhline(-1, c='k', ls=':')
+        plt.semilogx(a_logtab, self.w_de(a_logtab))
+        plt.xlabel(r'$a$')
+        plt.ylabel(r'$w(a)$')
+        plt.ylim((-1.05, 1.05))
+        
+        plt.show()
+
+    # Plot cosmic distances and times (dimensionless)
+    # TODO: Split distance and time and add dimensions
+    def plot_distances(self):
+        
+        plt.subplots(3, figsize=(20, 6))
+
+        amin = 1e-4
+        amax = 1.
+        na = 128
+        a_lin = np.linspace(amin, amax, na)
+        a_log = mead.logspace(amin, amax, na)
+
+        # Plot cosmic distance (dimensionless) vs. a on linear scale
+        plt.subplot(121)
+        plt.plot(a_lin, self.r(a_lin), 'g-', label='Comoving distance')
+        plt.plot(a_lin, self.rp(a_lin), 'b-', label='Particle horizon')
+        plt.plot(a_lin, self.t(a_lin), 'r-', label='Age')
+        plt.legend()
+        plt.xlabel(r'$a$')
+        plt.ylabel(r'$r(a)$ or $t(a)$')
+
+        # Plot cosmic distance (dimensionless) vs. a on log scale
+        plt.subplot(122)
+        plt.loglog(a_log, self.r(a_log), 'g-', label='interpolation')
+        plt.loglog(a_log, self.rp(a_log), 'b-', label='interpolation')
+        plt.loglog(a_log, self.t(a_log), 'r-', label='interpolation')
+        plt.xlabel(r'$a$')
+        plt.ylabel(r'$r(a)$ or $t(a)$')
+        plt.show()
+
+    # Plot g(a) and f(a)
+    def plot_growth(self):
+        
+        plt.figure(1,figsize=(20, 6))
+
+        amin = 1e-4
+        amax = 1.
+        na = 128
+        a_lin = np.linspace(amin, amax, na)
+        a_log = mead.logspace(amin, amax, na)
+
+        # Linear scale
+        plt.subplot(121)
+        plt.plot(a_lin, self.g(a_lin), 'b-', label = 'Growth function')
+        plt.plot(a_lin, self.f(a_lin), 'r-', label = 'Growth rate')
+        plt.legend()
+        plt.xlabel(r'$a$')
+        plt.xlim((0, 1.0))
+        plt.ylabel(r'$g(a)$ or $f(a)$')
+        plt.ylim((0, 1.05))
+
+        # Log scale
+        plt.subplot(122)
+        plt.semilogx(a_log, self.g(a_log), 'b-', label=r'interpolation')
+        plt.semilogx(a_log, self.f(a_log), 'r-', label=r'interpolation')
+        plt.xlabel(r'$a$')
+        plt.ylabel(r'$g(a)$ or $f(a)$')
+        plt.ylim((0, 1.05))
+
+        # Show the plot
+        plt.show()
+
+    ### ###
     
 ## Definitions of cosmological functions ##
 
 # TODO: Should these be class methods?
 
 # Hubble function: \dot(a)/a
-def H(cosm, a):
-    H2=(cosm.Om_r*a**-4)+(cosm.Om_m*a**-3)+cosm.Om_w*X_de(cosm, a)+cosm.Om_v+(1.-cosm.Om)*a**-2
-    return np.sqrt(H2)
+#def H(cosm, a):
+#    H2=(cosm.Om_r*a**-4)+(cosm.Om_m*a**-3)+cosm.Om_w*X_de(cosm, a)+cosm.Om_v+(1.-cosm.Om)*a**-2
+#    return np.sqrt(H2)
 
 # Acceleration function: \ddot(a)/a
-def AH(cosm, a):
-    AH=-0.5*((2.*cosm.Om_r*a**-4)+(cosm.Om_m*a**-3)+cosm.Om_w*(1.+3*w_de(cosm, a)*X_de(cosm, a))-2.*cosm.Om_v)
-    return AH
+#def AH(cosm, a):
+#    AH=-0.5*((2.*cosm.Om_r*a**-4)+(cosm.Om_m*a**-3)+cosm.Om_w*(1.+3*w_de(cosm, a)*X_de(cosm, a))-2.*cosm.Om_v)
+#    return AH
 
 # Dark energy density as a function of 'a'
-def X_de(cosm, a):
-    if(cosm.ide == 0):
-        return np.full_like(a, 1.) # Make numpy compatible
-    if(cosm.ide == 1):
-        return a**(-3.*(1.+cosm.w+cosm.wa))*np.exp(-3.*cosm.wa*(1.-a))
-    elif(cosm.ide == 2):
-        return a**(-3.*(1.+cosm.w))
-    elif(cosm.ide == 5):
-        f1=(a/cosm.a1)**cosm.nw+1.
-        f2=(1./cosm.a1)**cosm.nw+1.
-        f3=(1./cosm.a2)**cosm.nw+1.
-        f4=(a/cosm.a2)**cosm.nw+1.
-        return ((f1/f2)*(f3/f4))**(-6./cosm.nw)
+# def X_de(cosm, a):
+#     if(cosm.ide == 0):
+#         return np.full_like(a, 1.) # Make numpy compatible
+#     if(cosm.ide == 1):
+#         return a**(-3.*(1.+cosm.w+cosm.wa))*np.exp(-3.*cosm.wa*(1.-a))
+#     elif(cosm.ide == 2):
+#         return a**(-3.*(1.+cosm.w))
+#     elif(cosm.ide == 5):
+#         f1=(a/cosm.a1)**cosm.nw+1.
+#         f2=(1./cosm.a1)**cosm.nw+1.
+#         f3=(1./cosm.a2)**cosm.nw+1.
+#         f4=(a/cosm.a2)**cosm.nw+1.
+#         return ((f1/f2)*(f3/f4))**(-6./cosm.nw)
 
 # Dark energy equation-of-state parameter
-def w_de(cosm, a):
-    if(cosm.ide == 0):
-        return np.full_like(a, -1.) # Make numpy compatible
-    elif(cosm.ide == 1):
-        return cosm.w+(1.-a)*cosm.wa
-    elif(cosm.ide == 2):
-        return np.full_like(a, cosm.w) # Make numpy compatible
-    elif(cosm.ide == 5):
-        f1=(a/cosm.a1)**cosm.nw-1.
-        f2=(a/cosm.a1)**cosm.nw+1.
-        f3=(a/cosm.a2)**cosm.nw-1.
-        f4=(a/cosm.a2)**cosm.nw+1.
-        return -1.+f1/f2-f3/f4
+# def w_de(cosm, a):
+#     if(cosm.ide == 0):
+#         return np.full_like(a, -1.) # Make numpy compatible
+#     elif(cosm.ide == 1):
+#         return cosm.w+(1.-a)*cosm.wa
+#     elif(cosm.ide == 2):
+#         return np.full_like(a, cosm.w) # Make numpy compatible
+#     elif(cosm.ide == 5):
+#         f1=(a/cosm.a1)**cosm.nw-1.
+#         f2=(a/cosm.a1)**cosm.nw+1.
+#         f3=(a/cosm.a2)**cosm.nw-1.
+#         f4=(a/cosm.a2)**cosm.nw+1.
+#         return -1.+f1/f2-f3/f4
     
 # Omega_r as a function of 'a'
-def Omega_r(cosm, a):
-    return cosm.Om_r*(a**-4)/H(cosm, a)**2
+# def Omega_r(cosm, a):
+#     return cosm.Om_r*(a**-4)/H(cosm, a)**2
     
 # Omega_m as a function of 'a'
-def Omega_m(cosm, a):
-    return cosm.Om_m*(a**-3)/H(cosm, a)**2
+# def Omega_m(cosm, a):
+#     return cosm.Om_m*(a**-3)/H(cosm, a)**2
 
 # Omega_w as a function of 'a'
-def Omega_w(cosm, a):
-    return cosm.Om_w*X_de(cosm, a)/H(cosm, a)**2
+# def Omega_w(cosm, a):
+#     return cosm.Om_w*X_de(cosm, a)/H(cosm, a)**2
 
 # Omega_v as a function of 'a'
-def Omega_v(cosm, a):
-    return cosm.Om_v/H(cosm, a)**2
+# def Omega_v(cosm, a):
+#     return cosm.Om_v/H(cosm, a)**2
 
 # Total Omega as a function of 'a'
-def Omega(cosm, a):
-    return Omega_r(cosm, a)+Omega_m(cosm, a)+Omega_w(cosm, a)+Omega_v(cosm, a)
-
-def scale_factor_z(z):
-    return 1./(1.+z)
-
-def redshift_a(a):
-    return -1.+1./a
-
-# Plot Omega_i(a)
-def plot_Omegas(cosm):
-
-    # a range
-    amin = 1e-3
-    amax = 1
-    na = 128
-    a_lintab = np.linspace(amin, amax, na)
-    a_logtab = mead.logspace(amin, amax, na)
-    
-    plt.figure(1, figsize=(20, 6))
-
-    # Omegas - Linear
-    plt.subplot(122)
-    plt.plot(a_logtab, Omega_r(cosm, a_logtab), label=r'$\Omega_r(a)$')
-    plt.plot(a_logtab, Omega_m(cosm, a_logtab), label=r'$\Omega_m(a)$')
-    plt.plot(a_logtab, Omega_w(cosm, a_logtab), label=r'$\Omega_w(a)$')
-    plt.plot(a_logtab, Omega_v(cosm, a_logtab), label=r'$\Omega_v(a)$')
-    plt.xlabel(r'$a$')
-    plt.ylabel(r'$\Omega_i(a)$')
-    plt.legend()
-
-    # Omegas - Log
-    plt.subplot(121)
-    plt.semilogx(a_logtab, Omega_r(cosm, a_logtab), label=r'$\Omega_r(a)$')
-    plt.semilogx(a_logtab, Omega_m(cosm, a_logtab), label=r'$\Omega_m(a)$')
-    plt.semilogx(a_logtab, Omega_w(cosm, a_logtab), label=r'$\Omega_w(a)$')
-    plt.semilogx(a_logtab, Omega_v(cosm, a_logtab), label=r'$\Omega_v(a)$')
-    plt.xlabel(r'$a$')
-    plt.ylabel(r'$\Omega_i(a)$')
-    plt.legend()
-
-    plt.figure(2, figsize=(20, 6))
-
-    # w(a) - Linear
-    plt.subplot(121)
-    plt.axhline(0, c='k', ls=':')
-    plt.axhline(1, c='k', ls=':')
-    plt.axhline(-1, c='k', ls=':')
-    plt.plot(a_lintab, w_de(cosm, a_lintab))
-    plt.xlabel(r'$a$')
-    plt.ylabel(r'$w(a)$')
-    plt.ylim((-1.05, 1.05))
-
-    # w(a) - Log
-    plt.subplot(122)
-    plt.axhline(0, c='k', ls=':')
-    plt.axhline(1, c='k', ls=':')
-    plt.axhline(-1, c='k', ls=':')
-    plt.semilogx(a_logtab, w_de(cosm, a_logtab))
-    plt.xlabel(r'$a$')
-    plt.ylabel(r'$w(a)$')
-    plt.ylim((-1.05, 1.05))
-    
-    plt.show()
-
-# Plot cosmic distances and times (dimensionless)
-# TODO: Split distance and time and add dimensions
-def plot_distances(cosm):
-    
-    plt.subplots(3, figsize=(20, 6))
-
-    amin = 1e-4
-    amax = 1.
-    na = 128
-    a_lin = np.linspace(amin, amax, na)
-    a_log = mead.logspace(amin, amax, na)
-
-    # Plot cosmic distance (dimensionless) vs. a on linear scale
-    plt.subplot(121)
-    #plt.plot(a_tab,r_tab,'go',label=r'$r(a)$')
-    plt.plot(a_lin, cosm.r(a_lin), 'g-', label='Comoving distance')
-    #plt.plot(a_tab,rp_tab,'bo',label=r'$r_p(a)$')
-    plt.plot(a_lin, cosm.rp(a_lin), 'b-', label='Particle horizon')
-    #plt.plot(a_tab,t_tab,'ro',label=r'$t(a)$')
-    plt.plot(a_lin, cosm.t(a_lin), 'r-', label='Age')
-    plt.legend()
-    plt.xlabel(r'$a$')
-    plt.ylabel(r'$r(a)$ or $t(a)$')
-
-    # Plot cosmic distance (dimensionless) vs. a on log scale
-    plt.subplot(122)
-    #plt.loglog(a_tab,r_tab,'go',label=r'$r(a)$')
-    plt.loglog(a_log, cosm.r(a_log), 'g-', label='interpolation')
-    #plt.loglog(a_tab,rp_tab,'bo',label=r'$r_p(a)$')
-    plt.loglog(a_log, cosm.rp(a_log), 'b-', label='interpolation')
-    #plt.loglog(a_tab,t_tab,'ro',label=r'$t(a)$')
-    plt.loglog(a_log, cosm.t(a_log), 'r-', label='interpolation')
-    #plt.legend()
-    plt.xlabel(r'$a$')
-    plt.ylabel(r'$r(a)$ or $t(a)$')
-    plt.show()
-
-# Plot g(a) and f(a)
-def plot_growth(cosm):
-    
-    plt.figure(1,figsize=(20, 6))
-
-    amin = 1e-4
-    amax = 1.
-    na = 128
-    a_lin = np.linspace(amin, amax, na)
-    a_log = mead.logspace(amin, amax, na)
-
-    # Linear scale
-    plt.subplot(121)
-    #plt.plot(a_tab, g_tab, 'bo', label='g(a)')
-    #plt.plot(a_tab, f_tab, 'ro', label='f(a)')
-    plt.plot(a_lin, cosm.g(a_lin), 'b-', label = 'Growth function')
-    plt.plot(a_lin, cosm.f(a_lin), 'r-', label = 'Growth rate')
-    plt.legend()
-    plt.xlabel(r'$a$')
-    plt.xlim((0, 1.0))
-    plt.ylabel(r'$g(a)$ or $f(a)$')
-    plt.ylim((0, 1.05))
-
-    # Log scale
-    plt.subplot(122)
-    #plt.semilogx(a_tab, g_tab, 'bo', label=r'$g(a)$')
-    #plt.semilogx(a_tab,f_tab, 'ro', label=r'$f(a)$')
-    plt.semilogx(a_log, cosm.g(a_log), 'b-', label=r'interpolation')
-    plt.semilogx(a_log, cosm.f(a_log), 'r-', label=r'interpolation')
-    #plt.legend()
-    plt.xlabel(r'$a$')
-    plt.ylabel(r'$g(a)$ or $f(a)$')
-    plt.ylim((0, 1.05))
-
-    # Show the plot
-    plt.show()
+# def Omega(cosm, a):
+#     return Omega_r(cosm, a)+Omega_m(cosm, a)+Omega_w(cosm, a)+Omega_v(cosm, a)
 
 # Get P(k) from CAMB file
 # def read_CAMB(fname):
@@ -517,16 +631,47 @@ def plot_growth(cosm):
 
 #     return Pk
 
-# Generic 'cosmology' functions that should not take cosm class as input
+## Generic 'cosmology' functions that should *not* take cosm class as input ##
+
+def scale_factor_z(z):
+    '''
+    Scale factor at redshift z: 1/a = 1+z
+    '''
+    return 1./(1.+z)
+
+def redshift_a(a):
+    '''
+    Redshift at scale factor a: 1/a = 1+z
+    '''
+    return -1.+1./a
 
 def comoving_matter_density(Om_m):
-   return const.rhoc*Om_m
+    '''
+    Comoving matter density, not a function of time [Msun/h / (Mpc/h)^3]
+    TODO: Should this take cosm as an input?
+    '''
+    return const.rhoc*Om_m
+
+def physical_matter_density(a, Om_m):
+    '''
+    Physical matter density [Msun/h / (Mpc/h)^3]
+    TODO: Should this take cosm as an input?
+    '''
+    return comoving_matter_density(Om_m)*a**-3
 
 def Mass_R(R, Om_m):
+    '''
+    Mass contained within a sphere of radius 'R' in a homogeneous universe
+    TODO: Should this take cosm as an input?
+    '''
     return (4./3.)*np.pi*R**3*comoving_matter_density(Om_m)
 
 def Radius_M(M, Om_m):
-    return (3.*M/(4.*np.pi*comoving_matter_density(Om_m)))**(1./3.)
+    '''
+    Radius of a sphere containing mass M in a homogeneous universe
+    TODO: Should this take cosm as an input?
+    '''
+    return np.cbrt(3.*M/(4.*np.pi*comoving_matter_density(Om_m)))
 
 def Delta2(Power_k, k):
     return Power_k(k)*k**3/(2.*np.pi**2)
@@ -560,6 +705,15 @@ def nu_R(R, Power_k, dc=1.686):
 def nu_M(M, Power_k, Om_m, dc=1.686):
     R = Radius_M(M, Om_m)
     return nu_R(R, Power_k, dc)
+
+def Mstar(Power_k, Om_m, dc):
+    '''
+    nu(Mstar) = 1
+    '''
+    from scipy.optimize import root_scalar as root
+    M1 = 1e12; M2=1e13 # Initial guesses
+    sol = root(lambda M: nu_M(M, Power_k, Om_m, dc)-1., x0=M1, x1=M2) # Root finding
+    return sol.root # Return of root is a root object, so isolate the solution
 
 def calculate_AW10_rescaling_parameters(z_tgt, R1_tgt, R2_tgt, sigma_Rz_ogn, sigma_Rz_tgt, Om_m_ogn, Om_m_tgt):
 

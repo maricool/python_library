@@ -196,8 +196,7 @@ def create_mead_cosmology(cpar, verbose=False):
     # Make a Mead cosmology
     cosm = cosmo.cosmology(Om_m=cpar.Om_m, Om_b=cpar.Om_b, Om_w=cpar.Om_w, h=cpar.h, 
                            As=cpar.As, ns=cpar.ns, w=cpar.w, m_nu=cpar.m_nu)
-    if verbose: # Print to screen
-        cosm.print()
+    if verbose: cosm.print()
     return cosm
 
 def convert_mead_cosmology(cosm):
@@ -234,9 +233,10 @@ def init_emulator(cpar):
 
     return emu
 
-def Pk_mm(emu, ks, zs, nonlinear=False):
+def get_Pk_mm(emu, ks, zs, nonlinear=False):
     '''
     Matter power spectrum from emulator; either linear or non-linear
+    TODO: Prefix with get_ ?
     '''
     if isinstance(zs, float):
         if nonlinear:
@@ -250,12 +250,11 @@ def Pk_mm(emu, ks, zs, nonlinear=False):
                 Pk[iz, :] = emu.get_pknl(ks, z)
             else:         
                 Pk[iz, :] = emu.get_pklin_from_z(ks, z)
-
     return Pk
 
 def minimum_halo_mass(emu):
     '''
-    Minimum halo mass for the set of cosmological parameters
+    Minimum halo mass for the set of cosmological parameters [Msun/h]
     '''
     Mbox_HR = comoving_matter_density(emu)*Lbox_HR**3
     mmin = Mbox_HR*np_min/npart**3
@@ -263,46 +262,48 @@ def minimum_halo_mass(emu):
 
 def comoving_matter_density(emu):
     '''
-    Comoving matter density
+    Comoving matter density [(Msun/h)/(Mpc/h)^3]
     '''
     Om_m = emu.cosmo.get_Omega0()
     rhom = cosmo.comoving_matter_density(Om_m)
     return rhom
 
 def nu_R(emu, R, z):
-
+    '''
+    nu = dc/sigma [dimensionless]
+    '''
     M = Mass_R(emu, R)
-    nu = nu_M(emu, M, z)
-    return nu
+    return nu_M(emu, M, z)
 
 def nu_M(emu, M, z):
-
-    nu = dc/sigma_M(emu, M, z)
-    return nu
+    '''
+    nu = dc/sigma [dimensionless]
+    '''
+    return dc/sigma_M(emu)(M, z)
 
 def Radius_M(emu, M):
     '''
     Lagrangian radius of a halo of mass M [Mpc/h]
     '''
     Om_m = emu.cosmo.get_Omega0()
-    radius = cosmo.Radius_M(M, Om_m)
-    return radius
-
+    return cosmo.Radius_M(M, Om_m)
 
 def virial_radius_M(emu, M):
     '''
     Virial radius of a halo of mass M [Mpc/h]
     '''
-    from mead_special_functions import cbrt
-    return Radius_M(emu, M)/cbrt(Dv)
+    return Radius_M(emu, M)/np.cbrt(Dv)
 
 def Mass_R(emu, R):
-
+    '''
+    Mass enclosed within comoving radius R [Msun/h]
+    '''
     Om_m = emu.cosmo.get_Omega0()
-    Mass = cosmo.Mass_R(R, Om_m)
-    return Mass
+    return cosmo.Mass_R(R, Om_m)
 
 def Mass_nu(emu, nu, z):
+
+    # TODO: This does both interpolation and evaluation, could split up?
 
     # Import
     from scipy.interpolate import InterpolatedUnivariateSpline as ius
@@ -330,44 +331,92 @@ def Mass_nu(emu, nu, z):
 
     return Mass
 
-def sigma_R(emu, R, z):
+def Mstar(emu, z):
+    '''
+    Returns non-linear mass, M* | nu(M*) = 1 [Msun/h]
+    '''
+    return  Mass_nu(emu, 1., z)
 
-    M = Mass_R(emu, R)
-    sigma = sigma_M(emu, M, z)
-    return sigma
+# def sigma_M(emu, M, z):
 
-def sigma_M(emu, M, z):
+#     # TODO: This creates the interpolator AND evaluates it. Could just create an interpolator...
 
-    # TODO: This creates the interpolator AND evaluates it. Could just create an interpolator...
+#     # Import
+#     from scipy.interpolate import InterpolatedUnivariateSpline as ius
 
-    # Import
+#     # Options
+#     log_interp = log_interp_sigma # Should sigma(M) be interpolated logarithmically?
+    
+#     # Get internal M vs sigma arrays
+#     Ms_internal = emu.massfunc.Mlist
+#     sigs_internal = emu.massfunc.sigs0
+
+#     # Make an interpolator for sigma(M)  
+#     if log_interp:
+#         sigma_interpolator = ius(np.log(Ms_internal), np.log(sigs_internal), ext='extrapolate')
+#     else:
+#         sigma_interpolator = ius(Ms_internal, sigs_internal, ext='extrapolate')
+    
+#     # Get sigma(M) from the interpolator at the desired masses
+#     if log_interp:
+#         sigma0 = np.exp(sigma_interpolator(np.log(M)))
+#     else:
+#         sigma0 = sigma_interpolator(M)
+
+#     # Growth function (g(z=0)=1)
+#     g = emu.Dgrowth_from_z(z)
+#     sigma = g*sigma0
+
+#     # Result assuming scale-independent growth
+#     return sigma
+
+def sigma_M(emu):
+    '''
+    Create an interpolator for sigma(M)
+    TODO: Attach this to emu class?
+    '''
     from scipy.interpolate import InterpolatedUnivariateSpline as ius
-
-    # Options
     log_interp = log_interp_sigma # Should sigma(M) be interpolated logarithmically?
     
     # Get internal M vs sigma arrays
     Ms_internal = emu.massfunc.Mlist
     sigs_internal = emu.massfunc.sigs0
+    g = emu.Dgrowth_from_z # This is a function
 
     # Make an interpolator for sigma(M)  
     if log_interp:
         sigma_interpolator = ius(np.log(Ms_internal), np.log(sigs_internal), ext='extrapolate')
     else:
         sigma_interpolator = ius(Ms_internal, sigs_internal, ext='extrapolate')
-    
-    # Get sigma(M) from the interpolator at the desired masses
+    return lambda M, z: g(z)*sigma_interpolator(M)
+
+def sigma_R(emu, R, z):
+    '''
+    Root-mean-square linear overdensity fluctuation when field smoothed on scale R [dimensionless]
+    emu: An instance of DQ emulator
+    R: Radius [Mpc/h] (can this be a list?)
+    z: redshift
+    '''
+    M = Mass_R(emu, R)
+    return sigma_M(emu)(M, z)
+
+def get_sigma_Ms(emu, Ms, z):
+    '''
+    Returns an array of sigma(Ms, z) values 
+    '''
+    log_interp = log_interp_sigma
     if log_interp:
-        sigma0 = np.exp(sigma_interpolator(np.log(M)))
+        sigmas = sigma_M(emu)(np.log(Ms), z)
     else:
-        sigma0 = sigma_interpolator(M)
+        sigmas = sigma_M(emu)(Ms, z)
+    return sigmas
 
-    # Growth function (g(z=0)=1)
-    g = emu.Dgrowth_from_z(z) 
-    sigma = g*sigma0
-
-    # Result assuming scale-independent growth
-    return sigma
+def get_sigma_Rs(emu, Rs, z):
+    '''
+    Returns an array of sigma(Rs, z) values 
+    '''
+    Ms = Mass_R(emu, Rs)
+    return get_sigma_Ms(emu, Ms, z)
 
 def get_bias_mass(emu, M, redshift):
     '''
@@ -406,7 +455,7 @@ def ndenshalo(emu, Mmin, Mmax, z):
     vol = 1. # Fix to unity
     return emu.get_nhalo(Mmin, Mmax, vol, z)
 
-def mass_avg(emu, Mmin, Mmax, z):
+def mass_avg(emu, Mmin, Mmax, z, pow=1):
     '''
     Calculate the average halo mass between two limits, weighted by the halo mass function [Msun/h]
     '''
@@ -425,7 +474,7 @@ def mass_avg(emu, Mmin, Mmax, z):
     n = ndenshalo(emu, Mmin, Mmax, z) 
 
     # Integrate to get the average mass
-    Mav, _ = quad(lambda M: M*np.exp(log_dndM_interp(np.log(M))), Mmin, Mmax, epsabs=epsabs)
+    Mav, _ = quad(lambda M: (M**pow)*np.exp(log_dndM_interp(np.log(M))), Mmin, Mmax, epsabs=epsabs)
 
     return Mav/n
 
@@ -477,9 +526,10 @@ def get_xiauto_mass_avg(emu, rs, M1min, M1max, M2min, M2max, z):
 
     return xiauto_avg/(n1*n2)
 
-def linear_halo_bias(emu, M, z, klin, Pk_klin):
+def get_linear_halo_bias(emu, M, z, klin, Pk_klin):
     '''
     Linear halo bias
+    TODO: Prefix with get_ ?
     '''
     ibias = ibias_BNL # Source of linear halo bias
     if ibias == 1:
@@ -495,15 +545,17 @@ def linear_halo_bias(emu, M, z, klin, Pk_klin):
 def R_hh(emu, ks, M1, M2, z):
     '''
     Cross correlation coefficient between halo masses
+    TODO: Prefix with get_ ?
     '''
     P12 = emu.get_phh_mass(ks, M1, M2, z)
     P11 = emu.get_phh_mass(ks, M1, M1, z)
     P22 = emu.get_phh_mass(ks, M2, M2, z)
     return P12/np.sqrt(P11*P22)
 
-def beta_NL(emu, mass, ks, z, mass_variable='Mass'):
+def get_beta_NL(emu, mass, ks, z, mass_variable='Mass'):
     '''
     Beta_NL function, function: B^NL(M1, M2, k)
+    TODO: Prefix with get_ ?
     TODO: Change to accept two separate mass arguments and merge with beta_NL_1D?
     '''
     # Parameters
@@ -531,14 +583,14 @@ def beta_NL(emu, mass, ks, z, mass_variable='Mass'):
     for iM1, M1 in enumerate(Ms):
 
         # Linear halo bias
-        b1 = linear_halo_bias(emu, M1, z, klin, Pk_klin)
+        b1 = get_linear_halo_bias(emu, M1, z, klin, Pk_klin)
 
         for iM2, M2 in enumerate(Ms):
 
             if iM2 >= iM1:
 
                 # Create beta_NL
-                b2 = linear_halo_bias(emu, M2, z, klin, Pk_klin)
+                b2 = get_linear_halo_bias(emu, M2, z, klin, Pk_klin)
                 Pk_hh = emu.get_phh_mass(ks, M1, M2, z)
                 beta[iM1, iM2, :] = -1.+Pk_hh/(b1*b2*Pk_lin)
 
@@ -560,9 +612,10 @@ def beta_NL(emu, mass, ks, z, mass_variable='Mass'):
          
     return beta 
 
-def beta_NL_1D(emu, Mh, mass, ks, z, mass_variable='Mass'):
+def get_beta_NL_1D(emu, Mh, mass, ks, z, mass_variable='Mass'):
     '''
     One-dimensional Beta_NL function, function: B^NL(Mh, M, k)
+    TODO: Prefix with get_ ?
     TODO: Change two-dimensional version to accept two separate mass arguments and get rid of this version
     '''
     # Parameters
@@ -585,7 +638,7 @@ def beta_NL_1D(emu, Mh, mass, ks, z, mass_variable='Mass'):
     # Linear power
     Pk_lin = emu.get_pklin_from_z(ks, z)
     Pk_klin = emu.get_pklin_from_z(klin, z)
-    bh = linear_halo_bias(emu, Mh, z, klin, Pk_klin)
+    bh = get_linear_halo_bias(emu, Mh, z, klin, Pk_klin)
     
     # Calculate beta_NL by looping over mass arrays
     beta = np.zeros((len(Ms), len(ks)))  
@@ -596,7 +649,7 @@ def beta_NL_1D(emu, Mh, mass, ks, z, mass_variable='Mass'):
         else:
             
             # Calculate beta_NL
-            b = linear_halo_bias(emu, M, z, klin, Pk_klin)
+            b = get_linear_halo_bias(emu, M, z, klin, Pk_klin)
             Pk_hh = emu.get_phh_mass(ks, Mh, M, z)
             beta[iM, :] = -1.+Pk_hh/(bh*b*Pk_lin)
 
@@ -649,6 +702,4 @@ def calculate_rescaling_params(emu_ori, emu_tgt, z_tgt, M1_tgt, M2_tgt):
                                                          emu_ori.cosmo.get_Omega0(),
                                                          emu_tgt.cosmo.get_Omega0(),
                                                         )
-    print('')
-
     return (s, sm, z)
