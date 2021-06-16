@@ -15,6 +15,7 @@ def mrange(n):
     '''
     Mead range is more sensible than range, goes (1, 2, ..., n)
     I hate the inbuilt Python one with such fury that it frightens me
+    TODO: Make this go from a to b?
     '''
     return range(1, n+1)
 

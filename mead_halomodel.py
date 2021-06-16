@@ -1,9 +1,9 @@
-import math
-from mead_DarkQuest import sigma_M
+# Standard imports
 import numpy as np
 import scipy.integrate as integrate
 
-import mead_general as mead
+# My imports
+#import mead_general as mead
 import mead_cosmology as cosmo
 
 # Constants
@@ -43,6 +43,8 @@ class halomod():
 
     def __init__(self, z, Om_m, hm=hm_def, Dv=Dv_def, dc=dc_def):
 
+        from math import isclose
+
         # Store internal variables
         self.z = z
         self.a = 1./(1.+z)
@@ -65,9 +67,9 @@ class halomod():
         elif hm == Tinker2010:
             # Tinker et al. (2010; https://arxiv.org/abs/1001.3162)
             # Check Delta_v and delta_c values
-            if not math.isclose(Dv, 200., rel_tol=Dv_rel_tol):
+            if not isclose(Dv, 200., rel_tol=Dv_rel_tol):
                 print('Warning, Tinker (2010) only coded up for Dv=200')
-            if not math.isclose(dc, 1.686, rel_tol=dc_rel_tol):
+            if not isclose(dc, 1.686, rel_tol=dc_rel_tol):
                 print('Warning, dc = 1.686 assumed in Tinker (2010)')
             # Mass function from Table 4
             alpha = 0.368
@@ -634,14 +636,21 @@ def conc_Duffy(M, z, halo_definition='M200'):
 ### HOD ###
 
 def HOD_Zheng(M, Mmin=1e12, sigma=0.15, M0=1e12, M1=1e13, alpha=1.):
-
     '''
-    # HOD model from Zheng et al. (2005)
+    HOD model from Zheng et al. (2005)
     '''
-
     from scipy.special import erf
-    Nc = 0.5*(1.+erf(np.log(M/Mmin)/sigma))
-    Ns = Nc*np.heaviside(M-M0, 0.5)*((M-M0)/M1)**alpha
+    Nc = 0.5*(1.+erf(np.log10(M/Mmin)/sigma))
+    Ns = np.heaviside(M-M0, 0.5)*((M-M0)/M1)**alpha # Should be insensitive to H(x=0) value
+    return Nc, Ns
+
+def HOD_Zehavi(M, Mmin=1e12, M1=1e13, alpha=1.):
+    '''
+    HOD model from Zehavi et al. (2004)
+    Same as Zheng model in the limit that sigma=0 and M0=0
+    '''
+    Nc = np.heaviside(M-Mmin, 1.)
+    Ns = (M/M1)**alpha
     return Nc, Ns
 
 ### ###
