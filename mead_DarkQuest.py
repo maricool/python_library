@@ -236,7 +236,6 @@ def init_emulator(cpar):
 def get_Pk_mm(emu, ks, zs, nonlinear=False):
     '''
     Matter power spectrum from emulator; either linear or non-linear
-    TODO: Prefix with get_ ?
     '''
     if isinstance(zs, float):
         if nonlinear:
@@ -529,7 +528,6 @@ def get_xiauto_mass_avg(emu, rs, M1min, M1max, M2min, M2max, z):
 def get_linear_halo_bias(emu, M, z, klin, Pk_klin):
     '''
     Linear halo bias
-    TODO: Prefix with get_ ?
     '''
     ibias = ibias_BNL # Source of linear halo bias
     if ibias == 1:
@@ -555,7 +553,6 @@ def R_hh(emu, ks, M1, M2, z):
 def get_beta_NL(emu, mass, ks, z, mass_variable='Mass'):
     '''
     Beta_NL function, function: B^NL(M1, M2, k)
-    TODO: Prefix with get_ ?
     TODO: Change to accept two separate mass arguments and merge with beta_NL_1D?
     '''
     # Parameters
@@ -615,7 +612,6 @@ def get_beta_NL(emu, mass, ks, z, mass_variable='Mass'):
 def get_beta_NL_1D(emu, Mh, mass, ks, z, mass_variable='Mass'):
     '''
     One-dimensional Beta_NL function, function: B^NL(Mh, M, k)
-    TODO: Prefix with get_ ?
     TODO: Change two-dimensional version to accept two separate mass arguments and get rid of this version
     '''
     # Parameters

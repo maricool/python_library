@@ -618,8 +618,8 @@ def NFW_factor(c):
 def conc_Duffy(M, z, halo_definition='M200'):
     '''
     Duffy et al (2008; 0804.2486) c(M) relation for WMAP5, See Table 1
+    Appropriate for the full (rather than relaxed) samples
     '''
-    # Appropriate for the full (rather than relaxed) samples
     M_piv = 2e12 # Pivot mass [Msun/h]
     if halo_definition == 'M200':
         A = 10.14; B = -0.081; C = -1.01
@@ -638,19 +638,22 @@ def conc_Duffy(M, z, halo_definition='M200'):
 def HOD_Zheng(M, Mmin=1e12, sigma=0.15, M0=1e12, M1=1e13, alpha=1.):
     '''
     HOD model from Zheng et al. (2005)
+    Returns mean number of central and satellite galaxies
+    Note that imposing the 'central condition' can make the mean Ns returned not actually be the mean
     '''
     from scipy.special import erf
     Nc = 0.5*(1.+erf(np.log10(M/Mmin)/sigma))
-    Ns = np.heaviside(M-M0, 0.5)*((M-M0)/M1)**alpha # Should be insensitive to H(x=0) value
-    return Nc, Ns
+    Ns = np.heaviside(M-M0, 0.5)*((M-M0)/M1)**alpha # Should be insensitive to the H(x=0) value
+    return (Nc, Ns)
 
 def HOD_Zehavi(M, Mmin=1e12, M1=1e13, alpha=1.):
     '''
     HOD model from Zehavi et al. (2004)
     Same as Zheng model in the limit that sigma=0 and M0=0
+    Mean number of central galaxies is only ever 0 or 1 in this HOD
     '''
     Nc = np.heaviside(M-Mmin, 1.)
     Ns = (M/M1)**alpha
-    return Nc, Ns
+    return (Nc, Ns)
 
 ### ###
