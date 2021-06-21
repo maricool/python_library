@@ -179,8 +179,7 @@ def sum_integer_distribution(p, nmax, *args):
     nmax: Maximum n to compute sum
     *args: to be passed to p(n, *args)
     '''
-    mean = expectation_integer_distribution(p, lambda n: 1., nmax, *args)
-    return mean
+    return expectation_integer_distribution(p, lambda n: 1., nmax, *args)
 
 def mean_integer_distribution(p, nmax, *args):
     '''
@@ -189,8 +188,7 @@ def mean_integer_distribution(p, nmax, *args):
     nmax: Maximum n to compute sum
     *args: to be passed to p(n, *args)
     '''
-    mean = expectation_integer_distribution(p, lambda n: n, nmax, *args)
-    return mean
+    return expectation_integer_distribution(p, lambda n: n, nmax, *args)
 
 def variance_integer_distribution(p, nmax, *args):
     '''
