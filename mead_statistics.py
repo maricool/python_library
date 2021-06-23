@@ -172,6 +172,16 @@ def expectation_integer_distribution(p, f, nmax, *args):
     ps = p(ns, *args)
     return np.sum(f(ns)*ps)
 
+def moment_integer_distribution(p, pow, nmax, *args):
+    '''
+    Compute the moment of an integer distribution via direct summation
+    p(n, *args): Probability distribution (mass) function
+    pow: Order for moment (0 - normalisation; 1 - mean; 2 - second moment)
+    nmax: Maximum n to compute sum
+    *args: to be passed to p(n, *args)
+    '''
+    return expectation_integer_distribution(p, lambda n: n**pow, nmax, *args)
+
 def sum_integer_distribution(p, nmax, *args):
     '''
     Compute the sum of probabilities for integer distribution via direct summation (should be unity)
@@ -179,7 +189,7 @@ def sum_integer_distribution(p, nmax, *args):
     nmax: Maximum n to compute sum
     *args: to be passed to p(n, *args)
     '''
-    return expectation_integer_distribution(p, lambda n: 1., nmax, *args)
+    return moment_integer_distribution(p, 0, nmax, *args)
 
 def mean_integer_distribution(p, nmax, *args):
     '''
@@ -188,7 +198,7 @@ def mean_integer_distribution(p, nmax, *args):
     nmax: Maximum n to compute sum
     *args: to be passed to p(n, *args)
     '''
-    return expectation_integer_distribution(p, lambda n: n, nmax, *args)
+    return moment_integer_distribution(p, 1, nmax, *args)
 
 def variance_integer_distribution(p, nmax, *args):
     '''
@@ -197,8 +207,8 @@ def variance_integer_distribution(p, nmax, *args):
     nmax: Maximum n to compute sum
     *args: to be passed to p(n, *args)
     '''
-    mom1 = expectation_integer_distribution(p, lambda n: n**1, nmax, *args)
-    mom2 = expectation_integer_distribution(p, lambda n: n**2, nmax, *args)
+    mom1 = moment_integer_distribution(p, 1, nmax, *args)
+    mom2 = moment_integer_distribution(p, 2, nmax, *args)
     return mom2-mom1**2
 
 ### ###
