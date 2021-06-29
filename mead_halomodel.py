@@ -100,7 +100,6 @@ class halomod():
             raise ValueError('Halo model not recognised')
 
     def halo_mass_function(self, nu):
-
         '''
         Halo mass function g(nu) with nu=delta_c/sigma(M)
         Integral of g(nu) over all nu is unity
@@ -126,7 +125,6 @@ class halomod():
             raise ValueError('Halo model not recognised in halo_mass_function')
 
     def linear_halo_bias(self, nu):
-
         '''
         Halo linear bias b(nu) with nu=delta_c/sigma(M)
         Integral of b(nu)*g(nu) over all nu is unity
@@ -485,6 +483,22 @@ def interpolate_beta_NL(ks, Ms, Ms_small, beta_NL_small):
 
 ### Haloes and halo profiles ###
 
+class haloprof():
+    '''
+    Class for halo profiles
+    '''
+    def __init__(self, k, M, N, Wk, low_mass=True):
+        '''
+        k: array of wavenumbers [h/Mpc] going from low to high
+        M: array of halo masses [Msun/h] going from low to high
+        N(M): 1D array of halo profile amplitudes at halo masses 'M' [volume x tracer dimension]
+        Wk(M, k): 2D array of normalised halo Fourier transform [dimensionless]
+        low_mass: flag to determine if contributions are expected for M < M[0]
+        '''
+        self.N = N
+        self.Wk = np.ones((k, M))
+        self.low_mass = low_mass
+
 def _halo_window(ks, rs, Prho):
     '''
     Compute the halo window function given a 'density' profile Prho(r) = 4*pi*r^2*rho(r)
@@ -642,7 +656,10 @@ def HOD_Zheng(M, Mmin=1e12, sigma=0.15, M0=1e12, M1=1e13, alpha=1.):
     Note that imposing the 'central condition' can make the mean Ns returned not actually be the mean
     '''
     from scipy.special import erf
-    Nc = 0.5*(1.+erf(np.log10(M/Mmin)/sigma))
+    if sigma == 0.:
+        Nc = np.heaviside(M-Mmin, 1.)
+    else:
+        Nc = 0.5*(1.+erf(np.log10(M/Mmin)/sigma))
     Ns = np.heaviside(M-M0, 0.5)*((M-M0)/M1)**alpha # Should be insensitive to the H(x=0) value
     return (Nc, Ns)
 
