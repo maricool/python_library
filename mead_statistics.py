@@ -148,17 +148,17 @@ def correlation_matrix(cov):
 
 ### Integer distributions ###
 
-def central_condition_Poisson(n, lam, pc):
+def central_condition_Poisson(n, lam, p):
     '''
     Probability mass function for a Poisson distribution affected by the central condition
     n: p(n); n is an integer
     lam: mean value for the underlying Poisson distribution (not the mean value of this distribution)
-    pc: probability of hosting a central galaxy
+    p: probability of hosting a central galaxy
     '''
     from scipy.stats import poisson
-    p = poisson.pmf(n, lam)
-    p = np.where(n == 0, pc*p+1.-pc, pc*p)
-    return p
+    PMF = poisson.pmf(n, lam)
+    PMF = np.where(n == 0, p*PMF+1.-p, p*PMF)
+    return PMF
 
 def expectation_integer_distribution(p, f, nmax, *args):
     '''
