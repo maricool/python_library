@@ -27,6 +27,7 @@ halo_integration = integrate.trapezoid
 #win_integration = integrate.trapezoid
 #win_integration = integrate.simps
 win_integration = integrate.romb # Needs 2^m+1 (integer m) evenly-spaced samples in R
+nr = 1+2**7 # Number of points in r
 
 # Halo models for halo mass function and bias
 PS = 'Press & Schecter (1974)'
@@ -282,10 +283,10 @@ def Pk_hm(hmod, Ms, ks, profs, Pk_lin, beta=None, sigmas=None, sigma=None, shot=
     # Calculate the missing halo-bias from the low-mass part of the integral
     integrand = hmod.halo_mass_function(nus)*hmod.linear_halo_bias(nus)
     A = 1.-halo_integration(integrand, nus)
-    if verbose: print('Missing halo-bias-mass from two-halo integrand:', A, '\n')
-    if A < 0.:  print('Warning: Mass function/bias are not normalised and correction is negative!')
+    if verbose: print('Missing halo-bias-mass from two-halo integrand:', A)
+    if A < 0.:  print('Warning: Mass function/bias correction is negative!')
 
-    # Shot noise calculation
+    # Shot noise calculations
     PSNs = []
     for p in profs:
         if p.discrete:
@@ -294,23 +295,24 @@ def Pk_hm(hmod, Ms, ks, profs, Pk_lin, beta=None, sigmas=None, sigma=None, shot=
             PSN = 0.
         PSNs.append(PSN)
 
-    # Fill arrays
+    # Fill arrays for results
     nk = len(ks)
     Pk_2h_array = np.zeros((nf, nf, nk))
     Pk_1h_array = np.zeros((nf, nf, nk))
     Pk_hm_array = np.zeros((nf, nf, nk))
 
-    for u, pu in enumerate(profs): # Loop over halo profiles
+    # Loop over halo profiles
+    for u, pu in enumerate(profs): 
         for v, pv in enumerate(profs):
             if u <= v:
                 for ik, k in enumerate(ks): # Loop over wavenumbers
                     if beta is None: # Two-halo term, treat non-linear halo bias carefully
                         Pk_2h_array[u, v, ik] = _P_2h(hmod, Pk_lin, k, Ms, nus, 
-                                                      pu.Wk[:, ik], pv.Wk[:, ik], 
-                                                      pu.mass, pv.mass, A)
+                                                      pu.Wk[:, ik], pv.Wk[:, ik], # TODO: Replace with Uk/norm
+                                                      pu.mass, pv.mass, A) # TODO: Remove pu.norm from A*pu.norm
                     else:
                         Pk_2h_array[u, v, ik] = _P_2h(hmod, Pk_lin, k, Ms, nus, 
-                                                      pu.Wk[:, ik], pv.Wk[:, ik], 
+                                                      pu.Wk[:, ik], pv.Wk[:, ik], # TODO: Replace with Uk/norm
                                                       pu.mass, pv.mass, A, beta[:, :, ik])
                     if (u == v):# and ((discrete and pu.discrete) or (pu.var is not None)): # One-halo term, treat discrete auto case carefully
                         if discrete and pu.discrete: # Treat discrete tracers
@@ -320,7 +322,7 @@ def Pk_hm(hmod, Ms, ks, profs, Pk_lin, beta=None, sigmas=None, sigma=None, shot=
                         if pu.var is not None: Wfac += pu.var # Add variance
                         Wprod = Wfac*(pu.Uk[:, ik]/pu.norm)**2 # Multiply by factors of normalisataion and profile
                     else:
-                        Wprod = pu.Wk[:, ik]*pv.Wk[:, ik]
+                        Wprod = pu.Wk[:, ik]*pv.Wk[:, ik] # TODO: Replace with Uk/norm
                     Pk_1h_array[u, v, ik] = _P_1h(hmod, Ms, nus, Wprod)
                 # Shot noise corrections
                 # If '(not discrete) and shot' or 'discrete and (not shot)' no need to do anything as shot noise already correct
@@ -540,103 +542,93 @@ class haloprof():
     '''
     Class for halo profiles
     '''
-    def __init__(self, k, M, N, Uk, norm, var=None, mass=False, discrete=False):
+    def __init__(self, ks, Ms, N, Uk, norm=1., var=None, Prho=None, mass=False, discrete=False, *args):
         '''
         Input
         TODO: Allow for rho(r) to be specified
-        k: array of wavenumbers [h/Mpc] going from low to high
-        M: array of halo masses [Msun/h] going from low to high
+        ks: array of wavenumbers [h/Mpc] going from low to high
+        Ms: array of halo masses [Msun/h] going from low to high
         N(M): 1D array of halo profile amplitudes at halo masses 'M' (e.g., M for mass; N for galaxies)
         Uk(M, k): 2D array of normalised halo Fourier transform [dimensionless]; should have U(M, k->0) = 1
         norm: float of normalisation (e.g., rhom for mass, ng for galaxies)
-        variance(M): Var(N(M)) (auto)variance in the profile amplitude at each halo mass (e.g., N for Poisson galaxies)
+        var(M): Var(N(M)) (auto)variance in the profile amplitude at each halo mass (e.g., N for Poisson galaxies)
+        Prho(r, rv, *args): 4\pi r^2\rho(r, rv, *args) for density profile
         mass: flag to determine if contributions are expected for M < M[0] (e.g., matter)
         discrete: does the profile correspond to that of a discrete tracer (e.g., galaxies)
+        *args: Arguments for Prho
         '''
-
         # Set internal variables
-        self.k = np.copy(k)
-        self.M = np.copy(M)
-        self.N = np.copy(N)
-        self.Uk = np.copy(Uk)
-        self.norm = norm
-        if var is None:
-            self.var = None
-        else:
-            self.var = np.copy(var)
+        self.k = np.copy(ks)
+        self.M = np.copy(Ms)
         self.mass = mass
         self.discrete = discrete
+        self.norm = norm
+        if Prho is None:
+            self.N = np.copy(N)
+            self.Uk = np.copy(Uk)
+            if var is None:
+                self.var = None
+            else:
+                self.var = np.copy(var)
+            # Calculations; TODO: Do I need Wk?
+            self.Wk = (self.Uk.T*self.N).T/self.norm # Transposes necessary to get multiplication correct
+        else:
+            # Calculate the halo profile Fourier transform
+            self.N = np.zeros(len(Ms))
+            self.Uk = np.zeros((len(Ms), len(ks)))
+            self.Wk = np.zeros((len(Ms), len(ks)))
+            for iM, _ in enumerate(Ms):
+                rv = 1. # TODO: This
+                self.N[iM] = self._halo_window(0., rv, Prho, *args)
+                for ik, k in enumerate(ks):
+                    self.Wk[iM, ik] = self._halo_window(k, rv, Prho, *args)
+                    self.Uk[iM, ik]= self.Wk[iM, ik]/self.N[iM] # Always normalised halo profile
+            if N is not None:
+                self.N = np.copy(N)
+                self.Wk = self.Uk*self.N # Renormalise halo profile
+            self.Wk /= norm # TODO: Check /= operation, want A = A/b
 
-        # Calculations
-        self.Wk = (self.Uk.T*self.N).T/self.norm # Transposes necessary to get multiplication correct
+    def _halo_window(k, rv, Prho, *args):
+        '''
+        Compute the halo window function given a 'density' profile Prho(r) = 4*pi*r^2*rho(r)
+        TODO: Use integration scheme for continuous function 
+        TODO: This should almost certainly be done with a dedicated integration routine, FFTlog?
+        Input
+        k: wavenumber [h/Mpc]
+        rv: virial radius [Mpc/h]
+        Prho(r, rv, *args): function Prho = 4pi*r^2*rho values at different radii
+        '''
+        from scipy.integrate import trapezoid, simps, romb
+        from scipy.special import spherical_jn
 
-        # Calculate the halo profile Fourier transforms if necessary
-        #W_uv = []
-        #for i in [0, 1]:
-        #    W_uv.append(np.empty_like(rho_uv[i]))
-        #    if Fourier_uv[i]:
-        #        W_uv[i] = np.copy(rho_uv[i])
-        #    else:
-        #        nr = rho_uv[i].shape[1] # nr=nk always, but I suppose it need not be
-        #        for iM, M in enumerate(Ms):
-        #            rv = virial_radius(M, hmod.Dv, hmod.Om_m)
-        #            rs = np.linspace(0., rv, nr)
-        #            W_uv[i][iM, :] = _halo_window(ks, rs, rho_uv[i][iM, :])
-        #    for iM, _ in enumerate(Ms): # Normalise
-        #        W_uv[i][iM, :] = N_uv[i][iM]*W_uv[i][iM, :]
+        # Spacing between points for Romberg integration
+        rs = np.linspace(0., rv, nr)
+        dr = rs[1]-rs[0]
 
-def _halo_window(ks, rs, Prho):
-    '''
-    Compute the halo window function given a 'density' profile Prho(r) = 4*pi*r^2*rho(r)
-    TODO: This should almost certainly be done with a dedicated integration routine, FFTlog?
-    Input
-    ks: array of wavenumbers [h/Mpc]
-    rs: array of radii usually from r=0 to r=rv [Mpc/h]
-    Prho[rs]: array of Prho = 4pir^2*rho(r) values at different radii
-    '''
-    from scipy.integrate import trapezoid, simps, romb
-    from scipy.special import spherical_jn
-
-    # Spacing between points for Romberg integration
-    #dr = (rs[-1]-rs[0])/(len(rs)-1) # Spacing for whole array
-    dr = rs[1]-rs[0] # Spacing between points in r for Romberg integration (assumed even)
-
-    # Calculate profile mean
-    integrand = Prho
-    if win_integration == romb:
-        W0 = win_integration(integrand, dr)
-    elif win_integration in [trapezoid, simps]:
-        W0 = win_integration(integrand, rs)
-    else:
-        raise ValueError('Halo window function integration method not recognised')
-
-    # Calculate profile Fourier transform
-    W = np.empty_like(Prho)
-    for ik, k in enumerate(ks):
-        #integrand = np.sinc(k*rs/np.pi)*Prho # Numpy sinc function has unusual definition with pi
-        integrand = spherical_jn(0, k*rs)*Prho # Scipy spherical Bessel is slightly faster
+        # Calculate profile mean
+        integrand = spherical_jn(0, k*rs)*Prho(rs, rv, *args)
         if win_integration == romb:
-            W[ik] = win_integration(integrand, dr)
+            Wk = win_integration(integrand, dr)
         elif win_integration in [trapezoid, simps]:
-            W[ik] = win_integration(integrand, rs)
+            Wk = win_integration(integrand, rs)
         else:
             raise ValueError('Halo window function integration method not recognised')
-    return W/W0
+        return Wk
 
-def Prho_isothermal(r, M, rv):
+def Prho_isothermal(r, rv, M):
     '''
     Isothermal density profile multiplied by 4*pi*r^2
     '''
     return M/rv
 
-def Prho_NFW(r, M, rv, c):
+def Prho_NFW(r, rv, M, c):
     '''
     NFW density profile multiplied by 4*pi*r^2
     '''
     rs = rv/c
     return M*r/(NFW_factor(c)*(1.+r/rs)**2*rs**2)
 
-def Prho_UPP(r, z, M, r500, cosm):
+def Prho_UPP(r, r500, M, z, cosm):
     '''
     Universal pressure profile: UPP
     '''
@@ -666,17 +658,17 @@ def rho_Prho(Prho, r, *args):
     '''
     return Prho(r, *args)/(4.*np.pi*r**2)
 
-def rho_isothermal(r, M, rv):
+def rho_isothermal(r, rv, M):
     '''
     Density profile for an isothermal halo
     '''
-    return rho_Prho(Prho_isothermal, r, M, rv)
+    return rho_Prho(Prho_isothermal, r, rv, M)
 
-def rho_NFW(r, M, rv, c):
+def rho_NFW(r, rv, M, c):
     '''
     Density profile for an NFW halo
     '''
-    return rho_Prho(Prho_NFW, r, M, rv, c)
+    return rho_Prho(Prho_NFW, r, rv, M, c)
 
 def win_delta():
     '''
@@ -713,6 +705,10 @@ def NFW_factor(c):
     Factor from normalisation that always appears in NFW equations
     '''
     return np.log(1.+c)-c/(1.+c)
+
+### ###
+
+### Halo concentration
 
 def conc_Duffy(M, z, halo_definition='M200'):
     '''
