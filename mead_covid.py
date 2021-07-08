@@ -306,7 +306,7 @@ def plot_bar_data(df, date, start_date, end_date, regions, outfile=None, pop_nor
     # Parameters
     days_roll = days_in_roll
     pop_num = pop_norm_num
-    bar_width = 0.9
+    bar_width = 1.
     use_seaborn = True
     dpi = 200 # 100 is default
 
