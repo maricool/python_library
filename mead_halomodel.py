@@ -57,38 +57,56 @@ class halomod():
         self.dc = dc
         self.Dv = Dv
 
+        # Write to screen
+        if verbose:
+            print('Initialising halo model')
+            print('scale factor: %1.3f'%(self.a))
+            print('redshift: %1.3f'%(z))
+            print('Omega_m(z=0): %1.3f'%(Om_m))
+            print('delta_c: %1.4f'%(dc))
+            print('Delta_v: %4.1f'%(Dv))
+
+        # Initialise mass functions
         if hm == PS:
             # No initialisation required for Press & Schecter (1974)
             pass
         elif hm in [ST, SMT]:
             # Sheth & Tormen (1999; https://arxiv.org/abs/astro-ph/9901122)
+            # Virial halo definition
             from scipy.special import gamma as Gamma
             p = 0.3
             q = 0.707
             self.p_ST = p; self.q_ST = q
-            self.A_ST = np.sqrt(2.*q)/(np.sqrt(np.pi)+Gamma(0.5-p)/2**p) # A ~ 0.21
+            self.A_ST = np.sqrt(2.*q)/(np.sqrt(np.pi)+Gamma(0.5-p)/2**p) # A ~ 0.2161
+            if verbose:
+                print('Sheth & Tormen (1999) mass function')
+                print('p: %1.3f; q: %1.3f; A: %1.4f'%(p, q, self.A_ST))
             if hm == SMT:
                 self.a_SMT = 0.707
                 self.b_SMT = 0.5
                 self.c_SMT = 0.6
+                if verbose:
+                    print('a: %1.3f; b: %1.3f; c: %1.3f'%(self.a_SMT, self.b_SMT, self.c_SMT))
         elif hm == Despali:
             # Despali et al. (2016; https://arxiv.org/abs/1507.05627)
             # Note that this mass function is not correctly normalised
+            # Virial halo definition
             self.p_ST = 0.2536
             self.q_ST = 0.7689
             self.A_ST = 0.3295*np.sqrt(2.*self.q_ST/np.pi) # Careful with factors of sqrt(2q/pi) in normalisation
+            if verbose:
+                print('Despali et al. (2016) mass function')
+                print('p: %1.3f; q: %1.3f; A: %1.4f'%(self.p, self.q, self.A_ST))
         elif hm == Tinker2010:
             # Tinker et al. (2010; https://arxiv.org/abs/1001.3162)
-            # Check Delta_v and delta_c values
+            # A range of Delta_v are available
             Dv_array = np.array([200., 300., 400., 600., 800., 1200., 1600, 2400., 3200.])
-            #if not isclose(Dv, 200., rel_tol=Dv_rel_tol):
-            #    print('Warning: Tinker (2010) only coded up for Dv=200')
+            # Check Delta_v and delta_c values
             if Dv < Dv_array[0] or Dv > Dv_array[-1]:
                 print('Warning: Dv is outside supported range for Tinker et al. (2010') 
             if not isclose(dc, 1.686, rel_tol=dc_rel_tol):
                 print('Warning: dc = 1.686 assumed in Tinker et al. (2010)')
             # Mass function from Table 4
-            #alpha = 0.368; beta = 0.589; gamma = 0.864; phi = -0.729; eta = -0.243 # M200 parameters
             logDv = np.log(self.Dv); logDv_array = np.log(Dv_array)
             alpha_array = np.array([0.368, 0.363, 0.385, 0.389, 0.393, 0.365, 0.379, 0.355, 0.327])
             beta_array = np.array([0.589, 0.585, 0.544, 0.543, 0.564, 0.623, 0.637, 0.673, 0.702])
@@ -112,7 +130,6 @@ class halomod():
             self.eta_Tinker = eta
             if verbose:
                 print('Tinker et al. (2010) mass function')
-                print('Delta_v: %4.1f'%(Dv))
                 print('alpha: %1.3f; beta: %1.3f; gamma: %1.3f; phi: %1.3f; eta: %1.3f'%(alpha, beta, gamma, phi, eta))
             # Calibrated halo bias parameters (not from peak-background split) from Table 2
             y = np.log10(self.Dv)
@@ -123,6 +140,10 @@ class halomod():
             self.b_Tinker = 1.5
             self.C_Tinker = 0.019+0.107*y+0.19*exp
             self.c_Tinker = 2.4
+            if verbose:
+                print('A: %1.3f; a: %1.3f'%(self.A_Tinker, self.a_Tinker))
+                print('B: %1.3f; b: %1.3f'%(self.B_Tinker, self.b_Tinker))
+                print('C: %1.3f; c: %1.3f'%(self.C_Tinker, self.c_Tinker))
         else:
             raise ValueError('Halo model not recognised')
 
@@ -281,9 +302,8 @@ def Pk_hm(hmod, Ms, ks, profs, Pk_lin, beta=None, sigmas=None, sigma=None, shot=
     nus = _get_nus(Ms, hmod.dc, hmod.Om_m, sigmas, sigma, Pk_lin)
 
     # Calculate the missing halo-bias from the low-mass part of the integral
-    integrand = hmod.halo_mass_function(nus)*hmod.linear_halo_bias(nus)
-    A = 1.-halo_integration(integrand, nus)
-    if verbose: print('Missing halo-bias-mass from two-halo integrand:', A)
+    A = 1.-integrate.quad(lambda nu: hmod.halo_mass_function(nu)*hmod.linear_halo_bias(nu), nus[0], np.inf)[0] # from nu_min to infinity
+    if verbose: print('Missing halo-bias-mass from the low-mass end of the two-halo integrand:', A)
     if A < 0.:  print('Warning: Mass function/bias correction is negative!')
 
     # Shot noise calculations

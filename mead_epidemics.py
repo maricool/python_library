@@ -6,7 +6,7 @@ import mead_general as mead
 
 # Set of right-hand-side equations
 # TODO: t not necessary here, but might be for solve_ivp?
-def SIR_equations(t, y, R0, f, m):
+def SIR_equations(t, y, R0, G0, f, m):
     
     # Check size of problem (n should be divisible by 3)
     n3 = len(y)
@@ -15,7 +15,7 @@ def SIR_equations(t, y, R0, f, m):
     ng = n3//3 # Number of groups
 
     # Unpack y variable
-    # TODO: Slow loop?
+    # TODO: Replace slow loops?
     S = np.zeros(ng)
     I = np.zeros(ng)
     R = np.zeros(ng)
@@ -25,7 +25,8 @@ def SIR_equations(t, y, R0, f, m):
         R[ig] = y[2*(ng-1)+ig+2] 
     
     # Equations
-    # TODO: Slow loops?
+    # TODO: Replce slow loops?
+    G = G0*R
     T = np.zeros(ng)
     for i in range(ng):
         for j in range(ng):
@@ -33,15 +34,15 @@ def SIR_equations(t, y, R0, f, m):
         T[i] = T[i]*S[i]
     
     # Differential equations
-    dS = -T
+    dS = -T+G
     dI = T-I
-    dR = I
+    dR = I-G
 
     # Return a list
     return dS.tolist()+dI.tolist()+dR.tolist()
 
 # Routine to solve the SIR equations
-def solve_SIR(t, I_ini, R_ini, R0_matrix, group_fracs, mixing_matrix):
+def solve_SIR(t, I_ini, R_ini, R0_matrix, G0, group_fracs, mixing_matrix):
 
     from scipy.integrate import solve_ivp
     from mead_vectors import check_symmetric
@@ -91,7 +92,7 @@ def solve_SIR(t, I_ini, R_ini, R0_matrix, group_fracs, mixing_matrix):
     solution = solve_ivp(SIR_equations, (t[0], t[-1]), S_ini.tolist()+I_ini.tolist()+R_ini.tolist(), 
                             method='RK45',
                             t_eval=t,
-                            args=(R0_matrix, group_fracs, mixing_matrix),
+                            args=(R0_matrix, G0, group_fracs, mixing_matrix),
                         )
 
     # Break solution down into SIR

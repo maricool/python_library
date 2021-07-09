@@ -18,7 +18,7 @@ AW10_future_punishment = 1e6
 # TODO: How to include power spectra. Should I even do this? Probably I should use CAMB instead.
 class cosmology():
 
-    def __init__(self, Om_m=0.3, Om_b=0.05, Om_w=0.7, h=0.7, ns=0.96, As=2.0017e-9, 
+    def __init__(self, Om_m=0.3, Om_b=0.05, Om_w=0.7, h=0.7, ns=0.96, As=1.97448e-9, 
                        m_nu=0., w=-1., wa=0., neff=3.046, YH=0.76, Tcmb=2.725, Nnu=3):
 
         # Primary parameters
