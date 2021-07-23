@@ -48,11 +48,32 @@ lockdowns = {
     'Northern Ireland':{(dte(2020, 3, 23), dte(2020, 3, 23)), (dte(2020, 10, 16), dte(2020, 11, 20)), (dte(2020, 11, 27), dte(2020, 12, 11)), (dte(2020, 12, 26), dte(2021, 3, 31))},
 }
 
-# Parameters
+### Parameters ###
+
+# General
 days_in_roll = 7      # Number of days that contribute to a 'roll' (one week; seven days)
 pop_norm_num = 1e5    # Normalisation for y axes (per population; usually 100,000; sometimes 1,000,000)
 infect_duration = 10. # Number of days an average person is infectious for
 rolling_offset = 3    # Number of days to offset rolling data
+
+# Cases plot
+case_bar_color = 'cornflowerblue'
+case_line_color = 'b'
+case_line_label = 'Positive tests'
+
+# Hospitalisations plot
+hosp_fac = 10
+hosp_bar_color = 'g'
+hosp_line_color = 'forestgreen'
+hosp_line_label = r'Hospital admissions $[\times %d]$'%(int(hosp_fac))
+
+# Deaths plot
+death_fac = 20
+death_bar_color = 'indianred'
+death_line_color = 'r'
+death_line_label = r'Deaths $[\times %d]$'%(int(death_fac))
+
+### ###
 
 def download_data(area, metrics):
 
@@ -341,23 +362,6 @@ def plot_bar_data(df, date, start_date, end_date, regions, outfile=None, pop_nor
         figx = 6.; figy = 4.
     else:
         raise ValueError('Only one or nine regions supported')
-
-    # Cases
-    case_bar_color = 'cornflowerblue'
-    case_line_color = 'b'
-    case_line_label = 'Positive tests'
-
-    # Hospitalisations 
-    hosp_fac = 5.
-    hosp_bar_color = 'g'
-    hosp_line_color = 'forestgreen'
-    hosp_line_label = r'Hospital admissions $[\times %d]$'%(int(hosp_fac))
-
-    # Deaths
-    death_fac = 10.
-    death_bar_color = 'indianred'
-    death_line_color = 'r'
-    death_line_label = r'Deaths $[\times %d]$'%(int(death_fac))
 
     # Special dates
     #relax_color = 'green'
