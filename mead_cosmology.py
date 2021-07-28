@@ -648,28 +648,24 @@ def redshift_a(a):
 def comoving_matter_density(Om_m):
     '''
     Comoving matter density, not a function of time [Msun/h / (Mpc/h)^3]
-    TODO: Should this take cosm as an input?
     '''
     return const.rhoc*Om_m
 
 def physical_matter_density(a, Om_m):
     '''
     Physical matter density [Msun/h / (Mpc/h)^3]
-    TODO: Should this take cosm as an input?
     '''
     return comoving_matter_density(Om_m)*a**-3
 
 def Mass_R(R, Om_m):
     '''
     Mass contained within a sphere of radius 'R' in a homogeneous universe
-    TODO: Should this take cosm as an input?
     '''
     return (4./3.)*np.pi*R**3*comoving_matter_density(Om_m)
 
 def Radius_M(M, Om_m):
     '''
     Radius of a sphere containing mass M in a homogeneous universe
-    TODO: Should this take cosm as an input?
     '''
     return np.cbrt(3.*M/(4.*np.pi*comoving_matter_density(Om_m)))
 

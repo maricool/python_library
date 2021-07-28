@@ -100,6 +100,9 @@ class cosmology():
         self.m_nu = self.wnu*const.nuconst
         self.Om_nu = self.wnu/self.h**2
 
+    def cosmology_array(self):
+        return np.atleast_2d([self.wb, self.wc, self.Om_w, self.lnAs, self.ns, self.w])
+
     def print(self):
 
         # Write primary parameters to screen
@@ -203,7 +206,6 @@ def convert_mead_cosmology(cosm):
     '''
     Convert Mead cosmology into a Dark Quest cosmology
     '''
-    # Get Dark Quest parameters from my structure
     wb = cosm.w_b
     wc = cosm.w_c
     Om_w = cosm.Om_w
@@ -224,8 +226,9 @@ def init_emulator(cpar):
     print('')
 
     # Initialise emulator
-    cparam = np.array([cpar.wb, cpar.wc, cpar.Om_w, cpar.lnAs, cpar.ns, cpar.w]) # Surely this should be a dictionary 
+    #cparam = np.array([cpar.wb, cpar.wc, cpar.Om_w, cpar.lnAs, cpar.ns, cpar.w]) # Surely this should be a dictionary
     cpar.print()
+    cparam = cpar.cosmology_array()#np.array(cpar.list())
     emu.set_cosmology(cparam) # This does a load of emulator init steps
     cpar.sig8 = emu.get_sigma8()
     print('Derived sigma_8:', cpar.sig8)
@@ -537,7 +540,7 @@ def get_linear_halo_bias(emu, M, z, klin, Pk_klin):
     elif ibias == 3:
         b = emu.get_phm_mass(klin, M, z)/Pk_klin
     else:
-        raise ValueError('Linear bias recipe for beta_NL not recognised')
+        raise ValueError('Linear bias recipe not recognised')
     return b
 
 def R_hh(emu, ks, M1, M2, z):
@@ -549,6 +552,10 @@ def R_hh(emu, ks, M1, M2, z):
     P11 = emu.get_phh_mass(ks, M1, M1, z)
     P22 = emu.get_phh_mass(ks, M2, M2, z)
     return P12/np.sqrt(P11*P22)
+
+### ###
+
+### Non-linear halo bias ###
 
 def get_beta_NL(emu, mass, ks, z, mass_variable='Mass'):
     '''
@@ -685,6 +692,10 @@ def beta_match_metric_k(beta1, beta2):
         sigma[ik] = np.sqrt(diff[:, :, ik].sum()/diff[:, :, ik].size)
     return sigma
 
+### ###
+
+### Rescaling ###
+
 def calculate_rescaling_params(emu_ori, emu_tgt, z_tgt, M1_tgt, M2_tgt):
     '''
     Calculates the AW10 rescaling parameters to go from the original cosmology to the target cosmology
@@ -699,3 +710,59 @@ def calculate_rescaling_params(emu_ori, emu_tgt, z_tgt, M1_tgt, M2_tgt):
                                                          emu_tgt.cosmo.get_Omega0(),
                                                         )
     return (s, sm, z)
+
+### HOD ###
+
+def get_p_gg(self, k, redshift):
+    """get_p_gg
+
+    Compute galaxy power spectrum :math:`\\P_\mathrm{gg}(k)`.
+
+    Args:
+        k (numpy array): 3 dimensional separation in :math:`h^{-1}\mathrm{Mpc}`
+        redshift (float): redshift at which the galaxies are located
+
+    Returns:
+        numpy array: galaxy power spectrum
+    """
+    from scipy.interpolate import InterpolatedUnivariateSpline as ius
+
+    self._check_update_redshift(redshift)
+
+    self._compute_p_1hcs(redshift)
+    self._compute_p_1hss(redshift)
+    self._compute_p_2hcc(redshift)
+    self._compute_p_2hcs(redshift)
+    self._compute_p_2hss(redshift)
+
+    p_tot_1h = 2.*self.p_1hcs + self.p_1hss
+    p_tot_2h = self.p_2hcc + 2.*self.p_2hcs + self.p_2hss
+    p_gg = ius(self.fftlog_1h.k, p_tot_1h)(k)+ius(self.fftlog_2h.k, p_tot_2h)(k)
+    return p_gg
+
+def get_p_gm(self, k, redshift):
+    """get_p_gm
+
+    Compute galaxy matter power spectrum P_gm.
+
+    Args:
+        k (numpy array): 2 dimensional projected separation in :math:`h^{-1}\mathrm{Mpc}`
+        redshift (float): redshift at which the lens galaxies are located
+
+    Returns:
+        numpy array: excess surface density in :math:`h M_\odot \mathrm{pc}^{-2}`
+    """
+    from scipy.interpolate import InterpolatedUnivariateSpline as ius
+
+    self._check_update_redshift(redshift)
+
+    self._compute_p_cen(redshift)
+    self._compute_p_cen_off(redshift)
+    self._compute_p_sat(redshift)
+
+    p_tot = self.p_cen + self.p_cen_off + self.p_sat
+
+    p_gm = ius(self.fftlog_1h.k, p_tot)(k)
+    return p_gm
+
+### ###

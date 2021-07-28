@@ -1,9 +1,9 @@
 # Standard imports
 import numpy as np
 import scipy.integrate as integrate
+import warnings
 
 # My imports
-#import mead_general as mead
 import mead_cosmology as cosmo
 
 # Constants
@@ -103,9 +103,9 @@ class halomod():
             Dv_array = np.array([200., 300., 400., 600., 800., 1200., 1600, 2400., 3200.])
             # Check Delta_v and delta_c values
             if Dv < Dv_array[0] or Dv > Dv_array[-1]:
-                print('Warning: Dv is outside supported range for Tinker et al. (2010') 
+                warnings.warn('Dv is outside supported range for Tinker et al. (2010)', RuntimeWarning)
             if not isclose(dc, 1.686, rel_tol=dc_rel_tol):
-                print('Warning: dc = 1.686 assumed in Tinker et al. (2010)')
+                warnings.warn('dc = 1.686 assumed in Tinker et al. (2010)', RuntimeWarning)
             # Mass function from Table 4
             logDv = np.log(self.Dv); logDv_array = np.log(Dv_array)
             alpha_array = np.array([0.368, 0.363, 0.385, 0.389, 0.393, 0.365, 0.379, 0.355, 0.327])
@@ -146,6 +146,8 @@ class halomod():
                 print('C: %1.3f; c: %1.3f'%(self.C_Tinker, self.c_Tinker))
         else:
             raise ValueError('Halo model not recognised')
+        if verbose:
+            print()
 
     def halo_mass_function(self, nu):
         '''
@@ -208,7 +210,7 @@ class halomod():
 
 ### ###
 
-### Halo model ###
+### Halo model functions that do not take hmod as input ###
 
 def _get_nus(Ms, dc, Om_m, sigmas=None, sigma=None, Pk_lin=None):
     '''
@@ -250,6 +252,10 @@ def Dv_BryanNorman(Om_mz):
     x = Om_mz-1.
     Dv = Dv0+82.*x-39.*x**2
     return Dv/Om_mz
+
+### ###
+
+### Halo model functions that take hmod as input ###
 
 def mean_hm(hmod, Ms, fs, sigmas=None, sigma=None, Pk_lin=None):
     '''
@@ -304,7 +310,7 @@ def Pk_hm(hmod, Ms, ks, profs, Pk_lin, beta=None, sigmas=None, sigma=None, shot=
     # Calculate the missing halo-bias from the low-mass part of the integral
     A = 1.-integrate.quad(lambda nu: hmod.halo_mass_function(nu)*hmod.linear_halo_bias(nu), nus[0], np.inf)[0] # from nu_min to infinity
     if verbose: print('Missing halo-bias-mass from the low-mass end of the two-halo integrand:', A)
-    if A < 0.:  print('Warning: Mass function/bias correction is negative!')
+    if A < 0.:  warnings.warn('Warning: Mass function/bias correction is negative!', RuntimeWarning)
 
     # Shot noise calculations
     PSNs = []
@@ -350,7 +356,7 @@ def Pk_hm(hmod, Ms, ks, profs, Pk_lin, beta=None, sigmas=None, sigma=None, shot=
                     if discrete and shot:
                         Pk_1h_array[u, v, :] += PSNs[u] # Need to add shot noise
                     elif (not discrete) and (not shot):
-                        print('Warning: Subtracting shot noise while not treating discreteness properly is dangerous')
+                        warnings.warn('Warning: Subtracting shot noise while not treating discreteness properly is dangerous', RuntimeWarning)
                         Pk_1h_array[u, v, :] -= PSNs[u] # Need to subtract shot noise
                 Pk_hm_array[u, v, :] = Pk_2h_array[u, v, :]+Pk_1h_array[u, v, :] # Total
             else:
@@ -726,6 +732,16 @@ def NFW_factor(c):
     '''
     return np.log(1.+c)-c/(1.+c)
 
+def profile_matter(ks, Ms, rvs, cs, Om_m):
+    '''
+    Pre-configured matter NFW profile
+    '''
+    rhom = cosmo.comoving_matter_density(Om_m)
+    Uk = np.zeros((len(Ms), len(ks)))
+    for iM, (rv, c) in enumerate(zip(rvs, cs)):
+        Uk[iM, :] = win_NFW(ks, rv, c)
+    return haloprof(ks, Ms, Ms, Uk, norm=rhom, var=None, Prho=None, mass=True, discrete=False)
+
 ### ###
 
 ### Halo concentration
@@ -774,6 +790,7 @@ def HOD_Zheng(M, Mmin=1e12, sigma=0.15, M0=1e12, M1=1e13, alpha=1.):
     else:
         Ns = ((M-M0)/M1)**alpha # Should be insensitive to the H(x=0) value
     return (Nc, Ns)
+HOD_Zheng = np.vectorize(HOD_Zheng) # Because of M < M0 line
 
 def HOD_Zehavi(M, Mmin=1e12, M1=1e13, alpha=1.):
     '''

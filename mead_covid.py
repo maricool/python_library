@@ -53,7 +53,7 @@ lockdowns = {
 # General
 days_in_roll = 7      # Number of days that contribute to a 'roll' (one week; seven days)
 pop_norm_num = 1e5    # Normalisation for y axes (per population; usually 100,000; sometimes 1,000,000)
-infect_duration = 10. # Number of days an average person is infectious for
+infect_duration = 10. # Number of days an average person is infectious for (used in R calculation)
 rolling_offset = 3    # Number of days to offset rolling data
 
 # Cases plot
@@ -180,6 +180,7 @@ def data_calculations(df, verbose):
     for col in ['Cases', 'Deaths', 'Hosp']:
         if col in df:
             print('Calculating:', col+'_roll_Mead')
+            # TODO: Long line
             df[col+'_roll_Mead'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date <= x.date) & (df.date > x.date+relativedelta(days=-days_roll)), col].sum(skipna=False), axis=1)
     mpd.data_head(df, 'Weekly rolling numbers calculated', verbose)
 
@@ -188,7 +189,16 @@ def data_calculations(df, verbose):
     for col in ['Cases', 'Deaths']:
         if col+'_roll_Mead' in df:
             print('Calculating:', col+'_double')
+            # TODO: Long line
             df[col+'_roll_past'] = df.apply(lambda x: df.loc[(df.Region == x.Region) & (df.date == x.date+relativedelta(days=-days_roll)), col+'_roll_Mead'].sum(), axis=1)
+            # TODO: Divide by zero here
+            #if df[col+'_roll_Mead'] == 0.:
+            #    df[col+'_double'] = np.inf
+            #    df[col+'_R'] = 0.
+            #elif df[col+'_roll_past'] == 0.:
+            #    df[col+'_double'] = 0.
+            #    df[col+'_R'] = np.inf
+            #else:
             df[col+'_double'] = days_roll*np.log(2.)/np.log(df[col+'_roll_Mead']/df[col+'_roll_past'])
             df[col+'_R'] = 1.+infect_duration/df[col+'_double']
             df.drop(col+'_roll_past', inplace=True, axis=1)
@@ -260,9 +270,9 @@ def useful_info(regions, data):
         print()
 
 def sort_month_axis(plt):
-
-    # Get the months axis of a plot looking nice
-
+    '''
+    Get the months axis of a plot looking nice
+    '''
     import matplotlib.dates as mdates
     import matplotlib.ticker as mticker
     locator_monthstart = mdates.MonthLocator() # Start of every month
@@ -277,8 +287,9 @@ def sort_month_axis(plt):
     plt.xlabel(None)
 
 def plot_month_spans(plt):
-
-    # Plot the spans between months
+    '''
+    Plot the spans between months
+    '''
     month_color = 'black'
     month_alpha = 0.05
     for year in [2020, 2021]:
@@ -290,9 +301,9 @@ def plot_month_spans(plt):
                         )
 
 def plot_lockdown_spans(plt, data, region):
-
-    # Plot the spans of lockdown
-
+    '''
+    Plot the spans of lockdown
+    '''
     lockdown_color = 'red'
     lockdown_alpha = 0.25
     lockdown_lab = 'Lockdown'

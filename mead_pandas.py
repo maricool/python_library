@@ -1,10 +1,10 @@
-#import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 def data_head(df, comment, verbose=False):
     '''
     Utility function for writing out subset of dataframe with comment
+    TODO: This does not seem to be necessary
     '''
     if verbose:
         print(comment)
@@ -13,7 +13,8 @@ def data_head(df, comment, verbose=False):
 
 def column_statistics(df, feature):
     '''
-    Computes useful statistics of one pandas column (called feature here)
+    Computes useful summary statistics of one pandas column (called feature here)
+    TODO: How about df.describe()?
     '''
     d = df[feature]
     print('Feature:', feature)
@@ -25,21 +26,17 @@ def column_statistics(df, feature):
     print()
 
 def feature_triangle(df, disc, features):
-
     '''
     Triangle plot of list of features split by some characteristic. Histogram distributions along diagonal
     df: pandas data frame
     disc: sting, name of one column, usually the (discrete) thing you are interested in predicting (e.g., species) 
-    features: list of strings corresponding to feature columns
+    features: list of strings corresponding to feature columns (e.g., flipper length, width)
     '''
-
     density = True
     bins = 'auto'
     sns.set_theme(style='ticks')
     n = len(features)
-
     _, axs = plt.subplots(n, n, figsize=(10,10), sharex=True, sharey=True)
-
     i = 0
     for i1, feature1 in enumerate(features):
         for i2, feature2 in enumerate(features):
