@@ -25,12 +25,13 @@ def column_statistics(df, feature):
     print('Standard deviation:', d.std())
     print()
 
-def feature_triangle(df, disc, features):
+def feature_triangle(df, target, features):
     '''
     Triangle plot of list of features split by some characteristic. Histogram distributions along diagonal
     df: pandas data frame
-    disc: sting, name of one column, usually the (discrete) thing you are interested in predicting (e.g., species) 
+    target: sting, name of one column, usually the (discrete) thing you are interested in predicting (e.g., species) 
     features: list of strings corresponding to feature columns (e.g., flipper length, width)
+    TODO: Sort x and y ranges
     '''
     density = True
     bins = 'auto'
@@ -42,17 +43,17 @@ def feature_triangle(df, disc, features):
         for i2, feature2 in enumerate(features):
             i += 1
             if i2 > i1:
-                axs[i1, i2].axis('off')
+                axs[i1, i2].axis('off') # Ignore upper triangle
                 continue
             plt.subplot(n, n, i)
             if i1 == i2:
-                for thing in list(set(df[disc])):
-                    q = "%s == '%s'"%(disc, thing)
+                for thing in list(set(df[target])):
+                    q = "%s == '%s'"%(target, thing) # Query to isolate 
                     plt.hist(df.query(q)[feature1], bins=bins, density=density, label=thing)
             else:           
                 sns.scatterplot(x=df[feature2], y=df[feature1], 
-                                hue=df[disc], 
-                                style=df[disc],
+                                hue=df[target], 
+                                style=df[target],
                                 legend=None,
                             )
             if i1 == len(features)-1: 

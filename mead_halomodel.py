@@ -41,6 +41,15 @@ hm_def = Tinker2010
 Dv_def = 200.  # Halo overdensity with respect to background matter density
 dc_def = 1.686 # Linear collapse threshold relating nu = delta_c/sigma(M)
 
+# beta_NL
+do_I11 = True    # Low M1, M2 portion of the integral
+do_I12I21 = True # Low M1 or low M2 portion of the integral
+
+# TODO: Output halo mass function and bias (n(M); M^2 n(M)/rho; b(M)) but need dsigma integral
+# TODO: Incorporate configuration-space profiles
+# TODO: Dedicated test suite against pyHMcode/pyHMx for different cosmologies/halo models/redshifts
+# TODO: Better demonstration notebooks
+
 ### Class definition ###
 
 class halomod():
@@ -406,6 +415,7 @@ def _I_2h(hmod, Ms, nus, W, mass, A):
 def _I_beta(hmod, beta, Ms, nus, Wu, Wv, massu, massv, A):
     '''
     Evaluates the beta_NL double integral
+    TODO: Loops probably horribly inefficient here
     '''
     from numpy import trapz
     from mead_calculus import trapz2d
@@ -425,9 +435,9 @@ def _I_beta(hmod, beta, Ms, nus, Wu, Wv, massu, massv, A):
             else:
                 integrand[iM1, iM2] = integrand[iM2, iM1]
     integral = trapz2d(integrand, nus, nus)
-    if massu and massv:
+    if do_I11 and massu and massv:
         integral += (A**2)*Wu[0]*Wv[0]/Ms[0]**2
-    if massu:
+    if do_I12I21 and massu:
         integrand = np.zeros(len(nus))
         for iM, nu in enumerate(nus):
             M = Ms[iM]
@@ -436,7 +446,7 @@ def _I_beta(hmod, beta, Ms, nus, Wu, Wv, massu, massv, A):
             b = hmod.linear_halo_bias(nu)
             integrand[iM] = beta[0, iM]*W*g*b/M
         integral += (A*Wu[0]/Ms[0])*trapz(integrand, nus)
-    if massv:
+    if do_I12I21 and massv:
         for iM, nu in enumerate(nus):
             M = Ms[iM]
             W = Wu[iM]
@@ -528,6 +538,7 @@ def _P_2h_hu(hmod, Pk_lin, k, Ms, nuh, nus, Wk, mass, A, beta=None):
 def _I_beta_hu(hmod, beta, Ms, nuh, nus, Wk, mass, A):
     '''
     Evaluates the beta_NL integral for halo-u
+    TODO: Loop probably very inefficent here
     '''
     from numpy import trapz
     bh = hmod.linear_halo_bias(nuh)
@@ -547,14 +558,15 @@ def _I_beta_hu(hmod, beta, Ms, nuh, nus, Wk, mass, A):
 
 ### Beta_NL ###
 
-def interpolate_beta_NL(ks, Ms, Ms_small, beta_NL_small):
+def interpolate_beta_NL(ks, Ms, Ms_small, beta_NL_small, fill_value):
     '''
     Interpolate beta_NL from a small grid to a large grid for halo-model calculations
+    TODO: Remove inefficient loops
     '''
     from scipy.interpolate import interp2d
     beta_NL = np.zeros((len(Ms), len(Ms), len(ks))) # Numpy array for output
     for ik, _ in enumerate(ks):
-        beta_NL_interp = interp2d(np.log(Ms_small), np.log(Ms_small), beta_NL_small[:, :, ik], kind='linear')
+        beta_NL_interp = interp2d(np.log(Ms_small), np.log(Ms_small), beta_NL_small[:, :, ik], kind='linear', fill_value=fill_value)
         for iM1, M1 in enumerate(Ms):
             for iM2, M2 in enumerate(Ms):
                 beta_NL[iM1, iM2, ik] = beta_NL_interp(np.log(M1), np.log(M2))
@@ -768,7 +780,7 @@ def conc_Duffy(M, z, halo_definition='M200'):
 
 def HOD_Mead(M, Mmin, Msat, alpha):
     '''
-    Simple HOD model for tests
+    Simple HOD model
     '''
     Nc = np.heaviside(M-Mmin, 1.)
     Ns = Nc*(M/Msat)**alpha
@@ -820,7 +832,7 @@ def HOD_variance(p, lam, central_condition=True):
     '''
     Expected variance (and covariance) in the numbers of central and satellite galaxies
     Assumes Bernoulli statistics for centrals and Poisson statistics for satellites
-    The central condition modified an 'underlying' Poisson distribution in a calcuable way
+    The central condition modifies an 'underlying' Poisson distribution in a calcuable way
     '''
     vcc = p*(1.-p) # Bernoulli
     if central_condition:
