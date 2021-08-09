@@ -1,5 +1,8 @@
 ### First set of functions do not use numpy ###
 
+def OrderedUniqueList(x):
+    return list(dict.fromkeys(x))
+
 def file_length(fname):
     '''
     Count the number of lines in a file

@@ -11,12 +11,15 @@ def data_head(df, comment, verbose=False):
         print(df.head(15))
         print()
 
-def column_statistics(df, feature):
+def column_statistics(df, feature, condition=None):
     '''
     Computes useful summary statistics of one pandas column (called feature here)
-    TODO: How about df.describe()?
+    TODO: How about df.describe() or df.agg?
     '''
-    d = df[feature]
+    if condition is None:
+        d = df[feature]
+    else:
+        d = df[feature].loc[condition]
     print('Feature:', feature)
     print('Number:', len(d))
     print('Sum:', d.sum())
@@ -25,19 +28,18 @@ def column_statistics(df, feature):
     print('Standard deviation:', d.std())
     print()
 
-def feature_triangle(df, target, features):
+def feature_triangle(df, label, features):
     '''
     Triangle plot of list of features split by some characteristic. Histogram distributions along diagonal
     df: pandas data frame
-    target: sting, name of one column, usually the (discrete) thing you are interested in predicting (e.g., species) 
-    features: list of strings corresponding to feature columns (e.g., flipper length, width)
-    TODO: Sort x and y ranges
+    label: sting, name of one column, usually the (discrete) label you are interested in predicting (e.g., species) 
+    features: list of strings corresponding to feature columns (e.g., petal length, petal width)
     '''
-    density = True
+    stat='density'
     bins = 'auto'
     sns.set_theme(style='ticks')
     n = len(features)
-    _, axs = plt.subplots(n, n, figsize=(10,10), sharex=True, sharey=True)
+    _, axs = plt.subplots(n, n, figsize=(10,10))#, sharex=True, sharey=True) # sharex and sharey do not work because of density vs. scatter dims
     i = 0
     for i1, feature1 in enumerate(features):
         for i2, feature2 in enumerate(features):
@@ -47,13 +49,11 @@ def feature_triangle(df, target, features):
                 continue
             plt.subplot(n, n, i)
             if i1 == i2:
-                for thing in list(set(df[target])):
-                    q = "%s == '%s'"%(target, thing) # Query to isolate 
-                    plt.hist(df.query(q)[feature1], bins=bins, density=density, label=thing)
+                sns.histplot(df, x=feature1, hue=df[label], stat=stat, bins=bins, legend=(i1==0), kde=True)
             else:           
                 sns.scatterplot(x=df[feature2], y=df[feature1], 
-                                hue=df[target], 
-                                style=df[target],
+                                hue=df[label], 
+                                style=df[label],
                                 legend=None,
                             )
             if i1 == len(features)-1: 
@@ -66,5 +66,4 @@ def feature_triangle(df, target, features):
             else:
                 plt.ylabel(None)
                 plt.tick_params(axis='y', which='major', left=False, labelleft=False)
-            if i1 == i2 == 0: plt.legend()
             plt.tight_layout()
