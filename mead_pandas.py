@@ -13,16 +13,16 @@ def data_head(df, comment, verbose=False):
         print(df.head(15))
         print()
 
-def column_statistics(df, feature, condition=None):
+def column_statistics(df, column, condition=None):
     '''
     Computes useful summary statistics of one pandas column (called feature here)
-    TODO: How about df.describe() or df.agg?
+    TODO: How about df.describe() or df.agg()?
     '''
     if condition is None:
-        d = df[feature]
+        d = df[column]
     else:
-        d = df[feature].loc[condition]
-    print('Feature:', feature)
+        d = df[column].loc[condition]
+    print('Feature:', column)
     print('Number:', len(d))
     print('Sum:', d.sum())
     print('Mean:', d.mean())
@@ -39,6 +39,10 @@ def unique_column_entries(df, column, max=15, normalize=False): # Unique values 
     if number_of_different_entries < max:
         print(column, ':', number_of_different_entries)
         print(df[column].value_counts(dropna=False, normalize=normalize))
+
+def drop_column_name_prefix(df, prefix):
+    df.columns = df.columns.str.replace(prefix, '')
+    return df
 
 def _add_jitter(values, std):
     # Add jitter to values
@@ -70,10 +74,9 @@ def feature_triangle(df, label, features, continuous_label=False,
                                         ):
     '''
     Triangle plot of list of features split by some characteristic. Histogram distributions along diagonal, correlations off diagonal.
-    @params
-        df - pandas data frame
-        label - string, name of one column, usually the (discrete) label you are interested in predicting (e.g., species) 
-        features - list of strings corresponding to feature columns (e.g., petal length, petal width)
+    df - pandas data frame
+    label - string, name of one column, usually the (discrete) label you are interested in predicting (e.g., species) 
+    features - list of strings corresponding to feature columns (e.g., petal length, petal width)
     '''
 
     # Initialise the plot
@@ -138,10 +141,9 @@ def feature_scatter_triangle(df, label, features, continuous_label=False,
                                                     ):
     '''
     Triangle plot of list of features split by some characteristic. Histogram distributions along diagonal, correlations off diagonal.
-    @params
-        df - pandas data frame
-        label - string, name of one column, usually the (discrete) label you are interested in predicting (e.g., species) 
-        features - list of strings corresponding to feature columns (e.g., petal length, petal width)
+    df - pandas data frame
+    label - string, name of one column, usually the (discrete) label you are interested in predicting (e.g., species) 
+    features - list of strings corresponding to feature columns (e.g., petal length, petal width)
     '''
 
     # Initialise the plot
