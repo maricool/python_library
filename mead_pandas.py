@@ -1,3 +1,4 @@
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -28,42 +29,77 @@ def column_statistics(df, feature, condition=None):
     print('Standard deviation:', d.std())
     print()
 
-def feature_triangle(df, label, features):
+# def feature_triangle(df, label, features):
+#     '''
+#     Triangle plot of list of features split by some characteristic. Histogram distributions along diagonal
+#     df: pandas data frame
+#     label: sting, name of one column, usually the (discrete) label you are interested in predicting (e.g., species) 
+#     features: list of strings corresponding to feature columns (e.g., petal length, petal width)
+#     '''
+#     stat='density'
+#     bins = 'auto'
+#     sns.set_theme(style='ticks')
+#     n = len(features)
+#     _, axs = plt.subplots(n, n, figsize=(10,10))#, sharex=True, sharey=True) # sharex and sharey do not work because of density vs. scatter dims
+#     i = 0
+#     for i1, feature1 in enumerate(features):
+#         for i2, feature2 in enumerate(features):
+#             i += 1
+#             if i2 > i1:
+#                 axs[i1, i2].axis('off') # Ignore upper triangle 
+#                 continue
+#             plt.subplot(n, n, i)
+#             if i1 == i2:
+#                 sns.histplot(df, x=feature1, hue=df[label], stat=stat, bins=bins, legend=(i1==0), kde=True)
+#             else:           
+#                 sns.scatterplot(x=df[feature2], y=df[feature1], 
+#                                 hue=df[label], 
+#                                 style=df[label],
+#                                 legend=None,
+#                             )
+#             if i1 == len(features)-1: 
+#                 plt.xlabel(feature2)
+#             else:
+#                 plt.xlabel(None)
+#                 plt.tick_params(axis='x', which='major', bottom=False, labelbottom=False)
+#             if (i2 == 0) and (i1 != 0):
+#                 plt.ylabel(feature1)
+#             else:
+#                 plt.ylabel(None)
+#                 plt.tick_params(axis='y', which='major', left=False, labelleft=False)
+#             plt.tight_layout()
+
+
+
+# Correlation matrix
+def correlation_matrix(df, columns, figsize=(7,7), mask_diagonal=True, mask_upper_triangle=True):
     '''
-    Triangle plot of list of features split by some characteristic. Histogram distributions along diagonal
-    df: pandas data frame
-    label: sting, name of one column, usually the (discrete) label you are interested in predicting (e.g., species) 
-    features: list of strings corresponding to feature columns (e.g., petal length, petal width)
+    Create a plot of the correlation matrix for (continous) columns (features) of dataframe (df)
     '''
-    stat='density'
-    bins = 'auto'
-    sns.set_theme(style='ticks')
-    n = len(features)
-    _, axs = plt.subplots(n, n, figsize=(10,10))#, sharex=True, sharey=True) # sharex and sharey do not work because of density vs. scatter dims
-    i = 0
-    for i1, feature1 in enumerate(features):
-        for i2, feature2 in enumerate(features):
-            i += 1
-            if i2 > i1:
-                axs[i1, i2].axis('off') # Ignore upper triangle
-                continue
-            plt.subplot(n, n, i)
-            if i1 == i2:
-                sns.histplot(df, x=feature1, hue=df[label], stat=stat, bins=bins, legend=(i1==0), kde=True)
-            else:           
-                sns.scatterplot(x=df[feature2], y=df[feature1], 
-                                hue=df[label], 
-                                style=df[label],
-                                legend=None,
-                            )
-            if i1 == len(features)-1: 
-                plt.xlabel(feature2)
-            else:
-                plt.xlabel(None)
-                plt.tick_params(axis='x', which='major', bottom=False, labelbottom=False)
-            if (i2 == 0) and (i1 != 0):
-                plt.ylabel(feature1)
-            else:
-                plt.ylabel(None)
-                plt.tick_params(axis='y', which='major', left=False, labelleft=False)
-            plt.tight_layout()
+    # Calculate correlation coefficients
+    corr = df[columns].corr() 
+    if mask_diagonal and mask_upper_triangle:
+        corr.drop(labels=columns[0], axis=0, inplace=True)  # Remove first row
+        corr.drop(labels=columns[-1], axis=1, inplace=True) # Remove last column
+
+    # Create mask
+    mask = np.zeros_like(corr, dtype=bool) 
+    if mask_upper_triangle and mask_diagonal:
+        mask[np.triu_indices_from(mask, k=1)] = True # k=1 does diagonal offset from centre
+    elif mask_upper_triangle:
+        mask[np.triu_indices_from(mask, k=1)] = True
+    elif mask_diagonal:
+        mask[np.diag_indices_from(mask)] = True
+
+    # Make the plot
+    plt.style.use('seaborn-white') 
+    plt.figure(figsize=figsize)
+    cmap = sns.diverging_palette(220, 10, as_cmap=True)
+    g = sns.heatmap(corr, vmin=-1., vmax=1., cmap=cmap, mask=mask, linewidths=.5,
+                    annot=True,
+                    square=True,
+                    cbar=False,
+                )
+    g.set_yticklabels(labels=g.get_yticklabels(), va='center') # Centre y-axis ticks
+    return plt
+
