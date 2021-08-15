@@ -29,6 +29,16 @@ def column_statistics(df, feature, condition=None):
     print('Standard deviation:', d.std())
     print()
 
+def unique_column_entries(df, column, max=15): # Unique values in columns
+    '''
+    Write out useful information about the number of unique entries in a column
+    '''
+    entries = df[column].unique()
+    number_of_different_entries = len(entries)
+    if number_of_different_entries < max:
+        print(column, ':', number_of_different_entries)
+        print(df[column].value_counts(dropna=False), df[column].value_counts(dropna=False)/len(df[column]))
+
 def _add_jitter(values, std):
     # Add jitter to values
     return values+np.random.normal(0., std, values.shape)
