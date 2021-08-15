@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy.random.mtrand import normal
 import seaborn as sns
 
 def data_head(df, comment, verbose=False):
@@ -29,7 +30,7 @@ def column_statistics(df, feature, condition=None):
     print('Standard deviation:', d.std())
     print()
 
-def unique_column_entries(df, column, max=15): # Unique values in columns
+def unique_column_entries(df, column, max=15, normalize=False): # Unique values in columns
     '''
     Write out useful information about the number of unique entries in a column
     '''
@@ -37,7 +38,7 @@ def unique_column_entries(df, column, max=15): # Unique values in columns
     number_of_different_entries = len(entries)
     if number_of_different_entries < max:
         print(column, ':', number_of_different_entries)
-        print(df[column].value_counts(dropna=False), df[column].value_counts(dropna=False)/len(df[column]))
+        print(df[column].value_counts(dropna=False, normalize=normalize))
 
 def _add_jitter(values, std):
     # Add jitter to values
