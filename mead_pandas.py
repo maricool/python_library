@@ -69,7 +69,95 @@ def column_statistics(df, feature, condition=None):
 #                 plt.tick_params(axis='y', which='major', left=False, labelleft=False)
 #             plt.tight_layout()
 
+def feature_triangle(df, label, features, continuous_label=False, 
+                                          histograms=True, 
+                                          kde=True, 
+                                          alpha=1., 
+                                          figsize=(10,10), 
+                                          jitter=False
+                                        ):
+    '''
+    Triangle plot of list of features split by some characteristic. Histogram distributions along diagonal, correlations off diagonal.
+    @params
+        df - pandas data frame
+        label - string, name of one column, usually the (discrete) label you are interested in predicting (e.g., species) 
+        features - list of strings corresponding to feature columns (e.g., petal length, petal width)
+    '''
 
+    sns.set_theme(style='ticks')
+    fsig = 0.2
+    if histograms:
+        n = len(features)
+    else:
+        n = len(features)-1
+        raise ValueError('Plotting without histograms does not work yet')
+
+    # Figure out the hue of bars/points
+    if label is None:
+        hue_hist = None
+        hue_scat = None
+    else:
+        if continuous_label:
+            hue_hist = None
+        else:
+            hue_hist = df[label]
+        hue_scat = df[label]
+
+    # Two functions for the crude implementation of jitter
+    def add_jitter(values, std):
+        return values+np.random.normal(0., std, values.shape)
+    def calculate_minimum_difference(series):
+        arr = series.to_numpy()
+        b = np.diff(np.sort(arr))
+        return b[b>0].min()
+
+    # Make the big plot
+    _, axs = plt.subplots(n, n, figsize=figsize)
+    i = 0
+    for i1, feature1 in enumerate(features):
+        for i2, feature2 in enumerate(features):
+            i += 1
+            if i2 > i1:
+                if histograms:
+                    axs[i1, i2].axis('off') # Ignore upper triangle
+                else:
+                    axs[i1+1, i2+1].axis('off')
+                continue
+            plt.subplot(n, n, i)
+            if histograms and (i1 == i2):
+                sns.histplot(df, x=feature1, 
+                                 hue=hue_hist, 
+                                 stat='density', 
+                                 bins='auto', 
+                                 legend=(i1==0), 
+                                 kde=kde,
+                                )
+            else:
+                if jitter:
+                    std1 = fsig*calculate_minimum_difference(df[feature1])
+                    std2 = fsig*calculate_minimum_difference(df[feature2])
+                    xdata = add_jitter(df[feature2],std2)
+                    ydata = add_jitter(df[feature1],std1)
+                else:
+                    xdata = df[feature2]
+                    ydata = df[feature1]
+                sns.scatterplot(x=xdata, y=ydata, 
+                                hue=hue_scat, 
+                                alpha=alpha,
+                                legend=None,
+                               )
+            if i1 == len(features)-1: 
+                plt.xlabel(feature2)
+            else:
+                plt.xlabel(None)
+                plt.tick_params(axis='x', which='major', bottom=False, labelbottom=False)
+            if (i2 == 0) and (i1 != 0):
+                plt.ylabel(feature1)
+            else:
+                plt.ylabel(None)
+                plt.tick_params(axis='y', which='major', left=False, labelleft=False)
+            plt.tight_layout()
+    return plt
 
 # Correlation matrix
 def correlation_matrix(df, columns, figsize=(7,7), mask_diagonal=True, mask_upper_triangle=True):
