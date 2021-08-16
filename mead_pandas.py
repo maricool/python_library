@@ -172,17 +172,25 @@ def feature_scatter_triangle(df, label, features, continuous_label=False,
                             alpha=alpha,
                             legend=(not continuous_label and (icol==0)),
                             )
+
+            # x-axis labels
             if (irow == n-1): 
                 plt.xlabel(feature_col)
             else:
                 plt.xlabel(None)
                 plt.tick_params(axis='x', which='major', bottom=True, labelbottom=False)
+
+            # y-axis labels
+            if (icol == irow):
+                plt.ylabel(None)
+                plt.tick_params(axis='y', which='major', left=False, labelleft=False)
             if (icol == 0):
                 plt.ylabel(feature_row)
             else:
                 plt.ylabel(None)
                 plt.tick_params(axis='y', which='major', left=True, labelleft=False)
-            plt.tight_layout()
+
+    plt.tight_layout()
     return plt
 
 # Correlation matrix
