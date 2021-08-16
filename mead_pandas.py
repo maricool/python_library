@@ -114,7 +114,6 @@ def feature_triangle(df, label, features, continuous_label=False,
                                  kde=kde,
                                 )
             else:
-                #data_row, data_col = df[feature_row], df[feature_col]
                 data_row, data_col = _jitter_data(df, feature_row, feature_col, jitter)
                 sns.scatterplot(x=data_col, y=data_row,
                                 hue=hue_scat,
@@ -167,12 +166,11 @@ def feature_scatter_triangle(df, label, features, continuous_label=False,
                 continue
             plt.subplot(n, n, i)
             feature_col = features[icol]; feature_row = features[irow+1]
-            #data_col, data_row = df[feature_col], df[feature_row]
             data_row, data_col = _jitter_data(df, feature_row, feature_col, jitter)
             sns.scatterplot(x=data_col, y=data_row,
                             hue=hue_scat,
                             alpha=alpha,
-                            legend=None,
+                            legend=(not continuous_label and (icol==0)),
                             )
             if (irow == n-1): 
                 plt.xlabel(feature_col)
