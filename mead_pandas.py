@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from numpy.random.mtrand import normal
 import seaborn as sns
+import pandas as pd
 
 def data_head(df, comment, verbose=False):
     '''
@@ -46,6 +46,7 @@ def drop_column_name_prefix(df, prefix):
 
 def _add_jitter(values, std):
     # Add jitter to values
+    # TODO: Set a seed
     return values+np.random.normal(0., std, values.shape)
 
 def _calculate_minimum_difference(series):
@@ -77,6 +78,7 @@ def feature_triangle(df, label, features, continuous_label=False,
     df - pandas data frame
     label - string, name of one column, usually the (discrete) label you are interested in predicting (e.g., species) 
     features - list of strings corresponding to feature columns (e.g., petal length, petal width)
+    TODO: Seed random numbers so they are the same for each jitter
     '''
 
     # Initialise the plot
@@ -227,5 +229,52 @@ def correlation_matrix(df, columns, figsize=(7,7), mask_diagonal=True, mask_uppe
                     cbar=False,
                 )
     g.set_yticklabels(labels=g.get_yticklabels(), va='center') # Centre y-axis ticks
-    return plt
+    #return plt # TODO: Does this need to return anything?
+
+def swarmplot(df, columns, id_=None, hue=None, order=None, 
+        hue_order=None, dodge=False, orient=None, color=None, palette=None, 
+        size=5, edgecolor='gray', linewidth=0, ax=None, **kwargs):
+
+    # Make the id_vars column correctly if there are Nones
+    # TODO: There must be a one-line solution
+    if id_ is None and hue is None:
+        id_vars = None
+    elif hue is None:
+        id_vars = [id_]
+    elif id_ is None:
+        id_vars = [hue]
+    else:
+        id_vars = [id_, hue]
+
+    # Make the melted data frame columns correctly if there are Nones
+    # TODO: There must be a one-line solution
+    if id_vars is None:
+        new_columns = columns
+    else:
+        new_columns = columns+id_vars
+
+    # Make the simple data frame, then melt it from wide form to long form, then make swarmplot
+    simple_df = df[new_columns]
+    df_melted = pd.melt(simple_df, id_vars=id_vars, value_vars=None, var_name='var', value_name='value')
+    sns.swarmplot(data=df_melted, x='var', y='value', hue=hue, order=order, 
+        hue_order=hue_order, dodge=dodge, orient=orient, color=color, palette=palette, 
+        size=size, edgecolor=edgecolor, linewidth=linewidth, ax=ax, **kwargs)
+
+def lineswarm(ax, data, columns, line_alpha=0.1):
+
+    # TODO: Add all variables
+    #sns.swarmplot(data=data, x='variable', y='value', ax=ax)
+    swarmplot(data, columns)
+    n = len(columns)
+
+    # Now connect the dots
+    locs = []
+    for idx in range(n):
+        locs.append(ax.get_children()[idx].get_offsets())
+
+    for j in range(n-1):
+        for i in range(locs[0].shape[0]):
+            x = [locs[j][i, 0], locs[j+1][i, 0]]
+            y = [locs[j][i, 1], locs[j+1][i, 1]]
+            ax.plot(x, y, color='black', alpha=line_alpha)
 
