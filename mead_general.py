@@ -186,4 +186,7 @@ def colour(i):
     '''
     return 'C%d'%i
 
+def ceiling(a, b):
+    return -(-a // b)
+
 ### ###
