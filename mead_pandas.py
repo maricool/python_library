@@ -231,9 +231,7 @@ def correlation_matrix(df, columns, figsize=(7,7), mask_diagonal=True, mask_uppe
     g.set_yticklabels(labels=g.get_yticklabels(), va='center') # Centre y-axis ticks
     #return plt # TODO: Does this need to return anything?
 
-def swarmplot(df, columns, id_=None, hue=None, order=None, 
-        hue_order=None, dodge=False, orient=None, color=None, palette=None, 
-        size=5, edgecolor='gray', linewidth=0, ax=None, **kwargs):
+def nicely_melt(df, id_, columns, hue):
 
     # Make the id_vars column correctly if there are Nones
     # TODO: There must be a one-line solution
@@ -256,25 +254,34 @@ def swarmplot(df, columns, id_=None, hue=None, order=None,
     # Make the simple data frame, then melt it from wide form to long form, then make swarmplot
     simple_df = df[new_columns]
     df_melted = pd.melt(simple_df, id_vars=id_vars, value_vars=None, var_name='var', value_name='value')
-    sns.swarmplot(data=df_melted, x='var', y='value', hue=hue, order=order, 
+    return df_melted
+
+def swarmplot(df, columns, id_=None, hue=None, hue_order=None, 
+    dodge=False, orient=None, color=None, palette=None, 
+    size=5, edgecolor='gray', linewidth=0, ax=None, **kwargs):
+
+    df_melted = nicely_melt(df, id_, columns, hue)
+    sns.swarmplot(data=df_melted, x='var', y='value', hue=hue, order=None, 
         hue_order=hue_order, dodge=dodge, orient=orient, color=color, palette=palette, 
         size=size, edgecolor=edgecolor, linewidth=linewidth, ax=ax, **kwargs)
 
-def lineswarm(ax, data, columns, line_alpha=0.1):
+def lineswarm(df, columns, line_color='black', line_alpha=0.1, id_=None, hue=None,
+    hue_order=None, dodge=False, orient=None, color=None, palette=None, 
+    size=5, edgecolor='gray', linewidth=0, **kwargs):
 
-    # TODO: Add all variables
-    #sns.swarmplot(data=data, x='variable', y='value', ax=ax)
-    swarmplot(data, columns)
-    n = len(columns)
+    # Make the standard swarm plot
+    swarmplot(df, columns, id_=id_, hue=hue, hue_order=hue_order, 
+        dodge=dodge, orient=orient, color=color, palette=palette, 
+        size=size, edgecolor=edgecolor, linewidth=linewidth, ax=None, **kwargs)
 
-    # Now connect the dots
-    locs = []
-    for idx in range(n):
-        locs.append(ax.get_children()[idx].get_offsets())
+    # Make joining lines
+    ncol = len(columns)
+    for ix in range(ncol):
+        if ix == ncol-1: break # Only need to do n-1 sets of lines between n columns
+        x1 = ix; x2 = ix+1 # x positions are spaced 0, 1, 2, ...
+        for iy in range(len(df.index)):
+            y1 = df[columns[ix]].iloc[iy]
+            y2 = df[columns[ix+1]].iloc[iy]
+            plt.plot([x1, x2], [y1, y2], color=line_color, alpha=line_alpha)
 
-    for j in range(n-1):
-        for i in range(locs[0].shape[0]):
-            x = [locs[j][i, 0], locs[j+1][i, 0]]
-            y = [locs[j][i, 1], locs[j+1][i, 1]]
-            ax.plot(x, y, color='black', alpha=line_alpha)
 
