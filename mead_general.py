@@ -189,8 +189,8 @@ def colour(i):
 def ceiling(a, b):
     return -(-a // b)
 
-def remove_list_from_list(original_list, remove_list):
-    for item in remove_list:
+def remove_list_from_list(removal_list, original_list):
+    for item in removal_list:
         if item in original_list:
             original_list.remove(item)
 
