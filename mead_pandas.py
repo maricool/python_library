@@ -200,7 +200,7 @@ def feature_scatter_triangle(df, label, features, continuous_label=False,
     return plt
 
 # Correlation matrix
-def correlation_matrix(df, columns, figsize=(7,7), mask_diagonal=True, mask_upper_triangle=True):
+def correlation_matrix(df, columns, figsize=(7,7), annot=True, mask_diagonal=True, mask_upper_triangle=True):
     '''
     Create a plot of the correlation matrix for (continous) columns (features) of dataframe (df)
     '''
@@ -224,7 +224,7 @@ def correlation_matrix(df, columns, figsize=(7,7), mask_diagonal=True, mask_uppe
     plt.figure(figsize=figsize)
     cmap = sns.diverging_palette(220, 10, as_cmap=True)
     g = sns.heatmap(corr, vmin=-1., vmax=1., cmap=cmap, mask=mask, linewidths=.5,
-                    annot=True,
+                    annot=annot,
                     square=True,
                     cbar=False,
                 )
