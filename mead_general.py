@@ -1,7 +1,11 @@
 ### First set of functions do not use numpy ###
 
-def OrderedUniqueList(x):
-    return list(dict.fromkeys(x))
+def create_unique_list(list_with_duplicates):
+    '''
+    Takes a list that may contain duplicates and returns a new list with the duplicates removed
+    TODO: Check that the ordering is preserved. Is the first occurance kept and later ones discarded?
+    '''
+    return list(dict.fromkeys(list_with_duplicates))
 
 def file_length(fname):
     '''
@@ -44,12 +48,20 @@ def is_float_close_to_integer(x):
     from math import isclose
     return isclose(x, int(x))
 
-def multiply_list_elements(multiple, list):
+def ceiling(a, b):
     '''
-    Multiply all elements in a list by a constant
-    TODO: Is this really necessary?
+    Ceiling division a/b
+    TODO: Could also use math.ceiling
     '''
-    return [multiple*x for x in list]
+    return -(-a // b)
+
+def remove_list_from_list(removal_list, original_list):
+    '''
+    Remove items in 'removal_list' if they occur in 'original_list'
+    '''
+    for item in removal_list:
+        if item in original_list:
+            original_list.remove(item)
 
 ### ###
 
@@ -185,13 +197,5 @@ def colour(i):
     Default colours in plotly
     '''
     return 'C%d'%i
-
-def ceiling(a, b):
-    return -(-a // b)
-
-def remove_list_from_list(removal_list, original_list):
-    for item in removal_list:
-        if item in original_list:
-            original_list.remove(item)
 
 ### ###
