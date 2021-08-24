@@ -231,7 +231,7 @@ def correlation_matrix(df, columns, figsize=(7,7), annot=True, mask_diagonal=Tru
     g.set_yticklabels(labels=g.get_yticklabels(), va='center') # Centre y-axis ticks
     #return plt # TODO: Does this need to return anything?
 
-def nicely_melt(df, id_, columns, hue):
+def nicely_melt(df, id_, columns, hue, var_name='var', value_name='value'):
 
     # Make the id_vars column correctly if there are Nones
     # TODO: There must be a one-line solution
@@ -253,35 +253,43 @@ def nicely_melt(df, id_, columns, hue):
 
     # Make the simple data frame, then melt it from wide form to long form, then make swarmplot
     simple_df = df[new_columns]
-    df_melted = pd.melt(simple_df, id_vars=id_vars, value_vars=None, var_name='var', value_name='value')
+    df_melted = pd.melt(simple_df, id_vars=id_vars, value_vars=None, var_name=var_name, value_name=value_name)
     return df_melted
 
 def swarmplot(df, columns, id_=None, hue=None, hue_order=None, 
-    dodge=False, orient=None, color=None, palette=None, 
+    dodge=False, orient=None, color=None, palette=None, x_label='var', y_label='value',
     size=5, edgecolor='gray', linewidth=0, ax=None, **kwargs):
 
-    df_melted = nicely_melt(df, id_, columns, hue)
-    sns.swarmplot(data=df_melted, x='var', y='value', hue=hue, order=None, 
+    df_melted = nicely_melt(df, id_, columns, hue, var_name=x_label, value_name=y_label)
+    sns.swarmplot(data=df_melted, x=x_label, y=y_label, hue=hue, order=None, 
         hue_order=hue_order, dodge=dodge, orient=orient, color=color, palette=palette, 
         size=size, edgecolor=edgecolor, linewidth=linewidth, ax=ax, **kwargs)
 
-def lineswarm(df, columns, line_color='black', line_alpha=0.1, id_=None, hue=None,
-    hue_order=None, dodge=False, orient=None, color=None, palette=None, 
-    size=5, edgecolor='gray', linewidth=0, **kwargs):
+def lineswarm(df, columns, ax, line_color='black', line_alpha=0.1, id_=None, 
+    x_label='var', y_label='value', hue=None, hue_order=None, dodge=False, orient=None, 
+    color=None, palette=None, size=5, edgecolor='gray', linewidth=0, **kwargs):
 
     # Make the standard swarm plot
-    swarmplot(df, columns, id_=id_, hue=hue, hue_order=hue_order, 
-        dodge=dodge, orient=orient, color=color, palette=palette, 
-        size=size, edgecolor=edgecolor, linewidth=linewidth, ax=None, **kwargs)
+    swarmplot(df, columns, ax=ax, id_=id_, x_label=x_label, y_label=y_label, 
+        hue=hue, hue_order=hue_order, dodge=dodge, orient=orient, color=color, palette=palette, 
+        size=size, edgecolor=edgecolor, linewidth=linewidth, **kwargs)
 
-    # Make joining lines
-    ncol = len(columns)
-    for ix in range(ncol):
-        if ix == ncol-1: break # Only need to do n-1 sets of lines between n columns
-        x1 = ix; x2 = ix+1 # x positions are spaced 0, 1, 2, ...
-        for iy in range(len(df.index)):
-            y1 = df[columns[ix]].iloc[iy]
-            y2 = df[columns[ix+1]].iloc[iy]
-            plt.plot([x1, x2], [y1, y2], color=line_color, alpha=line_alpha)
+    # Now connect the dots
+    # Find idx0 and idx1 by inspecting the elements return from ax.get_children()
+    # ... or find a way to automate it
+    # Before plotting, we need to sort so that the data points
+    # correspond to each other as they did in "set1" and "set2"
+    locs = []; sort_idxs = []
+    for idx, col in enumerate(columns):
+        locs.append(ax.get_children()[idx].get_offsets())
+        sort_idxs.append(np.argsort(df[col]))
 
+    # Revert "ascending sort" through sort_idxs2.argsort(),
+    # and then sort into order corresponding with set1
+    for j in range(len(columns)-1):
+        locs_sorted = locs[j+1][sort_idxs[j+1].argsort()][sort_idxs[0]]
+        for i in range(locs[j].shape[0]):
+            x = [locs[j][i, 0], locs_sorted[i, 0]]
+            y = [locs[j][i, 1], locs_sorted[i, 1]]
+            ax.plot(x, y, color=line_color, alpha=line_alpha)
 
