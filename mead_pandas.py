@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy.random.mtrand import rand
 import seaborn as sns
 import pandas as pd
 
@@ -15,7 +16,7 @@ def data_head(df, comment, verbose=False):
 
 def column_statistics(df, column, condition=None):
     '''
-    Computes useful summary statistics of one pandas column (called feature here)
+    Computes useful summary statistics of one pandas column
     TODO: How about df.describe() or df.agg()?
     '''
     if condition is None:
@@ -30,7 +31,7 @@ def column_statistics(df, column, condition=None):
     print('Standard deviation:', d.std())
     print()
 
-def unique_column_entries(df, column, max=15, normalize=False): # Unique values in columns
+def unique_column_entries(df, column, max=15, normalize=False):
     '''
     Write out useful information about the number of unique entries in a column
     '''
@@ -74,10 +75,13 @@ def feature_triangle(df, label, features, continuous_label=False,
                                           jitter=0.
                                         ):
     '''
-    Triangle plot of list of features split by some characteristic. Histogram distributions along diagonal, correlations off diagonal.
+    Triangle plot of list of features split by some characteristic. 
+    Histogram distributions along diagonal, correlations off diagonal.
     df - pandas data frame
-    label - string, name of one column, usually the (discrete) label you are interested in predicting (e.g., species) 
-    features - list of strings corresponding to feature columns (e.g., petal length, petal width)
+    label - string, name of one column, usually the (discrete) 
+        label you are interested in predicting (e.g., species) 
+    features - list of strings corresponding to feature columns 
+        (e.g., petal length, petal width)
     TODO: Seed random numbers so they are the same for each jitter
     '''
 
@@ -116,7 +120,8 @@ def feature_triangle(df, label, features, continuous_label=False,
                                  kde=kde,
                                 )
             else:
-                data_row, data_col = _jitter_data(df, feature_row, feature_col, jitter)
+                data_row, data_col = _jitter_data(df, feature_row, 
+                                                  feature_col, jitter)
                 sns.scatterplot(x=data_col, y=data_row,
                                 hue=hue_scat,
                                 alpha=alpha,
@@ -127,31 +132,34 @@ def feature_triangle(df, label, features, continuous_label=False,
                 plt.xlabel(feature_col)
             else:
                 plt.xlabel(None)
-                plt.tick_params(axis='x', which='major', bottom=True, labelbottom=False)
+                plt.tick_params(axis='x', which='major', 
+                                bottom=True, labelbottom=False)
 
             # y-axis labels
             if (icol == irow):
                 plt.ylabel(None)
-                plt.tick_params(axis='y', which='major', left=False, labelleft=False)
+                plt.tick_params(axis='y', which='major', 
+                                left=False, labelleft=False)
             elif (icol == 0):
                 plt.ylabel(feature_row)
             else:
                 plt.ylabel(None)
-                plt.tick_params(axis='y', which='major', left=True, labelleft=False)
+                plt.tick_params(axis='y', which='major', 
+                                left=True, labelleft=False)
 
     plt.tight_layout()
     return plt
 
 def feature_scatter_triangle(df, label, features, continuous_label=False, 
-                                                    alpha=1., 
-                                                    figsize=(10,10), 
-                                                    jitter=0.
-                                                    ):
+        alpha=1., figsize=(10,10), jitter=0.):
     '''
-    Triangle plot of list of features split by some characteristic. Histogram distributions along diagonal, correlations off diagonal.
+    Triangle plot of list of features split by some characteristic. 
+    Histogram distributions along diagonal, correlations off diagonal.
     df - pandas data frame
-    label - string, name of one column, usually the (discrete) label you are interested in predicting (e.g., species) 
-    features - list of strings corresponding to feature columns (e.g., petal length, petal width)
+    label - string, name of one column, usually the (discrete) 
+        label you are interested in predicting (e.g., species) 
+    features - list of strings corresponding to feature columns 
+        (e.g., petal length, petal width)
     '''
 
     # Initialise the plot
@@ -175,7 +183,8 @@ def feature_scatter_triangle(df, label, features, continuous_label=False,
                 continue
             plt.subplot(n, n, i)
             feature_col = features[icol]; feature_row = features[irow+1]
-            data_row, data_col = _jitter_data(df, feature_row, feature_col, jitter)
+            data_row, data_col = _jitter_data(df, feature_row, 
+                                              feature_col, jitter)
             sns.scatterplot(x=data_col, y=data_row,
                             hue=hue_scat,
                             alpha=alpha,
@@ -187,22 +196,26 @@ def feature_scatter_triangle(df, label, features, continuous_label=False,
                 plt.xlabel(feature_col)
             else:
                 plt.xlabel(None)
-                plt.tick_params(axis='x', which='major', bottom=True, labelbottom=False)
+                plt.tick_params(axis='x', which='major', 
+                                bottom=True, labelbottom=False)
 
             # y-axis labels
             if (icol == 0):
                 plt.ylabel(feature_row)
             else:
                 plt.ylabel(None)
-                plt.tick_params(axis='y', which='major', left=True, labelleft=False)
+                plt.tick_params(axis='y', which='major', 
+                                left=True, labelleft=False)
 
     plt.tight_layout()
     return plt
 
 # Correlation matrix
-def correlation_matrix(df, columns, figsize=(7,7), annot=True, mask_diagonal=True, mask_upper_triangle=True):
+def correlation_matrix(df, columns, figsize=(7,7), annot=True, 
+        mask_diagonal=True, mask_upper_triangle=True):
     '''
-    Create a plot of the correlation matrix for (continous) columns (features) of dataframe (df)
+    Create a plot of the correlation matrix for (continous) columns 
+    (or features) of  adataframe (df)
     '''
     # Calculate correlation coefficients
     corr = df[columns].corr() 
@@ -213,7 +226,8 @@ def correlation_matrix(df, columns, figsize=(7,7), annot=True, mask_diagonal=Tru
     # Create mask
     mask = np.zeros_like(corr, dtype=bool) 
     if mask_upper_triangle and mask_diagonal:
-        mask[np.triu_indices_from(mask, k=1)] = True # k=1 does diagonal offset from centre
+        # k=1 does diagonal offset from centre
+        mask[np.triu_indices_from(mask, k=1)] = True 
     elif mask_upper_triangle:
         mask[np.triu_indices_from(mask, k=1)] = True
     elif mask_diagonal:
@@ -223,16 +237,41 @@ def correlation_matrix(df, columns, figsize=(7,7), annot=True, mask_diagonal=Tru
     plt.style.use('seaborn-white') 
     plt.figure(figsize=figsize)
     cmap = sns.diverging_palette(220, 10, as_cmap=True)
-    g = sns.heatmap(corr, vmin=-1., vmax=1., cmap=cmap, mask=mask, linewidths=.5,
+    g = sns.heatmap(corr, vmin=-1., vmax=1., cmap=cmap, mask=mask, 
+                    linewidths=.5,
                     annot=annot,
                     square=True,
                     cbar=False,
-                )
-    g.set_yticklabels(labels=g.get_yticklabels(), va='center') # Centre y-axis ticks
+                   )
+    # Centre y-axis ticks
+    g.set_yticklabels(labels=g.get_yticklabels(), va='center') 
     #return plt # TODO: Does this need to return anything?
 
-def nicely_melt(df, id_, columns, hue, var_name='var', value_name='value'):
+def bootstrap_resample(df):
+    df_bootstrap = df.sample(frac=1., replace=True, weights=None, 
+                             random_state=None, 
+                             axis=None, 
+                             ignore_index=False,
+                            )
+    return df_bootstrap
 
+def bootstrap_correlation_matrix(df, columns, n=500):
+    corrs = []
+    for _ in range(n):
+        df_boot = bootstrap_resample(df)
+        corr = df_boot[columns].corr()
+        corrs.append(corr)
+    df_concat = pd.concat(corrs)
+    #by_row_index = df_concat.groupby(df_concat.index)
+    #df_means = by_row_index.mean()
+    df_means = df_concat.groupby(level=1).mean()
+    return df_means
+
+def nicely_melt(df, id_, columns, hue, var_name='var', value_name='value'):
+    '''
+    Create a nicely melted data frame by specifying the id and hue columns
+    as well as all the columns for the melt
+    '''
     # Make the id_vars column correctly if there are Nones
     # TODO: There must be a one-line solution
     if id_ is None and hue is None:
@@ -251,34 +290,45 @@ def nicely_melt(df, id_, columns, hue, var_name='var', value_name='value'):
     else:
         new_columns = columns+id_vars
 
-    # Make the simple data frame, then melt it from wide form to long form, then make swarmplot
+    # Make the simple data frame, then melt it from wide form to long form, 
+    # then make swarmplot
     simple_df = df[new_columns]
-    df_melted = pd.melt(simple_df, id_vars=id_vars, value_vars=None, var_name=var_name, value_name=value_name)
+    df_melted = pd.melt(simple_df, id_vars=id_vars, value_vars=None, 
+                        var_name=var_name, 
+                        value_name=value_name
+                       )
     return df_melted
 
 def swarmplot(df, columns, id_=None, hue=None, hue_order=None, 
     dodge=False, orient=None, color=None, palette=None, x_label='var', y_label='value',
     size=5, edgecolor='gray', linewidth=0, ax=None, **kwargs):
-
+    '''
+    Version of swarmplot that takes as input a wide-format data frame
+    Wide format is converted to long format (required for swarm plot) inside
+    '''
     df_melted = nicely_melt(df, id_, columns, hue, var_name=x_label, value_name=y_label)
     sns.swarmplot(data=df_melted, x=x_label, y=y_label, hue=hue, order=None, 
         hue_order=hue_order, dodge=dodge, orient=orient, color=color, palette=palette, 
         size=size, edgecolor=edgecolor, linewidth=linewidth, ax=ax, **kwargs)
 
 def lineswarm(df, columns, ax, line_color='black', line_alpha=0.1, id_=None, 
-    x_label='var', y_label='value', hue=None, hue_order=None, dodge=False, orient=None, 
-    color=None, palette=None, size=5, edgecolor='gray', linewidth=0, **kwargs):
-
+    x_label='var', y_label='value', hue=None, hue_order=None, dodge=False, 
+    orient=None, color=None, palette=None, size=5, edgecolor='gray', linewidth=0, 
+    **kwargs):
+    '''
+    Make a seaborn swarm plot with lines connecting the points in each swarm cluster
+    Solution from: https://stackoverflow.com/questions/51155396/plotting-colored-lines-connecting-individual-data-points-of-two-swarmplots
+    '''
     # Make the standard swarm plot
     swarmplot(df, columns, ax=ax, id_=id_, x_label=x_label, y_label=y_label, 
-        hue=hue, hue_order=hue_order, dodge=dodge, orient=orient, color=color, palette=palette, 
-        size=size, edgecolor=edgecolor, linewidth=linewidth, **kwargs)
+        hue=hue, hue_order=hue_order, dodge=dodge, orient=orient, color=color, 
+        palette=palette, size=size, edgecolor=edgecolor, linewidth=linewidth, 
+        **kwargs)
 
     # Now connect the dots
-    # Find idx0 and idx1 by inspecting the elements return from ax.get_children()
-    # ... or find a way to automate it
-    # Before plotting, we need to sort so that the data points
-    # correspond to each other as they did in "set1" and "set2"
+    # TODO: Automate this?
+    # Find indices by inspecting the elements returned from ax.get_children()
+    # Before plotting, we need to sort so that the data points are in order
     locs = []; sort_idxs = []
     for idx, col in enumerate(columns):
         locs.append(ax.get_children()[idx].get_offsets())
