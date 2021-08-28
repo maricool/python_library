@@ -25,15 +25,13 @@ def print_array_statistics(x):
     print('<x^2>:', mean**2+var)
     print()
 
-def standardize(x):
-         
+def standardize_array(x):
     '''
     From: https://towardsdatascience.com/pca-with-numpy-58917c1d0391
     This function standardizes an array, its substracts mean value, 
     and then divide the standard deviation.
-    
-    param 1: array 
-    return: standardized array
+        x: array 
+        return: standardized array
     '''    
     rows, columns = x.shape
     
