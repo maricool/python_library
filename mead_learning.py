@@ -6,13 +6,33 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split, RandomizedSearchCV#, GridSearchCV
 from sklearn.metrics import classification_report
 
-def TrainRandomForest(df, target, features, test_size=0.2, random_state=42,
+def TrainRandomForest(df, target, features, test_size=0.2, 
+        random_state_split=None, random_state_search=None,
         n_iter=100, cv=3, n_jobs=-1, scoring='recall', verbose=True,
         n_trees_min=1, n_trees_max=1000, 
         max_features_min=1, max_features_max=10, 
         min_samples_split_min=2, min_samples_split_max=100,
         bootstrap=[True, False], 
         ):
+    '''
+    Take a dataframe and train a random forest to predict the (binary) target
+    Params:
+        df: pandas dataframe
+        target: column name of binary target
+        features: list of column names of features to use
+        test_size: fraction of input to use as test
+        random_state: random seed for test-train split
+        n_iter: number of forests to generate
+        cv: folding for cross validation
+        n_jobs: ?
+        scoring: scikit learn scoring function 
+            https://scikit-learn.org/stable/modules/model_evaluation.html
+        varbose: verbosity
+        n_trees_min/max: Number of trees in forest
+        max_features_min/max: ?
+        min_samples_split_min/max: ?
+        bootstrap: boolean for bootstrap resampling or not
+    '''
 
     # Create the training and test split (reporducible via the random_state)
     # TODO: Incorporate stratified sampling
@@ -21,7 +41,8 @@ def TrainRandomForest(df, target, features, test_size=0.2, random_state=42,
     if test_size is None:
         X_train, y_train = X, y
     else:
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, 
+                                            random_state=random_state_split)
 
     # Parameters to sample in random search
     n_trees = sp_randint(n_trees_min, n_trees_max)
@@ -41,7 +62,9 @@ def TrainRandomForest(df, target, features, test_size=0.2, random_state=42,
 
     grid_search = RandomizedSearchCV(RandomForestClassifier(), n_iter=n_iter, 
                                         param_distributions=search_params, 
-                                        cv=cv, n_jobs=n_jobs, scoring=scoring)
+                                        cv=cv, n_jobs=n_jobs, scoring=scoring,
+                                        random_state=random_state_search,
+                                    )
     grid_search.fit(X_train, y_train) # This is the time-consuming step
 
     # Write information to screen
