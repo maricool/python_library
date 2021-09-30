@@ -51,10 +51,10 @@ lockdowns = {
 ### Parameters ###
 
 # General
-days_in_roll = 7      # Number of days that contribute to a 'roll' (one week; seven days)
-pop_norm_num = 1e5    # Normalisation for y axes (per population; usually 100,000; sometimes 1,000,000)
-infect_duration = 10. # Number of days an average person is infectious for (used in R calculation)
-rolling_offset = 3    # Number of days to offset rolling data
+days_in_roll = 7     # Number of days that contribute to a 'roll' (one week; seven days)
+pop_norm_num = 1e5   # Normalisation for y axes (per population; usually 100,000; sometimes 1,000,000)
+infect_duration = 5. # Number of days an average person is infectious for (used in calculations of R number; lower values squash R about 1)
+rolling_offset = 3   # Number of days to offset rolling data
 
 # Cases plot
 case_bar_color = 'cornflowerblue'
@@ -75,13 +75,13 @@ death_line_label = r'Deaths $[\times %d]$'%(int(death_fac))
 
 ### ###
 
-def download_data(area, metrics):
-
-    # Download latest data
-    
+def download_data(area, metrics, verbose=True):
+    '''
+    Download latest data
+    '''
     import requests
     
-    verbose = True
+    # Parameters
     today = dt.date.today() # Today's date
     
     if verbose: 
@@ -115,13 +115,11 @@ def download_data(area, metrics):
         print('Download complete')
         print('')
 
-def read_data(infile, metrics):
+def read_data(infile, metrics, verbose=False):
+    '''
+    Read in data, no manipulations apart from renaming and deleting columns
+    '''
 
-    # Read in data, no manipulations apart from renaming and deleting columns
-    
-    # Parameters
-    verbose = False
-    
     # Read data into a pandas data frame
     df = pd.read_csv(infile)
 
@@ -131,7 +129,7 @@ def read_data(infile, metrics):
         print(df)
         print('')
 
-    # Convert date column to actual date data type
+    # Convert date column to actual datetime type
     df.date = pd.to_datetime(df['date'])
 
     # Remove unnecessary columns
@@ -139,8 +137,8 @@ def read_data(infile, metrics):
         df.drop(col, inplace=True, axis=1)
     
     # Rename columns
-    df.rename(columns={'areaName': 'Region'}, inplace=True, errors="raise")
-    df.rename(columns=metrics, inplace=True, errors="raise")
+    df.rename(columns={'areaName':'Region'}, inplace=True, errors='raise')
+    df.rename(columns=metrics, inplace=True, errors='raise')
 
     # Print data to screen again
     if verbose:
@@ -150,29 +148,16 @@ def read_data(infile, metrics):
 
     # Sort
     if verbose: mpd.data_head(df, 'Original data')
-    sort_data(df)
+    df.sort_values(['Region', 'date'], ascending=[True, False], inplace=True)
     if verbose: mpd.data_head(df, 'Sorted data')
-
-    # Print specific columns to screen
-    # TODO: This is probably wrong
-    if verbose:      
-        print(df['date'])
-        print('')
-        for metric in metrics:
-            print(df[metrics[metric]])
-            print('')
     
     # Return the massaged pandas data frame
     return df
 
-def sort_data(df):
-    # Sort data by region and by date
-    df.sort_values(['Region', 'date'], ascending=[True, False], inplace=True)
-
 def data_calculations(df, verbose):
-
-    # Perform calculations on data (assumes data organised in date from high to low for each region)
-    
+    '''
+    Perform calculations on data (assumes data organised in date from high to low for each region)
+    '''
     # Parameters
     days_roll = days_in_roll
 
@@ -205,8 +190,9 @@ def data_calculations(df, verbose):
     mpd.data_head(df, 'Doubling times and R values calculated', verbose)
  
 def useful_info(regions, data):
-
-    # Print useful information
+    '''
+    Print useful information
+    '''
 
     # Parameters
     norm_pop = pop_norm_num
@@ -228,7 +214,7 @@ def useful_info(regions, data):
         print('Region:', region)
 
         # Isolate regional data
-        df = data.loc[data['Region'] == region].copy()
+        df = data.loc[data['Region']==region].copy()
         df.sort_values(['date'], ascending=[False], inplace=True)
 
         # Date
@@ -246,7 +232,7 @@ def useful_info(regions, data):
             if col+'_roll' in df:
                 weekly = df[col+'_roll'].iloc[0]
                 if col+'_roll_Mead' in df:
-                    my_weekly = df[col+'_roll_Mead'].iloc[0]    
+                    my_weekly = df[col+'_roll_Mead'].iloc[0]
                     if weekly != my_weekly:
                         raise ValueError('My calculation of weekly roll disagrees with official')
                 norm_weekly = weekly*fac
@@ -374,20 +360,11 @@ def plot_bar_data(df, date, start_date, end_date, regions, outfile=None, pop_nor
     else:
         raise ValueError('Only one or nine regions supported')
 
-    # Special dates
-    #relax_color = 'green'
-    #relax_alpha = 0.25
-    #relax_lab = 'Relaxation'
-
     ### ###
-
-    # Relaxations
-    #Christmas_date = dt.date(2020, 12, 25)
 
     # Lockdowns
     plot_lockdowns = True
     plot_months = True
-    #plot_relax = False
 
     # Initialise plot
     plt.subplots(figsize=(figx, figy), sharex=True, sharey=True, dpi=dpi)
@@ -415,17 +392,7 @@ def plot_bar_data(df, date, start_date, end_date, regions, outfile=None, pop_nor
         if plot_months: plot_month_spans(plt)
         if plot_lockdowns: plot_lockdown_spans(plt, df, region)
 
-        # Important individual dates
-        #if plot_relax:
-        #    plt.axvspan(Christmas_date, Christmas_date+relativedelta(days=+1), 
-        #                color=relax_color, 
-        #                alpha=relax_alpha, 
-        #                label=relax_lab)
-
-        # Plot data
-        q = "Region == '%s'"%(region) # Query to isolate regions
-
-        # Bar chart for numbers per day
+        # Plot bars for numbers per day
         for col in ['Cases', 'Hosp', 'Deaths']:
             if col in df:
                 if col == 'Cases':
@@ -439,11 +406,12 @@ def plot_bar_data(df, date, start_date, end_date, regions, outfile=None, pop_nor
                     bar_color = death_bar_color
                 else:
                     raise ValueError('Something went wrong')
-                plt.bar(df.query(q)['date'],
-                        df.query(q)[col]*fac,
+                plt.bar(df[df['Region']==region]['date'],
+                        df[df['Region']==region][col]*fac,
                         width=bar_width,
                         color=bar_color,
-                        linewidth=0.)
+                        linewidth=0.
+                       )
 
         # Lines for weekly average
         for col in ['Cases_roll', 'Hosp_roll', 'Deaths_roll']:
@@ -462,8 +430,8 @@ def plot_bar_data(df, date, start_date, end_date, regions, outfile=None, pop_nor
                     line_label = death_line_label
                 else:
                     raise ValueError('Something went wrong')
-                plt.plot(pd.to_datetime(df.query(q)['date'])-dt.timedelta(rolling_offset),
-                         df.query(q)[col]*fac,
+                plt.plot(pd.to_datetime(df[df['Region']==region]['date'])-dt.timedelta(rolling_offset),
+                         df[df['Region']==region][col]*fac,
                          color=line_color, 
                          label=line_label
                         )
@@ -483,7 +451,10 @@ def plot_bar_data(df, date, start_date, end_date, regions, outfile=None, pop_nor
 
         # Finalise
         if n == 1 and region == 'North East':
-            plt.title(region+'\n%s' %(date.strftime("%Y-%m-%d")), x=0.03, y=0.88, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
+            plt.title(region+'\n%s'%(date.strftime("%Y-%m-%d")), x=0.03, y=0.88, 
+                      loc='Left', 
+                      bbox=dict(facecolor='w', edgecolor='k')
+                     )
         else:
             plt.title(region, x=0.03, y=0.88, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
         if (n == 4 or n == 9) and i == 0:
@@ -543,9 +514,8 @@ def plot_rolling_data(df, date, start_date, end_date, regions, pop_norm=True, pl
             pop_fac = pop_num/regions[region]
         else:
             pop_fac = 1.
-        q = "Region == '%s'"%(region) # Query to isolate regions
-        plt.plot(df.query(q)['date'],
-                 df.query(q)[plot_type+'_roll']*pop_fac/days_roll,
+        plt.plot(df[df['Region']==region]['date'],
+                 df[df['Region']==region][plot_type+'_roll']*pop_fac/days_roll,
                  color='C{}'.format(i), 
                  label=region
                 )
@@ -597,7 +567,6 @@ def plot_doubling_times(df, date, start_date, end_date, regions, plot_type='Case
     for i, region in enumerate(regions):
 
         # Plot data
-        q = "Region == '%s'"%(region) # Query to isolate regions
         for f in [1, -1]:
             if f == 1:
                 ls = '-'
@@ -605,13 +574,13 @@ def plot_doubling_times(df, date, start_date, end_date, regions, plot_type='Case
             else:
                 ls = '--'
                 label=None
-            plt.plot(df.query(q)['date'],
-                     f*df.query(q)[plot_type+'_double'],
+            plt.plot(df[df['Region']==region]['date'],
+                     f*df[df['Region']==region][plot_type+'_double'],
                      color='C{}'.format(i),
                      ls=ls,
                      label=label,
                     )
-        plt.title(plot_type+' doubling or halving time: %s' % (date.strftime("%Y-%m-%d")))
+        plt.title(plot_type+' doubling or halving time: %s'%(date.strftime("%Y-%m-%d")))
 
     # Axes limits
     sort_month_axis(plt)
@@ -635,6 +604,7 @@ def plot_R_estimates(df, date, start_date, end_date, regions, plot_type='Cases')
     figx = 17.; figy = 6.
     plot_lockdowns = True
     plot_months = True
+    Rmin = 0.; Rmax = 2.
 
     ### Figure options ###
 
@@ -653,9 +623,8 @@ def plot_R_estimates(df, date, start_date, end_date, regions, plot_type='Cases')
 
     # Loop over regions
     for i, region in enumerate(regions):
-        q = "Region == '%s'"%(region) # Query to isolate regions      
-        plt.plot(df.query(q)['date'],
-                 df.query(q)[plot_type+'_R'],
+        plt.plot(df[df['Region']==region]['date'],
+                 df[df['Region']==region][plot_type+'_R'],
                  color='C{}'.format(i), 
                  label=region,
                 )
@@ -665,6 +634,6 @@ def plot_R_estimates(df, date, start_date, end_date, regions, plot_type='Cases')
     sort_month_axis(plt)
     plt.xlim(left=start_date, right=end_date)
     plt.ylabel(r'$R$')
-    plt.ylim(bottom=0., top=3.)
-    plt.legend()#loc='upper left')
+    plt.ylim(bottom=Rmin, top=Rmax)
+    plt.legend()
     plt.show()
