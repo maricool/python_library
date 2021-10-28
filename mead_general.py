@@ -1,5 +1,14 @@
 ### First set of functions do not use numpy ###
 
+def opposite_side(left_or_right):
+    if left_or_right == 'left':
+        out = 'right'
+    elif left_or_right == 'right':
+        out = 'left'
+    else:
+        raise ValueError('Input should be left or right')
+    return out
+
 def create_unique_list(list_with_duplicates):
     '''
     Takes a list that may contain duplicates and returns a new list with the duplicates removed
