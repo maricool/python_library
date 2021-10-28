@@ -46,24 +46,84 @@ population_countries = {
     'Brazil': 212.559e6,
     'Italy': 60.461e6,
     'Russia': 145.934e6,
+    'Australia': 25.500e6,
+    'Canada': 37.742e6,
+    'China': 1439.323e6,
 }
 
 # Lockdown dates for Nations and Regions
 lockdowns = {
-    'North East': {(dte(2020, 3, 23), dte(2020, 5, 13)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2021, 1, 5), dte(2021, 3, 28))},
-    'North West': {(dte(2020, 3, 23), dte(2020, 5, 13)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2021, 1, 5), dte(2021, 3, 28))},
-    'Yorkshire and The Humber': {(dte(2020, 3, 23), dte(2020, 5, 13)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2021, 1, 5), dte(2021, 3, 28))},
-    'East Midlands': {(dte(2020, 3, 23), dte(2020, 5, 13)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2021, 1, 5), dte(2021, 3, 28))},
-    'West Midlands': {(dte(2020, 3, 23), dte(2020, 5, 13)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2021, 1, 5), dte(2021, 3, 28))},
-    'East of England': {(dte(2020, 3, 23), dte(2020, 5, 13)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2020, 12, 26), dte(2021, 3, 28))},
-    'London': {(dte(2020, 3, 23), dte(2020, 5, 13)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2020, 12, 20), dte(2021, 3, 28))},
-    'South East': {(dte(2020, 3, 23), dte(2020, 5, 13)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2020, 12, 20), dte(2021, 3, 28))},
-    'South West': {(dte(2020, 3, 23), dte(2020, 5, 13)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2021, 1, 5), dte(2021, 3, 28))},
-    'England': {(dte(2020, 3, 23), dte(2020, 5, 13)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2021, 1, 5), dte(2021, 3, 28))},
-    'Wales': {(dte(2020, 3, 23), dte(2020, 5, 13)), (dte(2020, 10, 23), dte(2020, 11, 9)), (dte(2020, 12, 20), dte(2021, 3, 26))},
-    'Scotland': {(dte(2020, 3, 23), dte(2020, 5, 13)), (dte(2020, 10, 9), dte(2020, 10, 25)), (dte(2021, 1, 5), dte(2021, 4, 1))},
-    'Northern Ireland': {(dte(2020, 3, 23), dte(2020, 5, 13)), (dte(2020, 10, 16), dte(2020, 11, 20)), (dte(2020, 11, 27), dte(2020, 12, 11)), (dte(2020, 12, 26), dte(2021, 3, 31))},
-    'United Kingdom': {(dte(2020, 3, 23), dte(2020, 5, 13)), (dte(2020, 11, 5), dte(2020, 12, 2)), (dte(2021, 1, 5), dte(2021, 3, 28))},
+    'North East':{
+        (dte(2020, 3, 23), dte(2020, 5, 13)), 
+        (dte(2020, 11, 5), dte(2020, 12, 2)), 
+        (dte(2021, 1, 5), dte(2021, 3, 28)),
+        },
+    'North West':{
+        (dte(2020, 3, 23), dte(2020, 5, 13)), 
+        (dte(2020, 11, 5), dte(2020, 12, 2)), 
+        (dte(2021, 1, 5), dte(2021, 3, 28)),
+        },
+    'Yorkshire and The Humber':{
+        (dte(2020, 3, 23), dte(2020, 5, 13)), 
+        (dte(2020, 11, 5), dte(2020, 12, 2)), 
+        (dte(2021, 1, 5), dte(2021, 3, 28)),
+        },
+    'East Midlands':{
+        (dte(2020, 3, 23), dte(2020, 5, 13)), 
+        (dte(2020, 11, 5), dte(2020, 12, 2)), 
+        (dte(2021, 1, 5), dte(2021, 3, 28)),
+        },
+    'West Midlands':{
+        (dte(2020, 3, 23), dte(2020, 5, 13)), 
+        (dte(2020, 11, 5), dte(2020, 12, 2)), 
+        (dte(2021, 1, 5), dte(2021, 3, 28)),
+        },
+    'East of England':{
+        (dte(2020, 3, 23), dte(2020, 5, 13)), 
+        (dte(2020, 11, 5), dte(2020, 12, 2)), 
+        (dte(2020, 12, 26), dte(2021, 3, 28)),
+        },
+    'London':{
+        (dte(2020, 3, 23), dte(2020, 5, 13)), 
+        (dte(2020, 11, 5), dte(2020, 12, 2)), 
+        (dte(2020, 12, 20), dte(2021, 3, 28)),
+        },
+    'South East':{
+        (dte(2020, 3, 23), dte(2020, 5, 13)), 
+        (dte(2020, 11, 5), dte(2020, 12, 2)), 
+        (dte(2020, 12, 20), dte(2021, 3, 28)),
+        },
+    'South West':{
+        (dte(2020, 3, 23), dte(2020, 5, 13)), 
+        (dte(2020, 11, 5), dte(2020, 12, 2)), 
+        (dte(2021, 1, 5), dte(2021, 3, 28)),
+        },
+    'England':{
+        (dte(2020, 3, 23), dte(2020, 5, 13)), 
+        (dte(2020, 11, 5), dte(2020, 12, 2)), 
+        (dte(2021, 1, 5), dte(2021, 3, 28)),
+        },
+    'Wales':{
+        (dte(2020, 3, 23), dte(2020, 5, 13)), 
+        (dte(2020, 10, 23), dte(2020, 11, 9)), 
+        (dte(2020, 12, 20), dte(2021, 3, 26)),
+        },
+    'Scotland':{
+        (dte(2020, 3, 23), dte(2020, 5, 13)), 
+        (dte(2020, 10, 9), dte(2020, 10, 25)), 
+        (dte(2021, 1, 5), dte(2021, 4, 1)),
+        },
+    'Northern Ireland':{
+        (dte(2020, 3, 23), dte(2020, 5, 13)), 
+        (dte(2020, 10, 16), dte(2020, 11, 20)), 
+        (dte(2020, 11, 27), dte(2020, 12, 11)), 
+        (dte(2020, 12, 26), dte(2021, 3, 31)),
+        },
+    'United Kingdom':{
+        (dte(2020, 3, 23), dte(2020, 5, 13)), 
+        (dte(2020, 11, 5), dte(2020, 12, 2)), 
+        (dte(2021, 1, 5), dte(2021, 3, 28)),
+        },
 }
 
 ### Parameters ###
@@ -98,15 +158,11 @@ def read_JHU_data(file):
     Read and organise JHU data downloaded from https://github.com/CSSEGISandData/COVID-19
     '''
     df = pd.read_csv(file)
-    df.drop(['Lat', 'Long'], axis='columns', inplace=True)
-    df['Region'] = df['Country/Region']+df['Province/State'].fillna('') # Merge country and region data
-    df.drop(['Country/Region', 'Province/State'], axis='columns', inplace=True)
-    col = df.pop('Region')
-    df.insert(0, col.name, col)
-    df.set_index('Region', inplace=True)
-    df.columns = pd.to_datetime(df.columns)
-    df.rename(index={'US': 'United States'}, inplace=True)
-    df.rename(index={'UK': 'United Kingdom'}, inplace=True)
+    df.drop(['Province/State', 'Lat', 'Long'], axis='columns', inplace=True) # Remove unnecessary columns
+    df.rename(columns={'Country/Region':'Region'}, inplace=True) # Rename for convenience
+    df = df.groupby(['Region']).sum() # Combine provinces that are part of the same countries
+    df.columns = pd.to_datetime(df.columns) # Convert entries to datetime objects
+    df.rename(index={'US':'United States', 'UK':'United Kingdom'}, inplace=True)
     return df
 
 def calculate_JHU_data(df):
@@ -451,6 +507,7 @@ def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True
     use_seaborn = True
     dpi = 200 # 100 is default
     date = max(df['date'])
+    legend_location = 'left'
 
     ### Figure options ###
 
@@ -577,27 +634,49 @@ def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True
         else:           
             plt.ylabel('Number per day')
 
-        # Title of region
+        # Title that is region
         if n == 1:
             title = region+'\n%s'%(date.strftime("%Y-%m-%d"))
-            ytit = 0.83
+            ytit = 0.85
         else:
             title = region
-            ytit = 0.90
+            if n == 4:
+                ytit = 0.93
+            elif n == 9:
+                ytit = 0.895
         if plot_type == 'Elongated':
-            xtit = 0.01
+            dx = 0.01
         else:
-            xtit = 0.03
-        plt.title(title, x=xtit, y=ytit, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
+            dx = 0.02
+        loc = mead.opposite_side(legend_location)
+        if loc == 'right':
+            xtit = 1.-dx
+        else:
+            xtit = dx
+        plt.title(title, x=xtit, y=ytit, loc=loc, bbox=dict(facecolor='w', edgecolor='k'))
 
-        # Title of date
+        # Title that is the date of the plot
         if (n == 4 or n == 9) and i == 0:
+            if legend_location == 'right':
+                xtit = 0.99
+            elif legend_location == 'left':
+                xtit = 0.01
+            else:
+                raise ValueError('legend location not recognised')
+            if legend_location == 'right':
+                xtit = 1.-dx
+            else:
+                xtit = dx
+            if n == 4:
+                ytit = 0.93
+            elif n == 9:
+                ytit = 0.89
             title = date.strftime("%Y-%m-%d")
-            plt.title(title, x=0.97, y=0.89, loc='Right', bbox=dict(facecolor='w', edgecolor='k'))
+            plt.title(title, x=xtit, y=ytit, loc=legend_location, bbox=dict(facecolor='w', edgecolor='k'))
 
         # Legend
-        if (n == 9 and i == 2) or (n == 4 and i == 1) or n==1: 
-            legend = plt.legend(loc='upper right', framealpha=1.)
+        if (n == 9 and i == 2) or (n == 4 and i == 1) or n==1:
+            legend = plt.legend(loc='upper '+legend_location, framealpha=1.)
             legend.get_frame().set_edgecolor('k')
 
         # Commas on y axis for long numbers
