@@ -217,7 +217,7 @@ def plot_UK_death_rate(df):
     #plt.title(dt.date.today().strftime("%Y-%m-%d"), x=0.19, y=0.88, loc='Center', bbox=dict(facecolor='w', edgecolor='k'))
     plt.tight_layout()
 
-def plot_world_death_rate(df, countries):
+def plot_world_rates(df, countries, dftype='deaths'):
     '''
     World death rate in different countries.
     '''
@@ -226,7 +226,7 @@ def plot_world_death_rate(df, countries):
     plot_month_spans(plt, alpha=0.025)
     for country in countries:
         sns.lineplot(data=df.loc[country]*1e6/population_countries[country], label=country)
-    plt.ylabel('Deaths per day per million population')
+    plt.ylabel(dftype.capitalize()+' per day per million population')
     plt.xlabel('')
     plt.ylim(bottom=0.)
     plt.xlim([dte(2020, 1, 1), max(df.columns)+relativedelta(months=3)])
@@ -234,7 +234,7 @@ def plot_world_death_rate(df, countries):
     plt.title(dt.date.today().strftime("%Y-%m-%d"), x=0.015, y=0.88, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
     plt.tight_layout()
 
-def plot_world_deaths(df, countries):
+def plot_world_totals(df, countries, dftype='deaths'):
     ''' 
     World total deaths in different countries.
     '''
@@ -244,7 +244,7 @@ def plot_world_deaths(df, countries):
     plot_month_spans(plt, alpha=0.025)
     for country in countries:
         sns.lineplot(data=df.loc[country]*1e6/population_countries[country], label=country)
-    plt.ylabel('Total deaths per million population')
+    plt.ylabel('Total '+dftype+' per million population')
     plt.xlabel('')
     plt.ylim(bottom=0.)
     plt.xlim([dte(2020, 1, 1), max(df.columns)+relativedelta(months=3)])
