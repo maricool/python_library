@@ -1,4 +1,4 @@
-### First set of functions do not use numpy ###
+### This set of functions use only basic Python ###
 
 def opposite_side(left_or_right):
     if left_or_right == 'left':
@@ -8,13 +8,6 @@ def opposite_side(left_or_right):
     else:
         raise ValueError('Input should be left or right')
     return out
-
-def create_unique_list(list_with_duplicates):
-    '''
-    Takes a list that may contain duplicates and returns a new list with the duplicates removed
-    TODO: Check that the ordering is preserved. Is the first occurance kept and later ones discarded?
-    '''
-    return list(dict.fromkeys(list_with_duplicates))
 
 def file_length(fname):
     '''
@@ -27,13 +20,15 @@ def file_length(fname):
             pass
     return i+1
 
-def mrange(n):
+def mrange(a, b=None):
     '''
     Mead range is more sensible than range, goes (1, 2, ..., n)
-    I hate the inbuilt Python one with such fury that it frightens me
-    TODO: Make this go from a to b?
+    I hate the inbuilt Python 'range' with such fury that it frightens me
     '''
-    return range(1, n+1)
+    if b is None:
+        return range(a+1)
+    else:
+        return range(a, b+1)
 
 def is_even(num):
     '''
@@ -64,6 +59,17 @@ def ceiling(a, b):
     '''
     return -(-a // b)
 
+### ###
+
+### These functions operate on collections (lists, tuples, sets, dictionaries) ###
+
+def create_unique_list(list_with_duplicates):
+    '''
+    Takes a list that may contain duplicates and returns a new list with the duplicates removed
+    TODO: Check that the ordering is preserved. Is the first occurance kept and later ones discarded?
+    '''
+    return list(dict.fromkeys(list_with_duplicates))
+
 def remove_list_from_list(removal_list, original_list):
     '''
     Remove items in 'removal_list' if they occur in 'original_list'
@@ -93,13 +99,9 @@ def logspace(xmin, xmax, nx):
     return logspace(log10(xmin), log10(xmax), nx)
 
 def is_power_of_two(x):
-    #from math import isclose
-    #from numpy import log2, rint
-    #lg2 = log2(i)
-    #if isclose(lg2, rint(lg2)):
-    #    return True
-    #else:
-    #    return False
+    '''
+    True if arguement is a perfect power of two
+    '''
     return is_power_of_n(x, 2)
 
 def is_power_of_n(x, n):
@@ -203,8 +205,8 @@ def seq_color(i, n, cmap):
 
 def colour(i):
     '''
-    Default colours in plotly
+    Default colours (C0, C1, C2, ...)
     '''
-    return 'C%d'%i
+    return 'C%d'(i)
 
 ### ###
