@@ -165,19 +165,33 @@ def read_JHU_data(file):
     df.rename(index={'US':'United States', 'UK':'United Kingdom'}, inplace=True)
     return df
 
-def calculate_JHU_data(df):
+def calculate_JHU_daily_from_original(df):
     '''
-    Calculate daily data from cumulative
+    Calculate daily data from original cumulative data
     '''
-    center = False
     df_new = df.diff(axis='columns').copy() # Convert from cumulative to daily numbers
-    df_new = df_new.rolling(7, min_periods=1, axis='columns', center=center).sum()/7. # Average over week
-    if center: # Remove final three entries that will be anomalously low
-        for _ in range(3):
-            df_new.drop(df_new.columns[len(df_new.columns)-1], axis='columns', inplace=True)
     return df_new
 
-def plot_UK_death_rate(df):
+def calculate_JHU_rolling_from_daily(df):
+    '''
+    Calculate rolling average from daily data
+    '''
+    center = True
+    df_new = df.rolling(7, min_periods=1, axis='columns', center=center).sum()/7. # Average over week
+    if center: # Remove final three entries that will be anomalously low if centring
+        for i in range(-3, 0):
+            df_new[df_new.columns[i]] = np.nan
+    return df_new
+
+def calculate_JHU_rolling_from_original(df):
+    '''
+    Calculate rolling average from original cumulative data
+    '''
+    df1 = calculate_JHU_daily_from_original(df)
+    df2 = calculate_JHU_rolling_from_daily(df1)
+    return df2
+
+def plot_UK_deaths(df_daily, df_rolling):
     '''
     Plot the UK death rate from COVID-19 over the course of the pandemic.
     Also add information about flu deaths and total deaths.
@@ -191,24 +205,26 @@ def plot_UK_death_rate(df):
         'Flu deaths in a typical flu year': 15000./365., # Total averaged over year
         'Flu deaths at height of a bad flu year': 4.*25000./365., # Compress total over 3 months (shoddy)
     }
+    country = 'United Kingdom'
 
     # Plot
     _, ax = plt.subplots(figsize=(18.,4.))
     sort_month_axis(plt)
     plot_month_spans(plt, alpha=0.025)
-    plot_lockdown_spans(plt, df, region='United Kingdom', label='Lockdowns')
-    sns.lineplot(data=df.loc['United Kingdom'], label='UK COVID-19 deaths')
+    plot_lockdown_spans(plt, df_daily, region=country, label='Lockdowns')
+    sns.lineplot(data=df_rolling.loc[country], label='UK COVID-19 deaths', color=case_line_color)
+    plt.bar(df_daily.loc[country].index, df_daily.loc[country].values, width=1., color=case_bar_color, linewidth=0.)
     plt.ylabel('Deaths per day during pandemic')
     plt.xlabel('')
     plt.ylim(bottom=0., top=1500)
-    plt.xlim([dte(2020, 1, 1), max(df.columns)+relativedelta(months=6)])
+    plt.xlim([dte(2020, 1, 1), max(df_rolling.columns)+relativedelta(months=6)])
     for i, death in enumerate(deaths.keys()):
         if i == 0:
             delta = -85.
         else:
             delta = 40.
         plt.axhline(deaths[death], color='black', alpha=0.8, ls=':')
-        plt.text(dte(2021, 11, 1), deaths[death]+delta, death)
+        plt.text(max(df_rolling.columns)+relativedelta(months=1), deaths[death]+delta, death)
     handles, _ = ax.get_legend_handles_labels()
     patch = mpatches.Patch(alpha=0., label=dt.date.today().strftime("%Y-%m-%d"))
     handles.insert(0, patch) 
@@ -251,6 +267,28 @@ def plot_world_totals(df, countries, dftype='deaths'):
     plt.legend(loc='upper right', edgecolor='k')
     plt.title(dt.date.today().strftime("%Y-%m-%d"), x=0.015, y=0.88, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
     ax.get_yaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
+    plt.tight_layout()
+
+def plot_world_deaths_per_case(df_deaths, df_cases, countries):
+    '''
+    World death rate in different countries.
+    '''
+    days_offset = 21
+    df_cases_offset = df_cases.copy()
+    df_cases_offset.columns = df_cases.columns+pd.DateOffset(days_offset)
+    df = df_deaths/df_cases_offset
+    plt.figure(figsize=(18.,4.))
+    sort_month_axis(plt)
+    plot_month_spans(plt, alpha=0.025)
+    for country in countries:
+        sns.lineplot(data=df.loc[country], label=country)
+    plt.ylabel('Deaths per confirmed case')
+    plt.xlabel('')
+    plt.yscale('log')
+    plt.ylim((1e-3, 1.))
+    plt.xlim([dte(2020, 1, 1), max(df.columns)+relativedelta(months=3)])
+    plt.legend(loc='upper right', edgecolor='k')
+    plt.title(dt.date.today().strftime("%Y-%m-%d"), x=0.015, y=0.88, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
     plt.tight_layout()
 
 def download_data(area, metrics, verbose=True):
