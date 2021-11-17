@@ -207,6 +207,6 @@ def colour(i):
     '''
     Default colours (C0, C1, C2, ...)
     '''
-    return 'C%d'(i)
+    return 'C%d'%(i)
 
 ### ###
