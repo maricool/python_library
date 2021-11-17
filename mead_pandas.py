@@ -343,3 +343,20 @@ def lineswarm(df, columns, ax, line_color='black', line_alpha=0.1, id_=None,
             y = [locs[j][i, 1], locs_sorted[i, 1]]
             ax.plot(x, y, color=line_color, alpha=line_alpha)
 
+def stacked_barplot(data, x, y, hue, normalize=False, hue_order=None, **kwargs):
+    '''
+    Create a stacked barplot, rather than the standard side-by-side seaborn barplot
+    data - pandas data frame
+        x - column to use for x-axis (continous data)
+        y - column to use for y-axis (continuous data)
+        hue - column to use for color of the bars (catagorical data)
+        normalize - Should the barplot be normalized to sum to unity?
+        hue_order - List for the order of the bars in the key
+        **kwargs - for df.plot function
+    '''
+    # First get the data into the correct format using pivot
+    dpiv = data.pivot(index=x, columns=hue, values=y)
+    if normalize: dpiv = dpiv.div(dpiv.sum(axis='columns'), axis='index')
+    if hue_order is not None:
+        dpiv = dpiv[hue_order]
+    dpiv.plot(kind='bar', stacked=True, **kwargs)
