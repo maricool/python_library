@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 import datetime as dt
-from datetime import date as dte
+from datetime import date
 from dateutil.relativedelta import relativedelta
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -14,23 +14,41 @@ import mead_pandas as mpd
 # https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationestimates
 # /bulletins/annualmidyearpopulationestimates/mid2019
 population_regions = {
-    'North East':2.67e6,
-    'North West':7.34e6,
-    'Yorkshire and The Humber':5.50e6,
-    'East Midlands':4.84e6,
-    'West Midlands':5.93e6,
-    'East of England':6.24e6,
-    'London':8.96e6,
-    'South East':9.18e6, 
-    'South West':5.62e6,
+    'North East': 2.67e6,
+    'North West': 7.34e6,
+    'Yorkshire and The Humber': 5.50e6,
+    'East Midlands': 4.84e6,
+    'West Midlands': 5.93e6,
+    'East of England': 6.24e6,
+    'London': 8.96e6,
+    'South East': 9.18e6, 
+    'South West': 5.62e6,
+}
+
+# Canadian provincial populations
+# https://worldpopulationreview.com/canadian-provinces
+population_Canadian_provinces = {
+    'Ontario': 14.733e6,
+    'Quebec': 8.576e6,
+    'British Columbia': 5.146e6,
+    'Alberta': 4.428e6,
+    'Manitoba': 1.380e6,
+    'Saskatchewan': 1.178e6,
+    'Nova Scotia': 0.979e6,
+    'New Brunswick': 0.781e6,
+    'Newfoundland and Labrador': 0.521e6,
+    'Prince Edward Island': 0.160e6,
+    'Northwest Territory': 0.045e6,
+    'Yukon': 0.042e6,
+    'Nanavut': 0.039e6,
 }
 
 # UK nation populations (from Google)
 population_nations = {
-    'England':55.98e6,
-    'Scotland':5.45e6,
-    'Wales':3.14e6,  
-    'Northern Ireland':1.89e6,
+    'England': 55.98e6,
+    'Scotland': 5.45e6,
+    'Wales': 3.14e6,  
+    'Northern Ireland': 1.89e6,
 }
 
 # Country populations as of 2020
@@ -54,76 +72,93 @@ population_countries = {
 # Lockdown dates for Nations and Regions
 lockdowns = {
     'North East':{
-        (dte(2020, 3, 23), dte(2020, 5, 13)), 
-        (dte(2020, 11, 5), dte(2020, 12, 2)), 
-        (dte(2021, 1, 5), dte(2021, 3, 28)),
+        (date(2020, 3, 23), date(2020, 5, 13)), 
+        (date(2020, 11, 5), date(2020, 12, 2)), 
+        (date(2021, 1, 5), date(2021, 3, 28)),
         },
     'North West':{
-        (dte(2020, 3, 23), dte(2020, 5, 13)), 
-        (dte(2020, 11, 5), dte(2020, 12, 2)), 
-        (dte(2021, 1, 5), dte(2021, 3, 28)),
+        (date(2020, 3, 23), date(2020, 5, 13)), 
+        (date(2020, 11, 5), date(2020, 12, 2)), 
+        (date(2021, 1, 5), date(2021, 3, 28)),
         },
     'Yorkshire and The Humber':{
-        (dte(2020, 3, 23), dte(2020, 5, 13)), 
-        (dte(2020, 11, 5), dte(2020, 12, 2)), 
-        (dte(2021, 1, 5), dte(2021, 3, 28)),
+        (date(2020, 3, 23), date(2020, 5, 13)), 
+        (date(2020, 11, 5), date(2020, 12, 2)), 
+        (date(2021, 1, 5), date(2021, 3, 28)),
         },
     'East Midlands':{
-        (dte(2020, 3, 23), dte(2020, 5, 13)), 
-        (dte(2020, 11, 5), dte(2020, 12, 2)), 
-        (dte(2021, 1, 5), dte(2021, 3, 28)),
+        (date(2020, 3, 23), date(2020, 5, 13)), 
+        (date(2020, 11, 5), date(2020, 12, 2)), 
+        (date(2021, 1, 5), date(2021, 3, 28)),
         },
     'West Midlands':{
-        (dte(2020, 3, 23), dte(2020, 5, 13)), 
-        (dte(2020, 11, 5), dte(2020, 12, 2)), 
-        (dte(2021, 1, 5), dte(2021, 3, 28)),
+        (date(2020, 3, 23), date(2020, 5, 13)), 
+        (date(2020, 11, 5), date(2020, 12, 2)), 
+        (date(2021, 1, 5), date(2021, 3, 28)),
         },
     'East of England':{
-        (dte(2020, 3, 23), dte(2020, 5, 13)), 
-        (dte(2020, 11, 5), dte(2020, 12, 2)), 
-        (dte(2020, 12, 26), dte(2021, 3, 28)),
+        (date(2020, 3, 23), date(2020, 5, 13)), 
+        (date(2020, 11, 5), date(2020, 12, 2)), 
+        (date(2020, 12, 26), date(2021, 3, 28)),
         },
     'London':{
-        (dte(2020, 3, 23), dte(2020, 5, 13)), 
-        (dte(2020, 11, 5), dte(2020, 12, 2)), 
-        (dte(2020, 12, 20), dte(2021, 3, 28)),
+        (date(2020, 3, 23), date(2020, 5, 13)), 
+        (date(2020, 11, 5), date(2020, 12, 2)), 
+        (date(2020, 12, 20), date(2021, 3, 28)),
         },
     'South East':{
-        (dte(2020, 3, 23), dte(2020, 5, 13)), 
-        (dte(2020, 11, 5), dte(2020, 12, 2)), 
-        (dte(2020, 12, 20), dte(2021, 3, 28)),
+        (date(2020, 3, 23), date(2020, 5, 13)), 
+        (date(2020, 11, 5), date(2020, 12, 2)), 
+        (date(2020, 12, 20), date(2021, 3, 28)),
         },
     'South West':{
-        (dte(2020, 3, 23), dte(2020, 5, 13)), 
-        (dte(2020, 11, 5), dte(2020, 12, 2)), 
-        (dte(2021, 1, 5), dte(2021, 3, 28)),
+        (date(2020, 3, 23), date(2020, 5, 13)), 
+        (date(2020, 11, 5), date(2020, 12, 2)), 
+        (date(2021, 1, 5), date(2021, 3, 28)),
         },
     'England':{
-        (dte(2020, 3, 23), dte(2020, 5, 13)), 
-        (dte(2020, 11, 5), dte(2020, 12, 2)), 
-        (dte(2021, 1, 5), dte(2021, 3, 28)),
+        (date(2020, 3, 23), date(2020, 5, 13)), 
+        (date(2020, 11, 5), date(2020, 12, 2)), 
+        (date(2021, 1, 5), date(2021, 3, 28)),
         },
     'Wales':{
-        (dte(2020, 3, 23), dte(2020, 5, 13)), 
-        (dte(2020, 10, 23), dte(2020, 11, 9)), 
-        (dte(2020, 12, 20), dte(2021, 3, 26)),
+        (date(2020, 3, 23), date(2020, 5, 13)), 
+        (date(2020, 10, 23), date(2020, 11, 9)), 
+        (date(2020, 12, 20), date(2021, 3, 26)),
         },
     'Scotland':{
-        (dte(2020, 3, 23), dte(2020, 5, 13)), 
-        (dte(2020, 10, 9), dte(2020, 10, 25)), 
-        (dte(2021, 1, 5), dte(2021, 4, 1)),
+        (date(2020, 3, 23), date(2020, 5, 13)), 
+        (date(2020, 10, 9), date(2020, 10, 25)), 
+        (date(2021, 1, 5), date(2021, 4, 1)),
         },
     'Northern Ireland':{
-        (dte(2020, 3, 23), dte(2020, 5, 13)), 
-        (dte(2020, 10, 16), dte(2020, 11, 20)), 
-        (dte(2020, 11, 27), dte(2020, 12, 11)), 
-        (dte(2020, 12, 26), dte(2021, 3, 31)),
+        (date(2020, 3, 23), date(2020, 5, 13)), 
+        (date(2020, 10, 16), date(2020, 11, 20)), 
+        (date(2020, 11, 27), date(2020, 12, 11)), 
+        (date(2020, 12, 26), date(2021, 3, 31)),
         },
     'United Kingdom':{
-        (dte(2020, 3, 23), dte(2020, 5, 13)), 
-        (dte(2020, 11, 5), dte(2020, 12, 2)), 
-        (dte(2021, 1, 5), dte(2021, 3, 28)),
+        (date(2020, 3, 23), date(2020, 5, 13)), 
+        (date(2020, 11, 5), date(2020, 12, 2)), 
+        (date(2021, 1, 5), date(2021, 3, 28)),
         },
+    'Alberta':{},
+    #'British Columbia':{
+    #    (date(2020, 3, 18), date(2020, 5, 19)),
+    #    (date(2020, 11, 7), date(2021, 6, 15)),
+    #},
+    'British Columbia':{},
+    'Saskatchewan':{},
+    'Manitoba':{},
+    'Ontario':{},
+    'Quebec':{},
+    'New Brunswick':{},
+    'Prince Edward Island':{},
+    'Nova Scotia':{},
+    'Newfoundland and Labrador':{},
+    'Yukon':{},
+    'Northwest Territory':{},
+    'Nunavut':{},
 }
 
 ### Parameters ###
@@ -137,7 +172,7 @@ rolling_offset = 3   # Number of days to offset rolling data
 # Cases plot
 case_bar_color = 'cornflowerblue'
 case_line_color = 'b'
-case_line_label = 'Positive tests'
+case_label = 'Positive tests'
 
 # Hospitalisations plot
 hosp_fac = 10
@@ -149,9 +184,107 @@ hosp_line_label = r'Hospital admissions $[\times %d]$'%(int(hosp_fac))
 death_fac = 20
 death_bar_color = 'indianred'
 death_line_color = 'r'
-death_line_label = r'Deaths $[\times %d]$'%(int(death_fac))
+death_label = r'Deaths $[\times %d]$'%(int(death_fac))
+
+### Canada data ###
+
+def read_Canada_data(infile):
+    df = pd.read_csv(infile)
+    df.sort_values(by=['prname', 'date'], ascending=[True, False], inplace=True)
+    df['date'] = pd.to_datetime(df['date'])
+    for col in ['numtotal_last7', 'numdeaths_last7']:
+        df[col] = df[col]/7.
+    return df
+
+def plot_Canada_data(df, provinces):
+
+    import matplotlib
+    from datetime import date
+
+    # Parameters
+    dpi = 200.
+    bar_width = 1.
+    bar_alpha = 1.
+    nrow = len(provinces)
+    pop = population_Canadian_provinces
+    start_date = date(2020, 3, 1)
+    end_date = max(df['date'])+relativedelta(months=2)
+    label = 'Total number per day per 100,000 population'
+    nmax = 50
+    titx = 0.01
+    figx = 18.; figy = 2.
+    use_seaborn = True
+
+    # Seaborn
+    if use_seaborn:
+        sns.set_theme(style='ticks')
+    else:
+        sns.reset_orig
+        matplotlib.rc_file_defaults()
+
+    # Make plot
+    fig, _ = plt.subplots(nrow, 1, figsize=(figx,figy*nrow), dpi=dpi)
+
+    for iplot, province in enumerate(provinces):
+        plt.subplot(nrow, 1, iplot+1)
+        sort_month_axis(plt)
+        plot_month_spans(plt)
+        plot_lockdown_spans(plt, df, province)
+        plt.bar(
+            x=df[df['prname']==province]['date'], 
+            height=df[df['prname']==province]['numtoday']*pop_norm_num/pop[province], 
+            width=bar_width, 
+            color=case_bar_color, 
+            linewidth=0., 
+            alpha=bar_alpha,
+            )
+        plt.bar(
+            x=df[df['prname']==province]['date'], 
+            height=df[df['prname']==province]['numdeathstoday']*death_fac*pop_norm_num/pop[province], 
+            width=bar_width, 
+            color=death_bar_color, 
+            linewidth=0., 
+            alpha=bar_alpha,
+            )
+        plt.plot(
+            df[df['prname']==province]['date']-dt.timedelta(rolling_offset), 
+            df[df['prname']==province]['numtotal_last7']*pop_norm_num/pop[province], 
+            color=case_line_color, 
+            label=case_label,
+            )
+        plt.plot(
+            df[df['prname']==province]['date']-dt.timedelta(rolling_offset), 
+            df[df['prname']==province]['numdeaths_last7']*death_fac*pop_norm_num/pop[province], 
+            color=death_line_color, 
+            label=death_label
+            )
+        plt.xlabel(None)
+        plt.ylim((0., nmax))
+        plt.xlim((start_date, end_date))
+        if iplot==0:
+            date = max(df['date'])
+            title = province+'\n%s'%(date.strftime("%Y-%m-%d"))
+            tity = 0.70
+        else:
+            title = province
+            tity = 0.80
+        plt.title(title, x=titx, y=tity, loc='left', fontsize='small', bbox=dict(facecolor='w', edgecolor='k'))
+        if iplot==0: plt.legend(loc='upper right')
+
+    # One big y-axis label
+    ax = fig.add_subplot(111, frameon=False)
+    ax.spines['top'].set_color('none')
+    ax.spines['bottom'].set_color('none')
+    ax.spines['left'].set_color('none')
+    ax.spines['right'].set_color('none')
+    ax.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
+    ax.set_ylabel(label)
+
+    plt.tight_layout()
 
 ### ###
+
+### JHU data ###
 
 def read_JHU_data(file):
     '''
@@ -206,18 +339,19 @@ def plot_UK_deaths(df_daily, df_rolling):
         'Flu deaths at height of a bad flu year': 4.*25000./365., # Compress total over 3 months (shoddy)
     }
     country = 'United Kingdom'
+    bar_alpha = 1.
 
     # Plot
     _, ax = plt.subplots(figsize=(18.,4.))
     sort_month_axis(plt)
     plot_month_spans(plt, alpha=0.025)
     plot_lockdown_spans(plt, df_daily, region=country, label='Lockdowns')
-    sns.lineplot(data=df_rolling.loc[country], label='UK COVID-19 deaths', color=case_line_color)
-    plt.bar(df_daily.loc[country].index, df_daily.loc[country].values, width=1., color=case_bar_color, linewidth=0.)
+    sns.lineplot(data=df_rolling.loc[country], label='UK COVID-19 deaths', color=death_line_color)
+    plt.bar(df_daily.loc[country].index, df_daily.loc[country].values, width=1., color=death_bar_color, linewidth=0., alpha=bar_alpha)
     plt.ylabel('Deaths per day during pandemic')
     plt.xlabel('')
     plt.ylim(bottom=0., top=1500)
-    plt.xlim([dte(2020, 1, 1), max(df_rolling.columns)+relativedelta(months=6)])
+    plt.xlim([date(2020, 1, 1), max(df_rolling.columns)+relativedelta(months=6)])
     for i, death in enumerate(deaths.keys()):
         if i == 0:
             delta = -85.
@@ -245,7 +379,7 @@ def plot_world_rates(df, countries, dftype='deaths'):
     plt.ylabel(dftype.capitalize()+' per day per million population')
     plt.xlabel('')
     plt.ylim(bottom=0.)
-    plt.xlim([dte(2020, 1, 1), max(df.columns)+relativedelta(months=3)])
+    plt.xlim([date(2020, 1, 1), max(df.columns)+relativedelta(months=3)])
     plt.legend(loc='upper right', edgecolor='k')
     plt.title(dt.date.today().strftime("%Y-%m-%d"), x=0.015, y=0.88, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
     plt.tight_layout()
@@ -263,7 +397,7 @@ def plot_world_totals(df, countries, dftype='deaths'):
     plt.ylabel('Total '+dftype+' per million population')
     plt.xlabel('')
     plt.ylim(bottom=0.)
-    plt.xlim([dte(2020, 1, 1), max(df.columns)+relativedelta(months=3)])
+    plt.xlim([date(2020, 1, 1), max(df.columns)+relativedelta(months=3)])
     plt.legend(loc='upper right', edgecolor='k')
     plt.title(dt.date.today().strftime("%Y-%m-%d"), x=0.015, y=0.88, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
     ax.get_yaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
@@ -286,10 +420,14 @@ def plot_world_deaths_per_case(df_deaths, df_cases, countries):
     plt.xlabel('')
     plt.yscale('log')
     plt.ylim((1e-3, 1.))
-    plt.xlim([dte(2020, 1, 1), max(df.columns)+relativedelta(months=3)])
+    plt.xlim([date(2020, 1, 1), max(df.columns)+relativedelta(months=3)])
     plt.legend(loc='upper right', edgecolor='k')
     plt.title(dt.date.today().strftime("%Y-%m-%d"), x=0.015, y=0.88, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
     plt.tight_layout()
+
+### ###
+
+### UK data ###
 
 def download_data(area, metrics, verbose=True):
     '''
@@ -491,10 +629,11 @@ def plot_month_spans(plt, color='black', alpha=0.05):
     '''
     for year in [2020, 2021, 2022, 2023]:
         for month in [2, 4, 6, 8, 10, 12]:
-            plt.axvspan(dt.date(year, month, 1), dt.date(year, month, 1)+relativedelta(months=+1), 
+            plt.axvspan(dt.date(year, month, 1), 
+                        dt.date(year, month, 1)+relativedelta(months=+1), 
                         alpha=alpha, 
-                        color=color,
-                        lw=0.,
+                        color=color, 
+                        lw=0., 
                         )
 
 def plot_lockdown_spans(plt, data, region, color='red', alpha=0.25, label='Lockdown'):
@@ -546,6 +685,12 @@ def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True
     dpi = 200 # 100 is default
     date = max(df['date'])
     legend_location = 'left'
+    bar_alpha = 1.
+    deaths = { # Comparable deaths
+        'All-cause deaths in a typical year': 530841./365., # 2019 total averaged over 365 days
+        'Flu deaths in a typical flu year': 15000./365., # Total averaged over year
+        'Flu deaths at height of a bad flu year': 4.*25000./365., # Compress total over 3 months (shoddy)
+    }
 
     ### Figure options ###
 
@@ -633,7 +778,8 @@ def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True
                         df[df['Region']==region][col]*fac,
                         width=bar_width,
                         color=bar_color,
-                        linewidth=0.
+                        linewidth=0.,
+                        alpha=bar_alpha,
                        )
 
         # Lines for weekly average
@@ -642,7 +788,7 @@ def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True
                 if col == 'Cases_roll':
                     fac = pop_fac/days_roll
                     line_color = case_line_color
-                    line_label = case_line_label
+                    line_label = case_label
                 elif col == 'Hosp_roll':
                     fac = pop_fac*hosp_fac/days_roll
                     line_color = hosp_line_color
@@ -650,7 +796,7 @@ def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True
                 elif col == 'Deaths_roll':
                     fac = pop_fac*death_fac/days_roll
                     line_color = death_line_color
-                    line_label = death_line_label
+                    line_label = death_label
                 else:
                     raise ValueError('Something went wrong')
                 plt.plot(pd.to_datetime(df[df['Region']==region]['date'])-dt.timedelta(rolling_offset),
@@ -658,6 +804,12 @@ def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True
                          color=line_color, 
                          label=line_label
                         )
+
+        if region=='United Kingdom' and pop_norm==False:
+            for i, death in enumerate(deaths.keys()):
+                delta = 50.
+                plt.axhline(deaths[death]*death_fac, color='black', alpha=0.8, ls=':')
+                plt.text(max(df['date'])+relativedelta(days=15), (deaths[death]+delta)*death_fac, death)
 
         # Ticks and month arragement on x axis
         sort_month_axis(plt)
@@ -723,8 +875,8 @@ def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True
 
     #if n != 1: plt.tight_layout()
     plt.tight_layout()
-    if(outfile != None): plt.savefig(outfile)
-    plt.show(block = False)
+    if outfile != None: plt.savefig(outfile)
+    plt.show(block=False)
 
 def plot_rolling_data(df, start_date, end_date, regions, pop_norm=True, plot_type='Cases', log=True):
 
@@ -738,7 +890,7 @@ def plot_rolling_data(df, start_date, end_date, regions, pop_norm=True, plot_typ
     days_roll = days_in_roll
     pop_num = pop_norm_num
     use_seaborn = True
-    lockdown_region = 'London'
+    lockdown_region = 'United Kingdom'
     plot_lockdowns = True
     plot_months = True
     figx = 17.; figy = 6.
@@ -779,7 +931,7 @@ def plot_rolling_data(df, start_date, end_date, regions, pop_norm=True, plot_typ
                  color='C{}'.format(i), 
                  label=region
                 )
-        plt.title('Daily new '+plot_type.lower()+': %s' % (date.strftime("%Y-%m-%d")))
+        plt.title('Daily new '+plot_type.lower()+': %s'%(date.strftime("%Y-%m-%d")))
 
     # Ticks and month arragement on x axis
     sort_month_axis(plt)
@@ -803,7 +955,7 @@ def plot_doubling_times(df, start_date, end_date, regions, plot_type='Cases'):
     
     # Parameters
     use_seaborn = True
-    lockdown_region = 'London'
+    lockdown_region = 'United Kingdom'
     plot_lockdowns = True
     plot_months = True
     figx = 17.; figy = 6.
@@ -861,7 +1013,7 @@ def plot_R_estimates(df, start_date, end_date, regions, plot_type='Cases'):
     
     # Parameters
     use_seaborn = True
-    lockdown_region = 'London'
+    lockdown_region = 'United Kingdom'
     figx = 17.; figy = 6.
     plot_lockdowns = True
     plot_months = True
@@ -899,3 +1051,5 @@ def plot_R_estimates(df, start_date, end_date, regions, plot_type='Cases'):
     plt.ylim(bottom=Rmin, top=Rmax)
     plt.legend()
     plt.show()
+
+### ###
