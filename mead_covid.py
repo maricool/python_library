@@ -446,7 +446,6 @@ def plot_world(df, countries, dftype='deaths'):
         _, ymax = ax.get_ylim()
         if ymax >= 1e3:
             ax.get_yaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
-
         if iplot == 1:
             plt.legend(loc='upper right', edgecolor='k')
             title = dftype.capitalize()+': '+dt.date.today().strftime("%Y-%m-%d")
