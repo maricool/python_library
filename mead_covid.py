@@ -4,9 +4,15 @@ import pandas as pd
 import datetime as dt
 from datetime import date
 from dateutil.relativedelta import relativedelta
+import matplotlib
+import matplotlib.dates as dates
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import matplotlib.ticker as ticker
+import requests
 import seaborn as sns
 
+# My imports
 import mead_general as mead
 import mead_pandas as mpd
 
@@ -172,7 +178,7 @@ rolling_offset = 3   # Number of days to offset rolling data
 # Cases plot
 case_bar_color = 'cornflowerblue'
 case_line_color = 'b'
-case_label = 'Positive tests'
+case_label = 'New cases'
 
 # Hospitalisations plot
 hosp_fac = 10
@@ -197,9 +203,6 @@ def read_Canada_data(infile):
     return df
 
 def plot_Canada_data(df, provinces):
-
-    import matplotlib
-    from datetime import date
 
     # Parameters
     dpi = 200.
@@ -226,8 +229,7 @@ def plot_Canada_data(df, provinces):
     fig, _ = plt.subplots(nrow, 1, figsize=(figx,figy*nrow), dpi=dpi)
 
     for iplot, province in enumerate(provinces):
-        plt.subplot(nrow, 1, iplot+1)
-        sort_month_axis(plt)
+        ax = plt.subplot(nrow, 1, iplot+1)
         plot_month_spans(plt)
         plot_lockdown_spans(plt, df, province)
         plt.bar(
@@ -261,15 +263,28 @@ def plot_Canada_data(df, provinces):
         plt.xlabel(None)
         plt.ylim((0., nmax))
         plt.xlim((start_date, end_date))
-        if iplot==0:
-            date = max(df['date'])
-            title = province+'\n%s'%(date.strftime("%Y-%m-%d"))
+        if iplot == 0:
+            date_label = max(df['date'])
+            title = province+'\n%s'%(date_label.strftime("%Y-%m-%d"))
             tity = 0.70
         else:
             title = province
             tity = 0.80
         plt.title(title, x=titx, y=tity, loc='left', fontsize='small', bbox=dict(facecolor='w', edgecolor='k'))
-        if iplot==0: plt.legend(loc='upper right')
+        if iplot == 0: plt.legend(loc='upper right')
+
+        # Sort x-axis with month data
+        X = plt.gca().xaxis
+        X.set_major_locator(dates.MonthLocator())
+        X.set_minor_locator(dates.MonthLocator(bymonthday=15))
+        X.set_major_formatter(ticker.NullFormatter())
+        if iplot == nrow-1:
+            fmt = dates.DateFormatter('%b') # Specify the format - %b gives us Jan, Feb...
+        else:
+            fmt = ticker.NullFormatter()
+        X.set_minor_formatter(fmt)
+        plt.tick_params(axis='x', which='minor', bottom=False, labelbottom=True)
+        plt.xlabel(None)
 
     # One big y-axis label
     ax = fig.add_subplot(111, frameon=False)
@@ -280,6 +295,7 @@ def plot_Canada_data(df, provinces):
     ax.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
     ax.set_ylabel(label)
 
+    # Finalize
     plt.tight_layout()
 
 ### ###
@@ -329,9 +345,6 @@ def plot_UK_deaths(df_daily, df_rolling):
     Plot the UK death rate from COVID-19 over the course of the pandemic.
     Also add information about flu deaths and total deaths.
     '''
-    import matplotlib.patches as mpatches
-    import matplotlib.ticker as ticker
-
     # Parameters
     deaths = { # Comparable deaths
         'All-cause deaths in a typical year': 530841./365., # 2019 total averaged over 365 days
@@ -388,7 +401,6 @@ def plot_world_totals(df, countries, dftype='deaths'):
     ''' 
     World total deaths in different countries.
     '''
-    import matplotlib.ticker as ticker
     _, ax = plt.subplots(figsize=(18.,4.))
     sort_month_axis(plt)
     plot_month_spans(plt, alpha=0.025)
@@ -401,6 +413,57 @@ def plot_world_totals(df, countries, dftype='deaths'):
     plt.legend(loc='upper right', edgecolor='k')
     plt.title(dt.date.today().strftime("%Y-%m-%d"), x=0.015, y=0.88, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
     ax.get_yaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
+    plt.tight_layout()
+
+def plot_world(df, countries, dftype='deaths'):
+    ''' 
+    World total and rate of cases/deaths in different countries.
+    '''
+    per = 1e6
+    alpha_month = 0.025
+    figx = 18.; figy = 8.
+    titx = 0.015; tity = 0.87
+
+    plt.subplots(2, 1, figsize=(figx,figy))
+
+    for iplot in mead.mrange(1, 2):
+
+        if iplot == 1:
+            dg = df
+            ylab = 'Total '+dftype+' per '+mead.number_name(per)+' population'
+        else:
+            dg = calculate_JHU_rolling_from_original(df)
+            ylab = dftype.capitalize()+' per day per '+mead.number_name(per)+' population'
+
+        ax = plt.subplot(2, 1, iplot)
+        plot_month_spans(plt, alpha=alpha_month)
+        for country in countries:
+            sns.lineplot(data=dg.loc[country]*per/population_countries[country], label=country)
+        plt.ylabel(ylab)
+        plt.xlabel(None)
+        plt.ylim(bottom=0.)
+        plt.xlim([date(2020, 1, 1), max(df.columns)+relativedelta(months=3)])
+        _, ymax = ax.get_ylim()
+        if ymax >= 1e3:
+            ax.get_yaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
+
+        if iplot == 1:
+            plt.legend(loc='upper right', edgecolor='k')
+            title = dftype.capitalize()+': '+dt.date.today().strftime("%Y-%m-%d")
+            plt.title(title, x=titx, y=tity, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
+            xfmt = ticker.NullFormatter()
+        else:
+            ax.get_legend().remove()
+            sort_month_axis(plt)
+            xfmt = dates.DateFormatter('%b') # Specify the format - %b gives us Jan, Feb...
+        X = plt.gca().xaxis
+        X.set_major_locator(dates.MonthLocator())
+        X.set_minor_locator(dates.MonthLocator(bymonthday=15))
+        X.set_major_formatter(ticker.NullFormatter())
+        X.set_minor_formatter(xfmt)
+        plt.tick_params(axis='x', which='minor', bottom=False, labelbottom=True)
+        plt.xlabel(None)
+
     plt.tight_layout()
 
 def plot_world_deaths_per_case(df_deaths, df_cases, countries):
@@ -433,8 +496,6 @@ def download_data(area, metrics, verbose=True):
     '''
     Download latest UK government data
     '''
-    import requests
-    
     # Parameters
     today = dt.date.today() # Today's date
     
@@ -610,11 +671,9 @@ def sort_month_axis(plt):
     '''
     Get the months axis of a plot looking nice
     '''
-    import matplotlib.dates as mdates
-    import matplotlib.ticker as ticker
-    locator_monthstart = mdates.MonthLocator() # Start of every month
-    locator_monthmid = mdates.MonthLocator(bymonthday=15) # Middle of every month
-    fmt = mdates.DateFormatter('%b') # Specify the format - %b gives us Jan, Feb...
+    locator_monthstart = dates.MonthLocator() # Start of every month
+    locator_monthmid = dates.MonthLocator(bymonthday=15) # Middle of every month
+    fmt = dates.DateFormatter('%b') # Specify the format - %b gives us Jan, Feb...
     X = plt.gca().xaxis
     X.set_major_locator(locator_monthstart)
     X.set_minor_locator(locator_monthmid)
@@ -673,10 +732,6 @@ def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True
         Nmax - Maximum value for y axis
         plot_type - Either 'Square', 'Long', or 'Elongated'
     '''
-    # Imports
-    import matplotlib
-    import matplotlib.ticker as ticker
-    
     # Parameters
     days_roll = days_in_roll
     pop_num = pop_norm_num
@@ -879,13 +934,9 @@ def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True
     plt.show(block=False)
 
 def plot_rolling_data(df, start_date, end_date, regions, pop_norm=True, plot_type='Cases', log=True):
-
-    # Plot rolling daily data to directly compare region-to-region
-
-    import matplotlib
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    
+    '''
+    Plot rolling daily data to directly compare region-to-region
+    '''
     # Parameters
     days_roll = days_in_roll
     pop_num = pop_norm_num
@@ -946,13 +997,9 @@ def plot_rolling_data(df, start_date, end_date, regions, pop_norm=True, plot_typ
     plt.show()
 
 def plot_doubling_times(df, start_date, end_date, regions, plot_type='Cases'):
-
-    # Plot doubling-time (or halving time) data to directly compare region-to-region
-
-    import matplotlib
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    
+    '''
+    Plot doubling-time (or halving time) data to directly compare region-to-region
+    '''
     # Parameters
     use_seaborn = True
     lockdown_region = 'United Kingdom'
@@ -1004,13 +1051,9 @@ def plot_doubling_times(df, start_date, end_date, regions, plot_type='Cases'):
     plt.show()
 
 def plot_R_estimates(df, start_date, end_date, regions, plot_type='Cases'):
-
-    # Plot rolling daily data to directly compare region-to-region
-
-    import matplotlib
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    
+    '''
+    Plot rolling daily data to directly compare region-to-region
+    '''
     # Parameters
     use_seaborn = True
     lockdown_region = 'United Kingdom'
