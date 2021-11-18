@@ -9,6 +9,25 @@ def opposite_side(left_or_right):
         raise ValueError('Input should be left or right')
     return out
 
+def number_name(n):
+    if n == int(1e1):
+        return 'ten'
+    elif n == int(1e2):
+        return 'hundred'
+    elif n == int(1e3):
+        return 'thousand'
+    elif n == int(1e4):
+        return 'ten thousand'
+    elif n == int(1e5):
+        return 'hundred thousand'
+    elif n == int(1e6):
+        return 'million'
+    elif n == int(1e9):
+        return 'billion'
+    else:
+        raise ValueError('Integer does not appear to have a name')
+        #return None
+
 def file_length(fname):
     '''
     Count the number of lines in a file
