@@ -73,6 +73,9 @@ population_countries = {
     'Australia': 25.500e6,
     'Canada': 37.742e6,
     'China': 1439.323e6,
+    'Netherlands': 17.135e6,
+    'South Africa': 59.309e6,
+    'Belgium': 11.590e6,
 }
 
 # Lockdown dates for Nations and Regions
@@ -205,7 +208,7 @@ def read_Canada_data(infile):
 def plot_Canada_data(df, provinces):
 
     # Parameters
-    dpi = 200.
+    dpi = 200
     bar_width = 1.
     bar_alpha = 1.
     nrow = len(provinces)
@@ -353,9 +356,10 @@ def plot_UK_deaths(df_daily, df_rolling):
     }
     country = 'United Kingdom'
     bar_alpha = 1.
+    dpi = 200
 
     # Plot
-    _, ax = plt.subplots(figsize=(18.,4.))
+    _, ax = plt.subplots(figsize=(18.,4.), dpi=dpi)
     sort_month_axis(plt)
     plot_month_spans(plt, alpha=0.025)
     plot_lockdown_spans(plt, df_daily, region=country, label='Lockdowns')
@@ -380,40 +384,40 @@ def plot_UK_deaths(df_daily, df_rolling):
     #plt.title(dt.date.today().strftime("%Y-%m-%d"), x=0.19, y=0.88, loc='Center', bbox=dict(facecolor='w', edgecolor='k'))
     plt.tight_layout()
 
-def plot_world_rates(df, countries, dftype='deaths'):
-    '''
-    World death rate in different countries.
-    '''
-    plt.figure(figsize=(18.,4.))
-    sort_month_axis(plt)
-    plot_month_spans(plt, alpha=0.025)
-    for country in countries:
-        sns.lineplot(data=df.loc[country]*1e6/population_countries[country], label=country)
-    plt.ylabel(dftype.capitalize()+' per day per million population')
-    plt.xlabel('')
-    plt.ylim(bottom=0.)
-    plt.xlim([date(2020, 1, 1), max(df.columns)+relativedelta(months=3)])
-    plt.legend(loc='upper right', edgecolor='k')
-    plt.title(dt.date.today().strftime("%Y-%m-%d"), x=0.015, y=0.88, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
-    plt.tight_layout()
+# def plot_world_rates(df, countries, dftype='deaths'):
+#     '''
+#     World death rate in different countries.
+#     '''
+#     plt.figure(figsize=(18.,4.))
+#     sort_month_axis(plt)
+#     plot_month_spans(plt, alpha=0.025)
+#     for country in countries:
+#         sns.lineplot(data=df.loc[country]*1e6/population_countries[country], label=country)
+#     plt.ylabel(dftype.capitalize()+' per day per million population')
+#     plt.xlabel('')
+#     plt.ylim(bottom=0.)
+#     plt.xlim([date(2020, 1, 1), max(df.columns)+relativedelta(months=3)])
+#     plt.legend(loc='upper right', edgecolor='k')
+#     plt.title(dt.date.today().strftime("%Y-%m-%d"), x=0.015, y=0.88, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
+#     plt.tight_layout()
 
-def plot_world_totals(df, countries, dftype='deaths'):
-    ''' 
-    World total deaths in different countries.
-    '''
-    _, ax = plt.subplots(figsize=(18.,4.))
-    sort_month_axis(plt)
-    plot_month_spans(plt, alpha=0.025)
-    for country in countries:
-        sns.lineplot(data=df.loc[country]*1e6/population_countries[country], label=country)
-    plt.ylabel('Total '+dftype+' per million population')
-    plt.xlabel('')
-    plt.ylim(bottom=0.)
-    plt.xlim([date(2020, 1, 1), max(df.columns)+relativedelta(months=3)])
-    plt.legend(loc='upper right', edgecolor='k')
-    plt.title(dt.date.today().strftime("%Y-%m-%d"), x=0.015, y=0.88, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
-    ax.get_yaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
-    plt.tight_layout()
+# def plot_world_totals(df, countries, dftype='deaths'):
+#     ''' 
+#     World total deaths in different countries.
+#     '''
+#     _, ax = plt.subplots(figsize=(18.,4.))
+#     sort_month_axis(plt)
+#     plot_month_spans(plt, alpha=0.025)
+#     for country in countries:
+#         sns.lineplot(data=df.loc[country]*1e6/population_countries[country], label=country)
+#     plt.ylabel('Total '+dftype+' per million population')
+#     plt.xlabel('')
+#     plt.ylim(bottom=0.)
+#     plt.xlim([date(2020, 1, 1), max(df.columns)+relativedelta(months=3)])
+#     plt.legend(loc='upper right', edgecolor='k')
+#     plt.title(dt.date.today().strftime("%Y-%m-%d"), x=0.015, y=0.88, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
+#     ax.get_yaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
+#     plt.tight_layout()
 
 def plot_world(df, countries, dftype='deaths'):
     ''' 
@@ -423,8 +427,9 @@ def plot_world(df, countries, dftype='deaths'):
     alpha_month = 0.025
     figx = 18.; figy = 8.
     titx = 0.015; tity = 0.87
+    dpi = 200
 
-    plt.subplots(2, 1, figsize=(figx,figy))
+    plt.subplots(2, 1, figsize=(figx,figy), dpi=dpi)
 
     for iplot in mead.mrange(1, 2):
 
@@ -448,7 +453,8 @@ def plot_world(df, countries, dftype='deaths'):
             ax.get_yaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
         if iplot == 1:
             plt.legend(loc='upper right', edgecolor='k')
-            title = dftype.capitalize()+': '+dt.date.today().strftime("%Y-%m-%d")
+            date_title = max(df.columns) # Not sure why this works, but it does
+            title = dftype.capitalize()+': '+date_title.strftime("%Y-%m-%d")
             plt.title(title, x=titx, y=tity, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
             xfmt = ticker.NullFormatter()
         else:
@@ -717,7 +723,7 @@ def plot_lockdown_spans(plt, data, region, color='red', alpha=0.25, label='Lockd
                     lw=0.,
                    )
 
-def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True, Nmax=None, plot_type='Square'):
+def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True, Nmax=None, plot_type='Square', legend_location='left'):
     '''
     Plot daily data and bar/line charts
     params
@@ -738,7 +744,6 @@ def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True
     use_seaborn = True
     dpi = 200 # 100 is default
     date = max(df['date'])
-    legend_location = 'left'
     bar_alpha = 1.
     deaths = { # Comparable deaths
         'All-cause deaths in a typical year': 530841./365., # 2019 total averaged over 365 days
@@ -945,6 +950,7 @@ def plot_rolling_data(df, start_date, end_date, regions, pop_norm=True, plot_typ
     plot_months = True
     figx = 17.; figy = 6.
     date = max(df['date'])
+    dpi = 200
 
     ### Figure options ###
 
@@ -966,7 +972,7 @@ def plot_rolling_data(df, start_date, end_date, regions, pop_norm=True, plot_typ
         ymin = 0.
 
     # Plot
-    plt.subplots(figsize=(figx, figy))
+    plt.subplots(figsize=(figx, figy), dpi=dpi)
     if plot_months: plot_month_spans(plt)
     if plot_lockdowns: plot_lockdown_spans(plt, df, lockdown_region)
 
@@ -1007,6 +1013,7 @@ def plot_doubling_times(df, start_date, end_date, regions, plot_type='Cases'):
     figx = 17.; figy = 6.
     ymin = 0.; ymax = 30.
     date = max(df['date'])
+    dpi = 200
 
     ### Figure options ###
 
@@ -1018,7 +1025,7 @@ def plot_doubling_times(df, start_date, end_date, regions, plot_type='Cases'):
         matplotlib.rc_file_defaults()
 
     # Plot
-    plt.subplots(figsize=(figx, figy))
+    plt.subplots(figsize=(figx, figy), dpi=dpi)
     if plot_months: plot_month_spans(plt)
     if plot_lockdowns: plot_lockdown_spans(plt, df, lockdown_region)
 
@@ -1061,6 +1068,7 @@ def plot_R_estimates(df, start_date, end_date, regions, plot_type='Cases'):
     plot_months = True
     Rmin = 0.; Rmax = 2.
     date = max(df['date'])
+    dpi = 200
 
     ### Figure options ###
 
@@ -1072,7 +1080,7 @@ def plot_R_estimates(df, start_date, end_date, regions, plot_type='Cases'):
         matplotlib.rc_file_defaults()
 
     # Plot
-    plt.subplots(figsize=(figx, figy))
+    plt.subplots(figsize=(figx, figy), dpi=dpi)
     if plot_months: plot_month_spans(plt)
     if plot_lockdowns: plot_lockdown_spans(plt, df, lockdown_region)
     plt.axhline(1., color='black')
