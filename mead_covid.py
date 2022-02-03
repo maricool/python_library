@@ -178,18 +178,23 @@ pop_norm_num = 1e5   # Normalisation for y axes (per population; usually 100,000
 infect_duration = 5. # Number of days an average person is infectious for (used in calculations of R number; lower values squash R about 1)
 rolling_offset = 3   # Number of days to offset rolling data
 
-# Cases plot
+# Cases
 case_bar_color = 'cornflowerblue'
 case_line_color = 'b'
-case_label = 'New cases'
+case_label = 'Cases'
 
-# Hospitalisations plot
+# Hospitalisations
 hosp_fac = 10
 hosp_bar_color = 'g'
 hosp_line_color = 'forestgreen'
-hosp_line_label = r'Hospital admissions $[\times %d]$'%(int(hosp_fac))
+hosp_label = r'Hospitalisations $[\times %d]$'%(int(hosp_fac))
 
-# Deaths plot
+# Hospital beds
+bed_bar_color = 'm'
+bed_line_color = 'violet'
+bed_label = r'Hospitalised'
+
+# Deaths
 death_fac = 20
 death_bar_color = 'indianred'
 death_line_color = 'r'
@@ -205,7 +210,7 @@ def read_Canada_data(infile):
         df[col] = df[col]/7.
     return df
 
-def plot_Canada_data(df, provinces):
+def plot_Canada_data(df, provinces, Nmax=100):
 
     # Parameters
     dpi = 200
@@ -216,7 +221,6 @@ def plot_Canada_data(df, provinces):
     start_date = date(2020, 3, 1)
     end_date = max(df['date'])+relativedelta(months=2)
     label = 'Total number per day per 100,000 population'
-    nmax = 50
     titx = 0.01
     figx = 18.; figy = 2.
     use_seaborn = True
@@ -264,7 +268,7 @@ def plot_Canada_data(df, provinces):
             label=death_label
             )
         plt.xlabel(None)
-        plt.ylim((0., nmax))
+        plt.ylim((0., Nmax))
         plt.xlim((start_date, end_date))
         if iplot == 0:
             date_label = max(df['date'])
@@ -581,7 +585,7 @@ def data_calculations(df, verbose):
     days_roll = days_in_roll
 
     # Calculate rolling cases and deaths (sum over previous week)
-    for col in ['Cases', 'Deaths', 'Hosp']:
+    for col in ['Cases', 'Hosp', 'Beds', 'Deaths']:
         if col in df:
             print('Calculating:', col+'_roll_Mead')
             df[col+'_roll_Mead'] = df.groupby('Region')[col].rolling(days_roll).sum(skipna=False).reset_index(0,drop=True)
@@ -723,7 +727,10 @@ def plot_lockdown_spans(plt, data, region, color='red', alpha=0.25, label='Lockd
                     lw=0.,
                    )
 
-def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True, Nmax=None, plot_type='Square', legend_location='left'):
+def plot_bar_data(df, start_date, end_date, regions, 
+    outfile=None, pop_norm=True, Nmax=None, plot_type='Square', legend_location='left',
+    hosp_fac=hosp_fac, death_fac=death_fac, 
+    dpi=200, ylabel=None, y2label=None, y2axis=False):
     '''
     Plot daily data and bar/line charts
     params
@@ -742,14 +749,22 @@ def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True
     pop_num = pop_norm_num
     bar_width = 1.
     use_seaborn = True
-    dpi = 200 # 100 is default
     date = max(df['date'])
     bar_alpha = 1.
     deaths = { # Comparable deaths
-        'All-cause deaths in a typical year': 530841./365., # 2019 total averaged over 365 days
-        'Flu deaths in a typical flu year': 15000./365., # Total averaged over year
-        'Flu deaths at height of a bad flu year': 4.*25000./365., # Compress total over 3 months (shoddy)
+        #'All-cause deaths in a typical year': 530841./365., # 2019 total averaged over 365 days
+        #'Flu deaths in a typical flu year': 15000./365., # Total averaged over year
+        #'Flu deaths at height of a bad flu year': 4.*25000./365., # Compress total over 3 months (shoddy)
     }
+    case_label = 'Cases'
+    if y2axis:
+        hosp_label = 'Hospitalisations'
+    else:
+        hosp_label = r'Hospitalisations $[\times %d]$'%(int(hosp_fac))
+    if y2axis:
+        death_label = 'Deaths'
+    else:
+        death_label = r'Deaths $[\times %d]$'%(int(death_fac))
 
     ### Figure options ###
 
@@ -820,7 +835,7 @@ def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True
         if plot_lockdowns: plot_lockdown_spans(plt, df, region)
 
         # Plot bars for numbers per day
-        for col in ['Cases', 'Hosp', 'Deaths']:
+        for col in ['Cases', 'Hosp', 'Beds', 'Deaths']:
             if col in df:
                 if col == 'Cases':
                     fac = pop_fac
@@ -828,6 +843,9 @@ def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True
                 elif col == 'Hosp':
                     fac = pop_fac*hosp_fac
                     bar_color = hosp_bar_color
+                elif col == 'Beds':
+                    fac = pop_fac
+                    bar_color = bed_bar_color
                 elif col == 'Deaths':
                     fac = pop_fac*death_fac
                     bar_color = death_bar_color
@@ -842,7 +860,7 @@ def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True
                        )
 
         # Lines for weekly average
-        for col in ['Cases_roll', 'Hosp_roll', 'Deaths_roll']:
+        for col in ['Cases_roll', 'Hosp_roll', 'Beds_roll', 'Deaths_roll']:
             if col in df:
                 if col == 'Cases_roll':
                     fac = pop_fac/days_roll
@@ -851,7 +869,11 @@ def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True
                 elif col == 'Hosp_roll':
                     fac = pop_fac*hosp_fac/days_roll
                     line_color = hosp_line_color
-                    line_label = hosp_line_label
+                    line_label = hosp_label
+                elif col == 'Beds_roll':
+                    fac = pop_fac/days_roll
+                    line_color = bed_line_color
+                    line_label = bed_label
                 elif col == 'Deaths_roll':
                     fac = pop_fac*death_fac/days_roll
                     line_color = death_line_color
@@ -879,9 +901,16 @@ def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True
         if Nmax != None: 
             plt.ylim(top=Nmax)
         if pop_norm:
-            plt.ylabel('Number per day per 100,000 population')
-        else:           
-            plt.ylabel('Number per day')
+            if y2axis:
+                raise ValueError('You need to code up y2 if pop_norm is active')
+            if ylabel is None: ylabel = 'Number per day per 100,000 population'
+        else:
+            if y2axis:
+                if ylabel is None: ylabel = 'New cases per day'
+                if y2label is None: y2label = 'Deaths per day'
+            else:
+                if ylabel is None: ylabel = 'Number per day'
+        plt.ylabel(ylabel)
 
         # Title that is region
         if n == 1:
@@ -931,6 +960,13 @@ def plot_bar_data(df, start_date, end_date, regions, outfile=None, pop_norm=True
         # Commas on y axis for long numbers
         if not pop_norm: 
             axs.get_yaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
+
+        # Secondary y axis
+        if y2axis:
+            y2fac = death_fac
+            ax2 = axs.secondary_yaxis('right', functions=(lambda y: y/y2fac, lambda y: y*y2fac))
+            ax2.set_ylabel(y2label)
+            ax2.get_yaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
 
     #if n != 1: plt.tight_layout()
     plt.tight_layout()

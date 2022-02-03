@@ -44,7 +44,7 @@ def SIR_equations(t, y, R0, G0, f, m):
     return dS.tolist()+dI.tolist()+dR.tolist()
 
 # Set of right-hand-side equations
-def basic_SIR_equations(t, y, R0t, G0):
+def basic_SIR_equations(t, y, R0t, G0=0., Vt=(lambda t, R: 0.)):
     '''
     Right-hand side of the SIR equations
     t - time array
@@ -56,21 +56,22 @@ def basic_SIR_equations(t, y, R0t, G0):
     S = y[0]; I = y[1]; R = y[2]
     
     # Differential equations
-    dS = -R0t(t)*I*S+G0*R
+    dS = -R0t(t)*I*S+G0*R-Vt(t, R)
     dI = R0t(t)*I*S-I
-    dR = I-G0*R
+    dR = I-G0*R+Vt(t, R)
 
     # Return a list
     return [dS, dI, dR]
 
-def solve_basic_SIR(t, Ii, Ri, R0t, G0):
+def solve_basic_SIR(t, Ii, Ri, R0t, G0=0., Vt=(lambda t, R: 0.)):
     '''
     Routine to solve the SIR equations
     t - Array of time values for solution [typical infectiousness duration]
     Ii - Array of initial infected fraction for each group
     Ri - Array of initial recovered fraction for each group (array of zeros for new diseases)
     Rt - R0(t) function
-    G0 - Ratio of infected duration to recovered duration (usually << 1)
+    G0 - Ratio of infected duration to recovered duration (usually << 1; 0 means immunity is forever)
+    Vt - Vaccination rate (fraction of population per infectiouness time)
     '''
     from scipy.integrate import solve_ivp
 
@@ -86,7 +87,7 @@ def solve_basic_SIR(t, Ii, Ri, R0t, G0):
     solution = solve_ivp(basic_SIR_equations, (t[0], t[-1]), [Si, Ii, Ri], 
                             method='RK45', 
                             t_eval=t, 
-                            args=(R0t, G0), 
+                            args=(R0t, G0, Vt), 
                         )
 
     # Break solution down into SIR
