@@ -23,6 +23,7 @@ def Gaussian(x, mu, sig):
 def Gaussian_distribution(x, mu, sig):
     '''
     Normalised Gaussian function that integrates to zero
+    NOTE: Try scipy.stats.norm
     NOTE: G(x=0) /= 0
     @params
         mu - mean
@@ -34,6 +35,7 @@ def Gaussian_distribution(x, mu, sig):
 def Poisson_distribution(n, mu):
     '''
     Normalised Poisson distribution
+    NOTE: Try scipy.stats.poisson
     @ params
         mu - mean
     '''
