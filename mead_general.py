@@ -49,34 +49,12 @@ def mrange(a, b=None):
     else:
         return range(a, b+1)
 
-def is_even(num):
-    '''
-    Returns true if integer is even
-    '''
-    if num%2 == 0:
-        return True
-    else:
-        return False
-
-def is_odd(num):
-    '''
-    True if integer is odd
-    '''
-    return not is_even(num)
-
 def is_float_close_to_integer(x):
     '''
     Checks if float is close to an integer value
     '''
     from math import isclose
     return isclose(x, int(x))
-
-def ceiling(a, b):
-    '''
-    Ceiling division a/b
-    TODO: Could also use math.ceiling
-    '''
-    return -(-a // b)
 
 ### ###
 
