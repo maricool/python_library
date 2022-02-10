@@ -305,6 +305,134 @@ def plot_Canada_data(df, provinces, Nmax=100):
     # Finalize
     plt.tight_layout()
 
+def plot_province_data(df, province, Nmax=5000, fake_hosp=False, fake_hosp_fac=0.01):
+
+    from datetime import date
+    from dateutil.relativedelta import relativedelta
+    import seaborn as sns
+    import datetime as dt
+    import matplotlib
+    import matplotlib.dates as dates
+    import matplotlib.ticker as ticker
+
+    # Parameters
+    dpi = 200
+    bar_width = 1.
+    bar_alpha = 1.
+    nrow = 1
+    #start_date = date(2020, 3, 1)
+    start_date = date(2020, 8, 1)
+    end_date = max(df['date'])+relativedelta(months=2)
+    y1label = 'New cases per day'
+    y2label = 'New deaths/hospitalisations per day'
+    y2fac = 50
+    titx = 0.015; tity = 0.86
+    figx = 10.; figy = 4.
+    use_seaborn = True
+    rolling_offset = 3 # Number of days to offset rolling data
+
+    # Cases plot
+    case_bar_color = 'cornflowerblue'
+    case_line_color = 'b'
+    case_label = 'Cases'
+
+    # Hospitalisations plot
+    hosp_fac = y2fac
+    hosp_bar_color = 'g'
+    hosp_line_color = 'forestgreen'
+    hosp_label = 'Hospitalizations'
+
+    # Deaths plot
+    death_fac = y2fac
+    death_bar_color = 'indianred'
+    death_line_color = 'r'
+    death_label = 'Deaths'
+
+    # Seaborn
+    if use_seaborn:
+        sns.set_theme(style='ticks')
+    else:
+        sns.reset_orig
+        matplotlib.rc_file_defaults()
+
+    # Make plot
+    plt.subplots(nrow, 1, figsize=(figx,figy*nrow), dpi=dpi)
+    ax = plt.subplot(nrow, 1, 1)
+    plot_month_spans(plt)
+    plot_lockdown_spans(plt, df, province)
+    plt.bar(
+        x=df[df['prname']==province]['date'], 
+        height=df[df['prname']==province]['numtoday'], 
+        width=bar_width, 
+        color=case_bar_color, 
+        linewidth=0., 
+        alpha=bar_alpha,
+        )
+    if fake_hosp:
+        plt.bar(
+            x=df[df['prname']==province]['date'], 
+            height=df[df['prname']==province]['numtoday']*hosp_fac*fake_hosp_fac, 
+            width=bar_width, 
+            color=hosp_bar_color, 
+            linewidth=0., 
+            alpha=bar_alpha,
+            )
+    plt.bar(
+        x=df[df['prname']==province]['date'], 
+        height=df[df['prname']==province]['numdeathstoday']*death_fac, 
+        width=bar_width, 
+        color=death_bar_color, 
+        linewidth=0., 
+        alpha=bar_alpha,
+        )
+    plt.plot(
+        df[df['prname']==province]['date']-dt.timedelta(rolling_offset), 
+        df[df['prname']==province]['numtotal_last7'], 
+        color=case_line_color, 
+        label=case_label,
+        )
+    if fake_hosp:
+        plt.plot(
+            df[df['prname']==province]['date']-dt.timedelta(rolling_offset), 
+            df[df['prname']==province]['numtotal_last7']*hosp_fac*fake_hosp_fac, 
+            color=hosp_line_color, 
+            label=hosp_label,
+            )
+    plt.plot(
+        df[df['prname']==province]['date']-dt.timedelta(rolling_offset), 
+        df[df['prname']==province]['numdeaths_last7']*death_fac, 
+        color=death_line_color, 
+        label=death_label
+        )
+    plt.xlabel(None)
+    plt.ylim((0., Nmax))
+    plt.xlim((start_date, end_date))
+    date_label = max(df['date'])
+    title = province+'\n%s'%(date_label.strftime("%Y-%m-%d"))
+    plt.title(title, x=titx, y=tity, loc='left', fontsize='small', bbox=dict(facecolor='w', edgecolor='k'))
+    plt.legend(loc='upper right')
+
+    # Sort x-axis with month data
+    X = plt.gca().xaxis
+    X.set_major_locator(dates.MonthLocator())
+    X.set_minor_locator(dates.MonthLocator(bymonthday=15))
+    X.set_major_formatter(ticker.NullFormatter())
+    fmt = dates.DateFormatter('%b') # Specify the format - %b gives us Jan, Feb...
+    X.set_minor_formatter(fmt)
+    plt.tick_params(axis='x', which='minor', bottom=False, labelbottom=True)
+    plt.xlabel(None)
+
+    # Primary y axis
+    ax.set_ylabel(y1label)
+    ax.get_yaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
+
+    # Secondary y axis
+    ax2 = ax.secondary_yaxis('right', functions=(lambda y: y/y2fac, lambda y: y*y2fac))
+    ax2.set_ylabel(y2label)
+
+    # Finalize
+    plt.tight_layout()
+
 ### ###
 
 ### JHU data ###
