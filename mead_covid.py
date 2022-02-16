@@ -1,4 +1,4 @@
-# Standard import statements
+# Standard imports
 import numpy as np
 import pandas as pd
 import datetime as dt
@@ -34,6 +34,7 @@ population_regions = {
 # Canadian provincial populations
 # https://worldpopulationreview.com/canadian-provinces
 population_Canadian_provinces = {
+    'Canada': 38.01e6,
     'Ontario': 14.733e6,
     'Quebec': 8.576e6,
     'British Columbia': 5.146e6,
@@ -151,6 +152,7 @@ lockdowns = {
         (date(2020, 11, 5), date(2020, 12, 2)), 
         (date(2021, 1, 5), date(2021, 3, 28)),
         },
+    'Canada':{},
     'Alberta':{},
     #'British Columbia':{
     #    (date(2020, 3, 18), date(2020, 5, 19)),
@@ -194,6 +196,11 @@ bed_bar_color = 'm'
 bed_line_color = 'violet'
 bed_label = r'Hospitalised'
 
+# ICU
+icu_bar_color = 'm'
+icu_line_color = 'violet'
+icu_label = r'Intensive care'
+
 # Deaths
 death_fac = 20
 death_bar_color = 'indianred'
@@ -210,7 +217,108 @@ def read_Canada_data(infile):
         df[col] = df[col]/7.
     return df
 
-def plot_Canada_data(df, provinces, Nmax=100):
+def read_Canada_hosp_data(infile):
+    df = pd.read_csv(infile)
+    df.rename(columns={'Date': 'date'}, inplace=True, errors='raise')
+    df.sort_values(by=['date'], ascending=[True], inplace=True)
+    df['date'] = pd.to_datetime(df['date'])
+    return df
+
+def read_Canada_vaccine_data(infile):
+    df = pd.read_csv(infile)
+    df.rename(columns={'prename': 'prname', 'week_end': 'date'}, inplace=True, errors='raise')
+    df.sort_values(by=['prname', 'date'], ascending=[True, False], inplace=True)
+    df['date'] = pd.to_datetime(df['date'])
+    return df
+
+def plot_Canada_data(df, df_hosp, death_fac=20, Nmax=None):
+
+    # Parameters
+    dpi = 200
+    bar_width = 1.
+    bar_alpha = 1.
+    nrow = 1
+    start_date = date(2020, 8, 1)
+    end_date = max(df['date'])+relativedelta(months=3)
+    ylabel = 'Number per day'
+    y2label = 'Deaths per day'
+    y2fac = death_fac
+    titx = 0.015; tity = 0.86
+    figx = 10.; figy = 4.
+    use_seaborn = True
+    province = 'Canada'
+
+    # Seaborn
+    if use_seaborn:
+        sns.set_theme(style='ticks')
+    else:
+        sns.reset_orig
+        matplotlib.rc_file_defaults()
+
+    # Make plot
+    plt.subplots(nrow, 1, figsize=(figx,figy*nrow), dpi=dpi)
+    ax = plt.subplot(nrow, 1, 1)
+    plot_month_spans(plt)
+    plot_lockdown_spans(plt, df, province)
+
+    # Bars
+    dfs = [df[df['prname']==province], df_hosp, df_hosp, df[df['prname']==province]]
+    things = ['numtoday', 'COVID_HOSP', 'COVID_OTHER', 'numdeathstoday']
+    facs = [1., 1., 1., death_fac]
+    colors = [case_bar_color, icu_bar_color, hosp_bar_color, death_bar_color]
+    labels = [None, 'Intensive care', 'Hospitalised', None]
+    for dg, thing, fac, color, label in zip(dfs, things, facs, colors, labels):
+        plt.bar(
+            x=dg['date'], 
+            height=dg[thing]*fac, 
+            width=bar_width, 
+            color=color, 
+            linewidth=0., 
+            alpha=bar_alpha,
+            label=label
+            )
+
+    # Lines
+    things = ['numtotal_last7', 'numdeaths_last7']
+    facs = [1., death_fac]
+    colors = [case_line_color, death_line_color]
+    labels = ['Cases', 'Deaths']
+    for thing, fac, color, label in zip(things, facs, colors, labels):
+        plt.plot(
+            df[df['prname']==province]['date']-dt.timedelta(rolling_offset), 
+            df[df['prname']==province][thing]*fac, 
+            color=color, 
+            label=label,
+            )
+
+    # Axis stuff
+    plt.xlabel(None)
+    plt.ylabel(ylabel)
+    ax.get_yaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
+    ax2 = ax.secondary_yaxis('right', functions=(lambda y: y/y2fac, lambda y: y*y2fac))
+    ax2.set_ylabel(y2label)
+    ax2.get_yaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
+    plt.ylim((0., Nmax))
+    plt.xlim((start_date, end_date))
+    date_label = max(df['date'])
+    title = province+'\n%s'%(date_label.strftime("%Y-%m-%d"))
+    plt.title(title, x=titx, y=tity, loc='left', fontsize='small', bbox=dict(facecolor='w', edgecolor='k'))
+    plt.legend(loc='upper right')
+
+    # Sort x-axis with month data
+    X = plt.gca().xaxis
+    X.set_major_locator(dates.MonthLocator())
+    X.set_minor_locator(dates.MonthLocator(bymonthday=15))
+    X.set_major_formatter(ticker.NullFormatter())
+    fmt = dates.DateFormatter('%b') # Specify the format - %b gives us Jan, Feb...
+    X.set_minor_formatter(fmt)
+    plt.tick_params(axis='x', which='minor', bottom=False, labelbottom=True)
+    plt.xlabel(None)
+
+    # Finalize
+    plt.tight_layout()
+
+def plot_Canadian_provinces_data(df, provinces, Nmax=100):
 
     # Parameters
     dpi = 200
@@ -220,7 +328,7 @@ def plot_Canada_data(df, provinces, Nmax=100):
     pop = population_Canadian_provinces
     start_date = date(2020, 3, 1)
     end_date = max(df['date'])+relativedelta(months=2)
-    label = 'Total number per day per 100,000 population'
+    ylabel = 'Total number per day per 100,000 population'
     titx = 0.01
     figx = 18.; figy = 2.
     use_seaborn = True
@@ -236,37 +344,40 @@ def plot_Canada_data(df, provinces, Nmax=100):
     fig, _ = plt.subplots(nrow, 1, figsize=(figx,figy*nrow), dpi=dpi)
 
     for iplot, province in enumerate(provinces):
+
+        # Initialise each individual subplot
         ax = plt.subplot(nrow, 1, iplot+1)
         plot_month_spans(plt)
         plot_lockdown_spans(plt, df, province)
-        plt.bar(
-            x=df[df['prname']==province]['date'], 
-            height=df[df['prname']==province]['numtoday']*pop_norm_num/pop[province], 
-            width=bar_width, 
-            color=case_bar_color, 
-            linewidth=0., 
-            alpha=bar_alpha,
-            )
-        plt.bar(
-            x=df[df['prname']==province]['date'], 
-            height=df[df['prname']==province]['numdeathstoday']*death_fac*pop_norm_num/pop[province], 
-            width=bar_width, 
-            color=death_bar_color, 
-            linewidth=0., 
-            alpha=bar_alpha,
-            )
-        plt.plot(
-            df[df['prname']==province]['date']-dt.timedelta(rolling_offset), 
-            df[df['prname']==province]['numtotal_last7']*pop_norm_num/pop[province], 
-            color=case_line_color, 
-            label=case_label,
-            )
-        plt.plot(
-            df[df['prname']==province]['date']-dt.timedelta(rolling_offset), 
-            df[df['prname']==province]['numdeaths_last7']*death_fac*pop_norm_num/pop[province], 
-            color=death_line_color, 
-            label=death_label
-            )
+
+        # Bar plots
+        things = ['numtoday', 'numdeathstoday']
+        facs = [pop_norm_num/pop[province], death_fac*pop_norm_num/pop[province]]
+        colors = [case_bar_color, death_bar_color]
+        for thing, fac, color in zip(things, facs, colors):
+            plt.bar(
+                x=df[df['prname']==province]['date'], 
+                height=df[df['prname']==province][thing]*fac, 
+                width=bar_width, 
+                color=color, 
+                linewidth=0., 
+                alpha=bar_alpha,
+                )
+
+        # Line plots
+        things = ['numtotal_last7', 'numdeaths_last7']
+        facs = [pop_norm_num/pop[province], death_fac*pop_norm_num/pop[province]]
+        colors = [case_line_color, death_line_color]
+        labels = [case_label, death_label]
+        for thing, fac, color, label in zip(things, facs, colors, labels):
+            plt.plot(
+                df[df['prname']==province]['date']-dt.timedelta(rolling_offset), 
+                df[df['prname']==province][thing]*fac, 
+                color=color, 
+                label=label,
+                )
+
+        # Axis stuff
         plt.xlabel(None)
         plt.ylim((0., Nmax))
         plt.xlim((start_date, end_date))
@@ -300,31 +411,23 @@ def plot_Canada_data(df, provinces, Nmax=100):
     ax.spines['left'].set_color('none')
     ax.spines['right'].set_color('none')
     ax.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
-    ax.set_ylabel(label)
+    ax.set_ylabel(ylabel)
 
     # Finalize
     plt.tight_layout()
 
-def plot_province_data(df, province, Nmax=5000, fake_hosp=False, fake_hosp_fac=0.01):
-
-    from datetime import date
-    from dateutil.relativedelta import relativedelta
-    import seaborn as sns
-    import datetime as dt
-    import matplotlib
-    import matplotlib.dates as dates
-    import matplotlib.ticker as ticker
+def plot_Canadian_province_data(df, province, Nmax=5000, fake_hosp=False, fake_hosp_fac=0.01):
 
     # Parameters
     dpi = 200
     bar_width = 1.
     bar_alpha = 1.
-    nrow = 1
     #start_date = date(2020, 3, 1)
     start_date = date(2020, 8, 1)
     end_date = max(df['date'])+relativedelta(months=2)
     y1label = 'New cases per day'
-    y2label = 'New deaths/hospitalisations per day'
+    #y2label = 'New deaths/hospitalisations per day'
+    y2label = 'New deaths per day'
     y2fac = 50
     titx = 0.015; tity = 0.86
     figx = 10.; figy = 4.
@@ -356,54 +459,89 @@ def plot_province_data(df, province, Nmax=5000, fake_hosp=False, fake_hosp_fac=0
         matplotlib.rc_file_defaults()
 
     # Make plot
-    plt.subplots(nrow, 1, figsize=(figx,figy*nrow), dpi=dpi)
-    ax = plt.subplot(nrow, 1, 1)
+    plt.subplots(1, 1, figsize=(figx,figy), dpi=dpi, sharex=True)
+
+    ax = plt.subplot(1, 1, 1)
     plot_month_spans(plt)
     plot_lockdown_spans(plt, df, province)
-    plt.bar(
-        x=df[df['prname']==province]['date'], 
-        height=df[df['prname']==province]['numtoday'], 
-        width=bar_width, 
-        color=case_bar_color, 
-        linewidth=0., 
-        alpha=bar_alpha,
-        )
-    if fake_hosp:
-        plt.bar(
-            x=df[df['prname']==province]['date'], 
-            height=df[df['prname']==province]['numtoday']*hosp_fac*fake_hosp_fac, 
-            width=bar_width, 
-            color=hosp_bar_color, 
-            linewidth=0., 
-            alpha=bar_alpha,
-            )
-    plt.bar(
-        x=df[df['prname']==province]['date'], 
-        height=df[df['prname']==province]['numdeathstoday']*death_fac, 
-        width=bar_width, 
-        color=death_bar_color, 
-        linewidth=0., 
-        alpha=bar_alpha,
-        )
-    plt.plot(
-        df[df['prname']==province]['date']-dt.timedelta(rolling_offset), 
-        df[df['prname']==province]['numtotal_last7'], 
-        color=case_line_color, 
-        label=case_label,
-        )
-    if fake_hosp:
-        plt.plot(
-            df[df['prname']==province]['date']-dt.timedelta(rolling_offset), 
-            df[df['prname']==province]['numtotal_last7']*hosp_fac*fake_hosp_fac, 
-            color=hosp_line_color, 
-            label=hosp_label,
-            )
-    plt.plot(
-        df[df['prname']==province]['date']-dt.timedelta(rolling_offset), 
-        df[df['prname']==province]['numdeaths_last7']*death_fac, 
-        color=death_line_color, 
-        label=death_label
-        )
+
+    # Bars
+    things = ['numtoday', 'numtoday', 'numdeathstoday']
+    facs = [1., hosp_fac*fake_hosp_fac, death_fac]
+    colors = [case_bar_color, hosp_bar_color, death_bar_color]
+    plots = [True, fake_hosp, True]
+    for thing, fac, color, plot in zip(things, facs, colors, plots):
+        if plot:
+            plt.bar(
+                x=df[df['prname']==province]['date'], 
+                height=df[df['prname']==province][thing]*fac, 
+                width=bar_width, 
+                color=color, 
+                linewidth=0., 
+                alpha=bar_alpha,
+                )
+
+    # Lines
+    things = ['numtotal_last7', 'numtotal_last7', 'numdeaths_last7']
+    facs = [1., hosp_fac*fake_hosp_fac, death_fac]
+    colors = [case_line_color, hosp_line_color, death_line_color]
+    labels = [case_label, hosp_label, death_label]
+    plots = [True, fake_hosp, True]
+    for thing, fac, color, label, plot in zip(things, facs, colors, labels, plots):
+        if plot:
+            plt.plot(
+                df[df['prname']==province]['date']-dt.timedelta(rolling_offset), 
+                df[df['prname']==province][thing]*fac, 
+                color=color, 
+                label=label,
+                )
+
+    if province == 'British Columbia':
+
+        # Special dates
+        special_dates = {
+            'Testing capacity breached': date(2021, 12, 24),
+        }
+        for label, special_date in special_dates.items():
+            plt.axvline(special_date, color='k', ls='--', lw=0.5)
+            plt.text(special_date+relativedelta(days=-2), 4000, label+' →', ha='right')
+
+        # Restrictions
+        restrictions = {
+            'school closures':{ # DONE
+                (date(2020, 3, 15), date(2020, 6, 1)), # Initial March 2020 school closure
+            },
+            'mask mandate':{ # DONE
+                (date(2020, 11, 19), date(2021, 7, 1)), # Masks first madated indoors in November 2020
+                (date(2021, 8, 25), end_date), # Brief period in July/August 2021 where mask mandate was dropped
+            },
+            'gym closures':{
+                (date(2020, 3, 21), date(2020, 5, 19)), # Initial March 2020 gym closures
+                (date(2020, 10, 19), date(2021, 5, 25)), # Step 1 of restart BC (TODO: Start date)
+                (date(2021, 12, 22), date(2022, 1, 18)), # Omicron gym closures
+            },
+            'indoor gatherings limited':{ 
+                (date(2020, 10, 19), date(2021, 6, 15)), # Step 2 of restart BC
+                (date(2021, 12, 22), date(2022, 2, 16)), # Gatherings limited  because of Omicron
+            },
+            'indoor gatherings banned':{
+                (date(2020, 11, 8), date(2020, 11, 23)), # Winter 2020 firebreak lockdown
+                (date(2020, 10, 19), date(2021, 5, 25)), # Step 1 of restart BC (TODO: Start date)
+            },
+            'vaccine passport':{ # DONE
+                (date(2021, 9, 13), end_date), # Vaccine passports introduced September 2021
+            }
+        }
+        add_label=True
+        for _, date_pairs in restrictions.items():
+            if add_label:
+                label='Restrictions'
+                add_label=False
+            else:
+                label=None
+            for date_pair in date_pairs:
+                plt.axvspan(date_pair[0], date_pair[1], alpha=0.1, color='red', lw=0., label=label)
+
     plt.xlabel(None)
     plt.ylim((0., Nmax))
     plt.xlim((start_date, end_date))
@@ -516,41 +654,6 @@ def plot_UK_deaths(df_daily, df_rolling):
     #plt.title(dt.date.today().strftime("%Y-%m-%d"), x=0.19, y=0.88, loc='Center', bbox=dict(facecolor='w', edgecolor='k'))
     plt.tight_layout()
 
-# def plot_world_rates(df, countries, dftype='deaths'):
-#     '''
-#     World death rate in different countries.
-#     '''
-#     plt.figure(figsize=(18.,4.))
-#     sort_month_axis(plt)
-#     plot_month_spans(plt, alpha=0.025)
-#     for country in countries:
-#         sns.lineplot(data=df.loc[country]*1e6/population_countries[country], label=country)
-#     plt.ylabel(dftype.capitalize()+' per day per million population')
-#     plt.xlabel('')
-#     plt.ylim(bottom=0.)
-#     plt.xlim([date(2020, 1, 1), max(df.columns)+relativedelta(months=3)])
-#     plt.legend(loc='upper right', edgecolor='k')
-#     plt.title(dt.date.today().strftime("%Y-%m-%d"), x=0.015, y=0.88, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
-#     plt.tight_layout()
-
-# def plot_world_totals(df, countries, dftype='deaths'):
-#     ''' 
-#     World total deaths in different countries.
-#     '''
-#     _, ax = plt.subplots(figsize=(18.,4.))
-#     sort_month_axis(plt)
-#     plot_month_spans(plt, alpha=0.025)
-#     for country in countries:
-#         sns.lineplot(data=df.loc[country]*1e6/population_countries[country], label=country)
-#     plt.ylabel('Total '+dftype+' per million population')
-#     plt.xlabel('')
-#     plt.ylim(bottom=0.)
-#     plt.xlim([date(2020, 1, 1), max(df.columns)+relativedelta(months=3)])
-#     plt.legend(loc='upper right', edgecolor='k')
-#     plt.title(dt.date.today().strftime("%Y-%m-%d"), x=0.015, y=0.88, loc='Left', bbox=dict(facecolor='w', edgecolor='k'))
-#     ax.get_yaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
-#     plt.tight_layout()
-
 def plot_world(df, countries, dftype='deaths'):
     ''' 
     World total and rate of cases/deaths in different countries.
@@ -605,7 +708,7 @@ def plot_world(df, countries, dftype='deaths'):
 
 def plot_world_deaths_per_case(df_deaths, df_cases, countries):
     '''
-    World death rate in different countries.
+    World deaths per case in different countries.
     '''
     days_offset = 21
     df_cases_offset = df_cases.copy()
