@@ -227,7 +227,7 @@ def read_Canada_hosp_data(infile):
 def read_Canada_vaccine_data(infile):
     df = pd.read_csv(infile)
     df.rename(columns={'prename': 'prname', 'week_end': 'date'}, inplace=True, errors='raise')
-    df.sort_values(by=['prname', 'date'], ascending=[True, False], inplace=True)
+    df.sort_values(by=['prname', 'date'], ascending=[True, True], inplace=True)
     df['date'] = pd.to_datetime(df['date'])
     return df
 
@@ -240,7 +240,7 @@ def plot_Canada_data(df, df_hosp, death_fac=20, Nmax=None):
     nrow = 1
     start_date = date(2020, 8, 1)
     end_date = max(df['date'])+relativedelta(months=3)
-    ylabel = 'Number per day'
+    ylabel = 'Cases/hospital occupation each day'
     y2label = 'Deaths per day'
     y2fac = death_fac
     titx = 0.015; tity = 0.86
@@ -266,7 +266,7 @@ def plot_Canada_data(df, df_hosp, death_fac=20, Nmax=None):
     things = ['numtoday', 'COVID_HOSP', 'COVID_OTHER', 'numdeathstoday']
     facs = [1., 1., 1., death_fac]
     colors = [case_bar_color, icu_bar_color, hosp_bar_color, death_bar_color]
-    labels = [None, 'Intensive care', 'Hospitalised', None]
+    labels = [None, 'ICU', 'Hospitalised', None]
     for dg, thing, fac, color, label in zip(dfs, things, facs, colors, labels):
         plt.bar(
             x=dg['date'], 
@@ -416,7 +416,8 @@ def plot_Canadian_provinces_data(df, provinces, Nmax=100):
     # Finalize
     plt.tight_layout()
 
-def plot_Canadian_province_data(df, province, Nmax=5000, fake_hosp=False, fake_hosp_fac=0.01):
+def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nmax=5500, 
+    fake_hosp=False, fake_hosp_fac=0.01):
 
     # Parameters
     dpi = 200
@@ -429,10 +430,15 @@ def plot_Canadian_province_data(df, province, Nmax=5000, fake_hosp=False, fake_h
     #y2label = 'New deaths/hospitalisations per day'
     y2label = 'New deaths per day'
     y2fac = 50
-    titx = 0.015; tity = 0.86
+    titx = 0.015; tity = 0.63
     figx = 10.; figy = 4.
     use_seaborn = True
     rolling_offset = 3 # Number of days to offset rolling data
+    restriction_alpha = 0.1
+    restriction_max = 10./11.
+    plot_waves = True
+    plot_restrictions = True
+    plot_vax = True
 
     # Cases plot
     case_bar_color = 'cornflowerblue'
@@ -451,6 +457,15 @@ def plot_Canadian_province_data(df, province, Nmax=5000, fake_hosp=False, fake_h
     death_line_color = 'r'
     death_label = 'Deaths'
 
+    # Vaccines
+    one_dose_color = 'darkorange'
+    two_dose_color = 'darkgreen'
+    one_dose_max = 1.00
+    one_dose_min = 0.5*(one_dose_max+restriction_max)
+    two_dose_max = one_dose_min
+    two_dose_min = restriction_max
+    alpha_vax = 0.018
+
     # Seaborn
     if use_seaborn:
         sns.set_theme(style='ticks')
@@ -462,7 +477,8 @@ def plot_Canadian_province_data(df, province, Nmax=5000, fake_hosp=False, fake_h
     plt.subplots(1, 1, figsize=(figx,figy), dpi=dpi, sharex=True)
 
     ax = plt.subplot(1, 1, 1)
-    plot_month_spans(plt)
+    if not plot_restrictions:
+        plot_month_spans(plt, alpha=0.025)
     plot_lockdown_spans(plt, df, province)
 
     # Bars
@@ -500,47 +516,83 @@ def plot_Canadian_province_data(df, province, Nmax=5000, fake_hosp=False, fake_h
 
         # Special dates
         special_dates = {
-            'Testing capacity breached': date(2021, 12, 24),
+            'masks mandated': date(2020, 11, 19),
+            'masks mandated again': date(2021, 8, 25),
+            'testing capacity breached': date(2021, 12, 24),
         }
-        for label, special_date in special_dates.items():
+        dirs = ['right', 'left', 'left']
+        yposes = [0.6, 0.5, 0.7]
+        for label, special_date, dir, ypos in zip(special_dates.keys(), special_dates.values(), dirs, yposes):
             plt.axvline(special_date, color='k', ls='--', lw=0.5)
-            plt.text(special_date+relativedelta(days=-2), 4000, label+' →', ha='right')
+            if dir == 'left':
+                plt.text(special_date+relativedelta(days=-2), ypos*Nmax, label+' →', ha='right')#, transform=ax.transAxes)
+            else:
+                plt.text(special_date+relativedelta(days=+2), ypos*Nmax, '← '+label, ha='left')#, transform=ax.transAxes)
+
+        # Waves
+        if plot_waves:
+            waves = ['alpha', 'delta', 'omicron']
+            days = [date(2021, 4, 10), date(2021, 9, 9), date(2022, 1, 16)]
+            yposs = [0.29, 0.2, 0.85]
+            for wave, day, ypos in zip(waves, days, yposs):
+                plt.text(day, ypos*Nmax, '|← '+wave+' →|', ha='center', va='center')
 
         # Restrictions
-        restrictions = {
-            'school closures':{ # DONE
-                (date(2020, 3, 15), date(2020, 6, 1)), # Initial March 2020 school closure
-            },
-            'mask mandate':{ # DONE
-                (date(2020, 11, 19), date(2021, 7, 1)), # Masks first madated indoors in November 2020
-                (date(2021, 8, 25), end_date), # Brief period in July/August 2021 where mask mandate was dropped
-            },
-            'gym closures':{
-                (date(2020, 3, 21), date(2020, 5, 19)), # Initial March 2020 gym closures
-                (date(2020, 10, 19), date(2021, 5, 25)), # Step 1 of restart BC (TODO: Start date)
-                (date(2021, 12, 22), date(2022, 1, 18)), # Omicron gym closures
-            },
-            'indoor gatherings limited':{ 
-                (date(2020, 10, 19), date(2021, 6, 15)), # Step 2 of restart BC
-                (date(2021, 12, 22), date(2022, 2, 16)), # Gatherings limited  because of Omicron
-            },
-            'indoor gatherings banned':{
-                (date(2020, 11, 8), date(2020, 11, 23)), # Winter 2020 firebreak lockdown
-                (date(2020, 10, 19), date(2021, 5, 25)), # Step 1 of restart BC (TODO: Start date)
-            },
-            'vaccine passport':{ # DONE
-                (date(2021, 9, 13), end_date), # Vaccine passports introduced September 2021
+        if plot_restrictions:
+            restrictions = {
+                'school closures':{ # DONE
+                    (date(2020, 3, 15), date(2020, 6, 1)), # Initial March 2020 school closure
+                },
+                'mask mandate':{ # DONE
+                    (date(2020, 11, 19), date(2021, 7, 1)), # Masks first madated indoors in November 2020
+                    (date(2021, 8, 25), end_date), # Brief period in July/August 2021 where mask mandate was dropped
+                },
+                'gym closures':{
+                    (date(2020, 3, 21), date(2020, 5, 19)), # Initial March 2020 gym closures
+                    (date(2020, 10, 19), date(2021, 5, 25)), # Step 1 of restart BC (TODO: Start date)
+                    (date(2021, 12, 22), date(2022, 1, 18)), # Omicron gym closures
+                },
+                'indoor gatherings limited':{ 
+                    (date(2020, 10, 19), date(2021, 6, 15)), # Step 2 of restart BC
+                    (date(2021, 12, 22), date(2022, 2, 16)), # Gatherings limited  because of Omicron
+                },
+                'indoor gatherings banned':{
+                    (date(2020, 11, 8), date(2020, 11, 23)), # Winter 2020 firebreak lockdown
+                    (date(2020, 10, 19), date(2021, 5, 25)), # Step 1 of restart BC (TODO: Start date)
+                },
+                'vaccine passport':{ # DONE
+                    (date(2021, 9, 13), end_date), # Vaccine passports introduced September 2021
+                }
             }
-        }
-        add_label=True
-        for _, date_pairs in restrictions.items():
-            if add_label:
-                label='Restrictions'
-                add_label=False
-            else:
-                label=None
-            for date_pair in date_pairs:
-                plt.axvspan(date_pair[0], date_pair[1], alpha=0.1, color='red', lw=0., label=label)
+            add_label=True
+            for _, date_pairs in restrictions.items():
+                if add_label:
+                    label='Restrictions'
+                    add_label=False
+                else:
+                    label=None
+                for date_pair in date_pairs:
+                    plt.axvspan(date_pair[0], date_pair[1], ymax=restriction_max,
+                        alpha=restriction_alpha, color='red', lw=0., label=label)
+
+        if plot_vax and df_vax is not None:
+            ax.plot([0.,1.], [restriction_max,restriction_max], transform=ax.transAxes, lw=0.5, color='black')
+            dg = df_vax[df_vax['prname']==province]
+            dg.reset_index(level=None, drop=False, inplace=True)
+            for i, day in enumerate(dg['date']):
+                start_day = day
+                try: 
+                    end_day = dg.at[i+1, 'date']
+                except:
+                    end_day = end_date
+                for _ in range(int(dg.at[i, 'proptotal_atleast1dose'])):
+                    plt.axvspan(start_day, end_day, ymin=one_dose_min, ymax=one_dose_max, 
+                        color=one_dose_color, alpha=alpha_vax, lw=0.)
+                for _ in range(int(dg.at[i, 'proptotal_fully'])):
+                    plt.axvspan(start_day, end_day, ymin=two_dose_min, ymax=two_dose_max, 
+                        color=two_dose_color, alpha=alpha_vax, lw=0.)
+            plt.text(0.9, one_dose_min, 'one dose', va='bottom', size='small', transform=ax.transAxes)
+            plt.text(0.9, two_dose_min, 'two doses', va='bottom', size='small', transform=ax.transAxes)
 
     plt.xlabel(None)
     plt.ylim((0., Nmax))
@@ -548,7 +600,7 @@ def plot_Canadian_province_data(df, province, Nmax=5000, fake_hosp=False, fake_h
     date_label = max(df['date'])
     title = province+'\n%s'%(date_label.strftime("%Y-%m-%d"))
     plt.title(title, x=titx, y=tity, loc='left', fontsize='small', bbox=dict(facecolor='w', edgecolor='k'))
-    plt.legend(loc='upper right')
+    plt.legend(loc='upper left', framealpha=1.)
 
     # Sort x-axis with month data
     X = plt.gca().xaxis
@@ -1138,7 +1190,7 @@ def plot_bar_data(df, start_date, end_date, regions,
         else:
             if y2axis:
                 if ylabel is None: ylabel = 'New cases per day'
-                if y2label is None: y2label = 'Deaths per day'
+                if y2label is None: y2label = 'Deaths/Hospitalisations per day'
             else:
                 if ylabel is None: ylabel = 'Number per day'
         plt.ylabel(ylabel)
