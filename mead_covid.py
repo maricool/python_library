@@ -229,6 +229,7 @@ def read_Canada_vaccine_data(infile):
     df.rename(columns={'prename': 'prname', 'week_end': 'date'}, inplace=True, errors='raise')
     df.sort_values(by=['prname', 'date'], ascending=[True, True], inplace=True)
     df['date'] = pd.to_datetime(df['date'])
+    df['proptotal_additional'] = df['proptotal_additional'].fillna(0)
     return df
 
 def plot_Canada_data(df, df_hosp, death_fac=20, Nmax=None):
@@ -436,6 +437,7 @@ def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nm
     rolling_offset = 3 # Number of days to offset rolling data
     restriction_alpha = 0.1
     restriction_max = 10./11.
+    restriction_color = 'red'
     plot_waves = True
     plot_restrictions = True
     plot_vax = True
@@ -460,10 +462,13 @@ def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nm
     # Vaccines
     one_dose_color = 'darkorange'
     two_dose_color = 'darkgreen'
+    thr_dose_color = 'darkblue'
     one_dose_max = 1.00
-    one_dose_min = 0.5*(one_dose_max+restriction_max)
+    one_dose_min = restriction_max+(1.-restriction_max)*(2./3.)
     two_dose_max = one_dose_min
-    two_dose_min = restriction_max
+    two_dose_min = restriction_max+(1.-restriction_max)*(1./3.)
+    thr_dose_max = two_dose_min
+    thr_dose_min = restriction_max
     alpha_vax = 0.018
 
     # Seaborn
@@ -573,8 +578,9 @@ def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nm
                     label=None
                 for date_pair in date_pairs:
                     plt.axvspan(date_pair[0], date_pair[1], ymax=restriction_max,
-                        alpha=restriction_alpha, color='red', lw=0., label=label)
+                        alpha=restriction_alpha, color=restriction_color, lw=0., label=label)
 
+        # Vaccines
         if plot_vax and df_vax is not None:
             ax.plot([0.,1.], [restriction_max,restriction_max], transform=ax.transAxes, lw=0.5, color='black')
             dg = df_vax[df_vax['prname']==province]
@@ -591,8 +597,17 @@ def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nm
                 for _ in range(int(dg.at[i, 'proptotal_fully'])):
                     plt.axvspan(start_day, end_day, ymin=two_dose_min, ymax=two_dose_max, 
                         color=two_dose_color, alpha=alpha_vax, lw=0.)
-            plt.text(0.9, one_dose_min, 'one dose', va='bottom', size='small', transform=ax.transAxes)
-            plt.text(0.9, two_dose_min, 'two doses', va='bottom', size='small', transform=ax.transAxes)
+                for _ in range(int(dg.at[i, 'proptotal_additional'])):
+                    plt.axvspan(start_day, end_day, ymin=thr_dose_min, ymax=thr_dose_max, 
+                        color=thr_dose_color, alpha=alpha_vax, lw=0.)
+            labels = [
+                'one dose: {:.0f}%'.format(dg.at[i, 'proptotal_atleast1dose']),
+                'two doses: {:.0f}%'.format(dg.at[i, 'proptotal_fully']),
+                'booster: {:.0f}%'.format(dg.at[i, 'proptotal_additional']),
+            ]
+            yposs = [one_dose_min, two_dose_min, thr_dose_min]
+            for ypos, label in zip(yposs, labels):
+                plt.text(0.91, ypos, label, va='bottom', size='xx-small', transform=ax.transAxes)
 
     plt.xlabel(None)
     plt.ylim((0., Nmax))
