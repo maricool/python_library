@@ -150,7 +150,7 @@ def feature_triangle(df, label, features, continuous_label=False,
     plt.tight_layout()
     return plt
 
-def feature_scatter_triangle(df, label, features, continuous_label=False, 
+def feature_scatter_triangle(df, features, hue_col=None, style_col=None, continuous_label=False, 
         alpha=1., figsize=(10,10), jitter=0.):
     '''
     Triangle plot of list of features split by some characteristic. 
@@ -166,11 +166,15 @@ def feature_scatter_triangle(df, label, features, continuous_label=False,
     sns.set_theme(style='ticks')
     n = len(features)-1
 
-    # Figure out the hue of bars/points
-    if label is None:
-        hue_scat = None
+    # Figure out the hue/style of bars/points
+    if hue_col is None:
+        hue = None
     else:
-        hue_scat = df[label]
+        hue = df[hue_col]
+    if style_col is None:
+        style = None
+    else:
+        style = df[style_col]
 
     # Make the big plot
     _, axs = plt.subplots(n, n, figsize=figsize)
@@ -186,7 +190,8 @@ def feature_scatter_triangle(df, label, features, continuous_label=False,
             data_row, data_col = _jitter_data(df, feature_row, 
                                               feature_col, jitter)
             sns.scatterplot(x=data_col, y=data_row,
-                            hue=hue_scat,
+                            hue=hue,
+                            style=style,
                             alpha=alpha,
                             legend=(not continuous_label and (icol==0)),
                             )
