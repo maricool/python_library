@@ -193,7 +193,7 @@ def feature_scatter_triangle(df, features, hue_col=None, style_col=None, continu
                             hue=hue,
                             style=style,
                             alpha=alpha,
-                            legend=(not continuous_label and (icol==0)),
+                            legend=(not continuous_label and (icol==0) and (irow==0)),
                             )
 
             # x-axis labels
