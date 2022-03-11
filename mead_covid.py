@@ -417,7 +417,7 @@ def plot_Canadian_provinces_data(df, provinces, Nmax=100):
     # Finalize
     plt.tight_layout()
 
-def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nmax=5500, 
+def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nmax=5750, 
     fake_hosp=False, fake_hosp_fac=0.01):
 
     # Parameters
@@ -426,7 +426,7 @@ def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nm
     bar_alpha = 1.
     #start_date = date(2020, 3, 1)
     start_date = date(2020, 8, 1)
-    end_date = max(df['date'])+relativedelta(months=2)
+    end_date = max(df['date'])+relativedelta(months=1)
     y1label = 'New cases per day'
     #y2label = 'New deaths/hospitalisations per day'
     y2label = 'New deaths per day'
@@ -435,9 +435,9 @@ def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nm
     figx = 10.; figy = 4.
     use_seaborn = True
     rolling_offset = 3 # Number of days to offset rolling data
-    restriction_alpha = 0.1
-    restriction_max = 10./11.
-    restriction_color = 'red'
+    restriction_alpha = 0.08
+    restriction_max = 5000./Nmax
+    restriction_color = 'black'
     plot_waves = True
     plot_restrictions = True
     plot_vax = True
@@ -460,9 +460,9 @@ def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nm
     death_label = 'Deaths'
 
     # Vaccines
-    one_dose_color = 'darkorange'
-    two_dose_color = 'darkgreen'
-    thr_dose_color = 'darkblue'
+    one_dose_color = 'limegreen'
+    two_dose_color = one_dose_color
+    thr_dose_color = two_dose_color
     one_dose_max = 1.00
     one_dose_min = restriction_max+(1.-restriction_max)*(2./3.)
     two_dose_max = one_dose_min
@@ -538,22 +538,22 @@ def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nm
         if plot_waves:
             waves = ['alpha', 'delta', 'omicron']
             days = [date(2021, 4, 10), date(2021, 9, 9), date(2022, 1, 16)]
-            yposs = [0.29, 0.2, 0.85]
+            yposs = [0.29, 0.2, 0.80]
             for wave, day, ypos in zip(waves, days, yposs):
                 plt.text(day, ypos*Nmax, '|← '+wave+' →|', ha='center', va='center')
 
         # Restrictions
         if plot_restrictions:
             restrictions = {
-                'school closures':{ # DONE
-                    (date(2020, 3, 15), date(2020, 6, 1)), # Initial March 2020 school closure
+                'school closures':{
+                    (date(2020, 3, 15), date(2020, 6, 1)),  # Initial March 2020 school closure
                 },
-                'mask mandate':{ # DONE
+                'mask mandate':{
                     (date(2020, 11, 19), date(2021, 7, 1)), # Masks first madated indoors in November 2020
-                    (date(2021, 8, 25), end_date), # Brief period in July/August 2021 where mask mandate was dropped
+                    (date(2021, 8, 25), date(2022, 3, 11)), # Brief period in July/August 2021 where mask mandate was dropped
                 },
                 'gym closures':{
-                    (date(2020, 3, 21), date(2020, 5, 19)), # Initial March 2020 gym closures
+                    (date(2020, 3, 21), date(2020, 5, 19)),  # Initial March 2020 gym closures
                     (date(2020, 10, 19), date(2021, 5, 25)), # Step 1 of restart BC (TODO: Start date)
                     (date(2021, 12, 22), date(2022, 1, 18)), # Omicron gym closures
                 },
@@ -565,8 +565,8 @@ def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nm
                     (date(2020, 11, 8), date(2020, 11, 23)), # Winter 2020 firebreak lockdown
                     (date(2020, 10, 19), date(2021, 5, 25)), # Step 1 of restart BC (TODO: Start date)
                 },
-                'vaccine passport':{ # DONE
-                    (date(2021, 9, 13), end_date), # Vaccine passports introduced September 2021
+                'vaccine passport':{
+                    (date(2021, 9, 13), date(2022, 4, 8)),   # Vaccine passports introduced September 2021
                 }
             }
             add_label=True
@@ -607,7 +607,7 @@ def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nm
             ]
             yposs = [one_dose_min, two_dose_min, thr_dose_min]
             for ypos, label in zip(yposs, labels):
-                plt.text(0.91, ypos, label, va='bottom', size='xx-small', transform=ax.transAxes)
+                plt.text(0.89, ypos, label, va='bottom', size='x-small', transform=ax.transAxes)
 
     plt.xlabel(None)
     plt.ylim((0., Nmax))
