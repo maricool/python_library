@@ -1,8 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from numpy.random.mtrand import rand
-import seaborn as sns
 import pandas as pd
+import seaborn as sns
+
+### Basic ###
 
 def data_head(df, comment, verbose=False):
     '''
@@ -45,19 +46,29 @@ def drop_column_name_prefix(df, prefix):
     df.columns = df.columns.str.replace(prefix, '')
     return df
 
+### ###
+
+### Plotting helper functions ###
+
 def _add_jitter(values, std):
+    '''
     # Add jitter to values
     # TODO: Set a seed
+    '''
     return values+np.random.normal(0., std, values.shape)
 
 def _calculate_minimum_difference(series):
-    # Calculate the minimum of the differences between values in a column
+    '''
+    Calculate the minimum of the differences between values in a column
+    '''
     arr = series.to_numpy()
     b = np.diff(np.sort(arr))
     return b[b>0].min()
 
 def _jitter_data(df, feature_row, feature_col, fsig):
-    # Apply a jitter
+    '''
+    Apply a jitter
+    '''
     if fsig == 0.:
         data_row = df[feature_row]
         data_col = df[feature_col]
@@ -67,6 +78,52 @@ def _jitter_data(df, feature_row, feature_col, fsig):
         data_row = _add_jitter(df[feature_row], std_row)
         data_col = _add_jitter(df[feature_col], std_col)
     return (data_row, data_col)
+
+def bootstrap_resample(df):
+    '''
+    '''
+    df_bootstrap = df.sample(frac=1., replace=True, weights=None, 
+                             random_state=None, 
+                             axis=None, 
+                             ignore_index=False,
+                            )
+    return df_bootstrap
+
+def nicely_melt(df, id_, columns, hue, var_name='var', value_name='value'):
+    '''
+    Create a nicely melted data frame by specifying the id and hue columns
+    as well as all the columns for the melt
+    '''
+    # Make the id_vars column correctly if there are Nones
+    # TODO: There must be a one-line solution
+    if id_ is None and hue is None:
+        id_vars = None
+    elif hue is None:
+        id_vars = [id_]
+    elif id_ is None:
+        id_vars = [hue]
+    else:
+        id_vars = [id_, hue]
+
+    # Make the melted data frame columns correctly if there are Nones
+    # TODO: There must be a one-line solution
+    if id_vars is None:
+        new_columns = columns
+    else:
+        new_columns = columns+id_vars
+
+    # Make the simple data frame, then melt it from wide form to long form, 
+    # then make swarmplot
+    simple_df = df[new_columns]
+    df_melted = pd.melt(simple_df, id_vars=id_vars, value_vars=None, 
+                        var_name=var_name, 
+                        value_name=value_name
+                       )
+    return df_melted
+
+### ###
+
+### Plotting ###
 
 def feature_triangle(df, label, features, continuous_label=False, 
                                           kde=True, 
@@ -215,7 +272,6 @@ def feature_scatter_triangle(df, features, hue_col=None, style_col=None, continu
     plt.tight_layout()
     return plt
 
-# Correlation matrix
 def correlation_matrix(df, columns, figsize=(7,7), annot=True, 
         mask_diagonal=True, mask_upper_triangle=True):
     '''
@@ -252,15 +308,9 @@ def correlation_matrix(df, columns, figsize=(7,7), annot=True,
     g.set_yticklabels(labels=g.get_yticklabels(), va='center') 
     #return plt # TODO: Does this need to return anything?
 
-def bootstrap_resample(df):
-    df_bootstrap = df.sample(frac=1., replace=True, weights=None, 
-                             random_state=None, 
-                             axis=None, 
-                             ignore_index=False,
-                            )
-    return df_bootstrap
-
 def bootstrap_correlation_matrix(df, columns, n=500):
+    '''
+    '''
     corrs = []
     for _ in range(n):
         df_boot = bootstrap_resample(df)
@@ -272,37 +322,7 @@ def bootstrap_correlation_matrix(df, columns, n=500):
     df_means = df_concat.groupby(level=1).mean()
     return df_means
 
-def nicely_melt(df, id_, columns, hue, var_name='var', value_name='value'):
-    '''
-    Create a nicely melted data frame by specifying the id and hue columns
-    as well as all the columns for the melt
-    '''
-    # Make the id_vars column correctly if there are Nones
-    # TODO: There must be a one-line solution
-    if id_ is None and hue is None:
-        id_vars = None
-    elif hue is None:
-        id_vars = [id_]
-    elif id_ is None:
-        id_vars = [hue]
-    else:
-        id_vars = [id_, hue]
-
-    # Make the melted data frame columns correctly if there are Nones
-    # TODO: There must be a one-line solution
-    if id_vars is None:
-        new_columns = columns
-    else:
-        new_columns = columns+id_vars
-
-    # Make the simple data frame, then melt it from wide form to long form, 
-    # then make swarmplot
-    simple_df = df[new_columns]
-    df_melted = pd.melt(simple_df, id_vars=id_vars, value_vars=None, 
-                        var_name=var_name, 
-                        value_name=value_name
-                       )
-    return df_melted
+### Plotting ###
 
 def swarmplot(df, columns, id_=None, hue=None, hue_order=None, 
     dodge=False, orient=None, color=None, palette=None, x_label='var', y_label='value',
@@ -365,3 +385,50 @@ def stacked_barplot(data, x, y, hue, normalize=False, hue_order=None, **kwargs):
     if hue_order is not None:
         dpiv = dpiv[hue_order]
     dpiv.plot(kind='bar', stacked=True, **kwargs)
+
+def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix', cmap=plt.cm.Blues):
+    '''
+    Shamelessly stolen from Viviana Acquvina
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    '''
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print('Normalized confusion matrix')
+    else:
+        print('Confusion matrix, without normalization')
+    if not normalize:
+        for i, thing in enumerate(classes):
+            print('True number of '+thing+':', np.sum(cm[i,:]))
+
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    fmt = '.2f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            plt.text(j, i, format(cm[i, j], fmt),
+                horizontalalignment="center",
+                color='white' if cm[i, j]>thresh else 'black')
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+
+def plot_ROC_curve(FPR, TPR, ROC_AUC):
+    plt.plot(FPR, TPR, lw=2, label='AUC = %0.3f'%(ROC_AUC))
+    plt.plot([0., 1.], [0., 1.], color='black', ls=':', label='Chance')
+    plt.fill_between(FPR, TPR, alpha=0.3)
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.xlim((0.,1.))
+    plt.ylim((0.,1.))
+    plt.gca().set_aspect('equal', adjustable='box')
+    plt.legend()
+    plt.show()
+
+### ###
