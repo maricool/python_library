@@ -530,9 +530,9 @@ def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nm
         for label, special_date, dir, ypos in zip(special_dates.keys(), special_dates.values(), dirs, yposes):
             plt.axvline(special_date, color='k', ls='--', lw=0.5)
             if dir == 'left':
-                plt.text(special_date+relativedelta(days=-2), ypos*Nmax, label+' →', ha='right')#, transform=ax.transAxes)
+                plt.text(special_date+relativedelta(days=-2), ypos*Nmax, label+' →', size='small', ha='right')#, transform=ax.transAxes)
             else:
-                plt.text(special_date+relativedelta(days=+2), ypos*Nmax, '← '+label, ha='left')#, transform=ax.transAxes)
+                plt.text(special_date+relativedelta(days=+2), ypos*Nmax, '← '+label, size='small', ha='left')#, transform=ax.transAxes)
 
         # Waves
         if plot_waves:
