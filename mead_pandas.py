@@ -8,7 +8,7 @@ import seaborn as sns
 def data_head(df, comment, verbose=False):
     '''
     Utility function for writing out subset of dataframe with comment
-    TODO: This does not seem to be necessary
+    TODO: This does not seem to be necessary...
     '''
     if verbose:
         print(comment)
@@ -43,7 +43,59 @@ def unique_column_entries(df, column, max=15, normalize=False):
         print(df[column].value_counts(dropna=False, normalize=normalize))
 
 def drop_column_name_prefix(df, prefix):
+    '''
+    Removes the 'prefix' from the column names of a dataframe
+    e.g., if prefix='hello_' and df.column[0] = 'hello_world' then renames to 'world'
+    '''
     df.columns = df.columns.str.replace(prefix, '')
+    return df
+
+def shuffle(df):
+    '''
+    Randomly shuffle the entry rows in a dataframe
+    '''
+    return df.sample(frac=1).reset_index(drop=True)
+
+def create_mock_classification_data(mus, sigs, ns, rseed=None, verbose=False):
+    '''
+    Create mock classification dataset using Gaussian distributions
+    Data contains 'n' points distributed in 'c' classes with 'd' features
+    TODO: Add feature correlation via correlation matrices
+    @params:
+        mus - Length 'c' list of means, each entry is an array of length 'd'
+        sigs - Length 'c' list of standard deviations, each entry is an array of length 'd'
+        ns - Length 'c' list of integer number of members of each class
+        rseed - Random number seed
+    '''
+    from numpy import array, diag, append
+    from numpy.random import seed, multivariate_normal
+    if verbose:
+        print('Creating mock classification dataset')
+        print('Number of features:', len(mus[0]))
+        print('Number of classes:', len(ns))
+        print('Total number of entries:', sum(ns))
+        print()
+    x = array([])
+    if rseed is not None: seed(rseed)
+    for i, (mu, sig, n) in enumerate(zip(mus, sigs, ns)): # mus, sigs, ns must be the same length
+        if verbose:
+            print('Class %d members: %d'%(i, n))
+            print('Mean:', mu)
+            print('Standard deviation:', sig)
+            print()
+        y = multivariate_normal(mean=mu, cov=diag(sig), size=n)
+        if i==0:
+            x = y.copy()
+        else:
+            x = append(x, y, axis=0)
+    labels = []
+    for i, n in enumerate(ns):
+        labels += n*['c'+str(i)] # Label could be less boring than 'i'
+    data = {'class': labels}
+    for i in range(len(ns)):
+        data['x%d'%(i+1)] = x[:, i]
+    df = pd.DataFrame.from_dict(data)
+    df = shuffle(df) # Shuffle entries
     return df
 
 ### ###
@@ -125,7 +177,7 @@ def nicely_melt(df, id_, columns, hue, var_name='var', value_name='value'):
 
 ### Plotting ###
 
-def feature_triangle(df, label, features, continuous_label=False, 
+def plot_feature_triangle(df, features, label, continuous_label=False, 
                                           kde=True, 
                                           alpha=1., 
                                           figsize=(10,10), 
@@ -207,7 +259,7 @@ def feature_triangle(df, label, features, continuous_label=False,
     plt.tight_layout()
     return plt
 
-def feature_scatter_triangle(df, features, hue_col=None, style_col=None, continuous_label=False, 
+def plot_feature_scatter_triangle(df, features, hue_col=None, style_col=None, continuous_label=False, 
         alpha=1., figsize=(10,10), jitter=0.):
     '''
     Triangle plot of list of features split by some characteristic. 
@@ -272,17 +324,40 @@ def feature_scatter_triangle(df, features, hue_col=None, style_col=None, continu
     plt.tight_layout()
     return plt
 
-def correlation_matrix(df, columns, figsize=(7,7), annot=True, 
+def plot_correlation_matrix(df, columns, figsize=(5,5), annot=True, errors=True, nbs=100,# fmt='.2g',
         mask_diagonal=True, mask_upper_triangle=True):
     '''
-    Create a plot of the correlation matrix for (continous) columns 
-    (or features) of  adataframe (df)
+    Create a plot of the correlation matrix for (continous) data columns 
+    (or features) of a dataframe (df)
+    @params:
+        df - Pandas data frame
+        columns - Columns of data frame to include in matrix
+        annot - Should the value of the correlation appear in the cell?
+        errors - Calculate errors via bootstrap resampling
+        nbs - Number of bootstrap realisations
+        #fmt - Format for annotations
+        mask_diagonral - Mask the matrix diagonal (all 1's)
+        mask_upper_triangle - Mask the (copy) upper triangle
     '''
     # Calculate correlation coefficients
-    corr = df[columns].corr() 
+    corr = df[columns].corr()
+    if annot and errors: # Calculate errors via bootstrap
+        std = _bootstrap_correlation_errors(df, columns, n=nbs)
+        notes = []
+        for i in range(len(columns)): # Create annotations for heatmap
+            note = []
+            for j in range(len(columns)): 
+                note.append('$%.2g \pm %.2g$'%(np.array(corr)[i, j], std[i, j]))
+            notes.append(note)
+        notes = pd.DataFrame(notes, index=corr.index, columns=corr.columns)
+
+    # Apply mask
     if mask_diagonal and mask_upper_triangle:
         corr.drop(labels=columns[0], axis=0, inplace=True)  # Remove first row
         corr.drop(labels=columns[-1], axis=1, inplace=True) # Remove last column
+        if annot and errors:
+            notes.drop(labels=columns[0], axis=0, inplace=True)  # Remove first row
+            notes.drop(labels=columns[-1], axis=1, inplace=True) # Remove last column
 
     # Create mask
     mask = np.zeros_like(corr, dtype=bool) 
@@ -294,13 +369,19 @@ def correlation_matrix(df, columns, figsize=(7,7), annot=True,
     elif mask_diagonal:
         mask[np.diag_indices_from(mask)] = True
 
+    if annot and errors:
+        fmt = ''
+    else:
+        notes = annot
+
     # Make the plot
     plt.style.use('seaborn-white') 
     plt.figure(figsize=figsize)
     cmap = sns.diverging_palette(220, 10, as_cmap=True)
     g = sns.heatmap(corr, vmin=-1., vmax=1., cmap=cmap, mask=mask, 
                     linewidths=.5,
-                    annot=annot,
+                    annot=notes,
+                    fmt=fmt,
                     square=True,
                     cbar=False,
                    )
@@ -308,19 +389,21 @@ def correlation_matrix(df, columns, figsize=(7,7), annot=True,
     g.set_yticklabels(labels=g.get_yticklabels(), va='center') 
     #return plt # TODO: Does this need to return anything?
 
-def bootstrap_correlation_matrix(df, columns, n=500):
+def _bootstrap_correlation_errors(df, columns, n=100):
     '''
+    Estimate an error on a correlation matrix via bootstrap
+    @ params
+        df - Pandas dataframe
+        columns - Columns of dataframe to use
+        n - Number of bootstrap realisations
     '''
-    corrs = []
+    corrs = [] # corrs will be a list of numpy arrays
     for _ in range(n):
-        df_boot = bootstrap_resample(df)
-        corr = df_boot[columns].corr()
+        df_boot = bootstrap_resample(df) # Resample each time
+        corr = np.array(df_boot[columns].corr()) # Convert to numpy
         corrs.append(corr)
-    df_concat = pd.concat(corrs)
-    #by_row_index = df_concat.groupby(df_concat.index)
-    #df_means = by_row_index.mean()
-    df_means = df_concat.groupby(level=1).mean()
-    return df_means
+    std = np.std(corrs, axis=0) # Standard deviation
+    return std
 
 ### Plotting ###
 
@@ -367,68 +450,5 @@ def lineswarm(df, columns, ax, line_color='black', line_alpha=0.1, id_=None,
             x = [locs[j][i, 0], locs_sorted[i, 0]]
             y = [locs[j][i, 1], locs_sorted[i, 1]]
             ax.plot(x, y, color=line_color, alpha=line_alpha)
-
-def stacked_barplot(data, x, y, hue, normalize=False, hue_order=None, **kwargs):
-    '''
-    Create a stacked barplot, rather than the standard side-by-side seaborn barplot
-    data - pandas data frame
-        x - column to use for x-axis (continous data)
-        y - column to use for y-axis (continuous data)
-        hue - column to use for color of the bars (catagorical data)
-        normalize - Should the barplot be normalized to sum to unity?
-        hue_order - List for the order of the bars in the key
-        **kwargs - for df.plot function
-    '''
-    # First get the data into the correct format using pivot
-    dpiv = data.pivot(index=x, columns=hue, values=y)
-    if normalize: dpiv = dpiv.div(dpiv.sum(axis='columns'), axis='index')
-    if hue_order is not None:
-        dpiv = dpiv[hue_order]
-    dpiv.plot(kind='bar', stacked=True, **kwargs)
-
-def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix', cmap=plt.cm.Blues):
-    '''
-    Shamelessly stolen from Viviana Acquvina
-    This function prints and plots the confusion matrix.
-    Normalization can be applied by setting `normalize=True`.
-    '''
-    if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        print('Normalized confusion matrix')
-    else:
-        print('Confusion matrix, without normalization')
-    if not normalize:
-        for i, thing in enumerate(classes):
-            print('True number of '+thing+':', np.sum(cm[i,:]))
-
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
-    plt.title(title)
-    tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=45)
-    plt.yticks(tick_marks, classes)
-
-    fmt = '.2f' if normalize else 'd'
-    thresh = cm.max() / 2.
-    for i in range(cm.shape[0]):
-        for j in range(cm.shape[1]):
-            plt.text(j, i, format(cm[i, j], fmt),
-                horizontalalignment="center",
-                color='white' if cm[i, j]>thresh else 'black')
-
-    plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
-
-def plot_ROC_curve(FPR, TPR, ROC_AUC):
-    plt.plot(FPR, TPR, lw=2, label='AUC = %0.3f'%(ROC_AUC))
-    plt.plot([0., 1.], [0., 1.], color='black', ls=':', label='Chance')
-    plt.fill_between(FPR, TPR, alpha=0.3)
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.xlim((0.,1.))
-    plt.ylim((0.,1.))
-    plt.gca().set_aspect('equal', adjustable='box')
-    plt.legend()
-    plt.show()
 
 ### ###

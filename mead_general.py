@@ -252,24 +252,36 @@ def standardize_array(x):
     and then divide the standard deviation.
         x: array 
         return: standardized array
+    NOTE: In sklearn the 'StandardScaler' exists to do exactly this
     '''
-    import numpy as np
+    #import numpy as np
+    from numpy import zeros, empty, append
     rows, columns = x.shape
     
-    standardizedArray = np.zeros(shape=(rows, columns))
-    tempArray = np.zeros(rows)
+    standardizedArray = zeros(shape=(rows, columns))
+    tempArray = zeros(rows)
     
     for col in range(columns):
-        mean = np.mean(x[:, col])
-        std = np.std(x[:, col])
-        tempArray = np.empty(0)
-        
+        #mean = np.mean(x[:, col]); std = np.std(x[:, col])
+        mean = x[:, col].mean(); std = x[:, col].std()
+        tempArray = empty(0)
         for element in x[:, col]:
-            tempArray = np.append(tempArray, (element-mean)/std)
- 
+            tempArray = append(tempArray, (element-mean)/std)
         standardizedArray[:, col] = tempArray
-    
     return standardizedArray
+
+def covariance_matrix(sigmas, R):
+    '''
+    Creates an nxn covariance matrix from a correlation matrix
+    Covariance is matrix multiplication of S R S where S = diag(sigmas)
+    @params
+        sigmas - sigmas for the diagonal
+        R - correlation matrix (nxn)
+    '''
+    from numpy import diag, matmul
+    S = diag(sigmas)
+    cov = matmul(matmul(S, R), S)
+    return cov
 
 # use numpy deg2rad() or radians()
 #def degrees_to_radians(theta):
