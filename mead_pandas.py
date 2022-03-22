@@ -45,7 +45,7 @@ def unique_column_entries(df, column, max=15, normalize=False):
 def drop_column_name_prefix(df, prefix):
     '''
     Removes the 'prefix' from the column names of a dataframe
-    e.g., if prefix='hello_' and df.column[0] = 'hello_world' then renames to 'world'
+    e.g., if prefix='hello_' and df.column[0]='hello_world' would rename to 'world'
     '''
     df.columns = df.columns.str.replace(prefix, '')
     return df
@@ -98,6 +98,38 @@ def create_mock_classification_data(mus, sigs, ns, rseed=None, verbose=False):
     df = shuffle(df) # Shuffle entries
     return df
 
+def nicely_melt(df, id_, columns, hue, var_name='var', value_name='value'):
+    '''
+    Create a nicely melted data frame by specifying the id and hue columns
+    as well as all the columns for the melt
+    '''
+    # Make the id_vars column correctly if there are Nones
+    # TODO: There must be a one-line solution
+    if id_ is None and hue is None:
+        id_vars = None
+    elif hue is None:
+        id_vars = [id_]
+    elif id_ is None:
+        id_vars = [hue]
+    else:
+        id_vars = [id_, hue]
+
+    # Make the melted data frame columns correctly if there are Nones
+    # TODO: There must be a one-line solution
+    if id_vars is None:
+        new_columns = columns
+    else:
+        new_columns = columns+id_vars
+
+    # Make the simple data frame, then melt it from wide form to long form, 
+    # then make swarmplot
+    simple_df = df[new_columns]
+    df_melted = pd.melt(simple_df, id_vars=id_vars, value_vars=None, 
+                        var_name=var_name, 
+                        value_name=value_name
+                       )
+    return df_melted
+
 ### ###
 
 ### Plotting helper functions ###
@@ -140,38 +172,6 @@ def bootstrap_resample(df):
                              ignore_index=False,
                             )
     return df_bootstrap
-
-def nicely_melt(df, id_, columns, hue, var_name='var', value_name='value'):
-    '''
-    Create a nicely melted data frame by specifying the id and hue columns
-    as well as all the columns for the melt
-    '''
-    # Make the id_vars column correctly if there are Nones
-    # TODO: There must be a one-line solution
-    if id_ is None and hue is None:
-        id_vars = None
-    elif hue is None:
-        id_vars = [id_]
-    elif id_ is None:
-        id_vars = [hue]
-    else:
-        id_vars = [id_, hue]
-
-    # Make the melted data frame columns correctly if there are Nones
-    # TODO: There must be a one-line solution
-    if id_vars is None:
-        new_columns = columns
-    else:
-        new_columns = columns+id_vars
-
-    # Make the simple data frame, then melt it from wide form to long form, 
-    # then make swarmplot
-    simple_df = df[new_columns]
-    df_melted = pd.melt(simple_df, id_vars=id_vars, value_vars=None, 
-                        var_name=var_name, 
-                        value_name=value_name
-                       )
-    return df_melted
 
 ### ###
 

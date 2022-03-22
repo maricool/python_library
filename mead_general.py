@@ -235,7 +235,6 @@ def print_array_statistics(x):
     print('mean:', mean)
     std = x.std()
     var = std**2
-    #std_bc = x.std(ddof=1) # Avoiding this to prevent multiple similar calculations
     std_bc = std*sqrt(n/(n-1))
     var_bc = std_bc**2
     print('std:', std)
@@ -254,7 +253,6 @@ def standardize_array(x):
         return: standardized array
     NOTE: In sklearn the 'StandardScaler' exists to do exactly this
     '''
-    #import numpy as np
     from numpy import zeros, empty, append
     rows, columns = x.shape
     
@@ -262,7 +260,6 @@ def standardize_array(x):
     tempArray = zeros(rows)
     
     for col in range(columns):
-        #mean = np.mean(x[:, col]); std = np.std(x[:, col])
         mean = x[:, col].mean(); std = x[:, col].std()
         tempArray = empty(0)
         for element in x[:, col]:
@@ -308,7 +305,7 @@ def covariance_matrix(sigmas, R):
 
 def seq_color(i, n, cmap):
     '''
-    Sequential colors
+    Sequential colors from i=0 to i=n-1 to select n colors from cmap
     '''
     return cmap(i/(n-1))
 
