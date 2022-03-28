@@ -55,6 +55,9 @@ def mrange(a, b=None, step=None):
     e.g., list(range(4)) = [1, 2, 3, 4]
     e.g., list(range(2, 4)) = [2, 3, 4]
     I hate the inbuilt Python 'range' with such fury that it frightens me
+    NOTE: I don't think I can call this range since that would overwrite internal Python version
+    TODO: Include step properly, what is this (start, stop[, step]) square-bracket thing?
+    TODO: Note that Python range() is actually a class and returns an iterable
     '''
     if step is None:
         if b is None:
@@ -122,17 +125,29 @@ def second_largest(numbers):
                 m2 = x
     return m2 if count >= 2 else None
 
+def arange(min, max, dtype=None, *, like=None):
+    '''
+    Sensible arange function for producing integers from min to max inclusive
+    I hate the inbuilt numpy one with such fury that it frightens me
+    TODO: Include step properly, what is this ([start,] stop[, step], ...) square-bracket thing?
+    '''
+    from numpy import arange
+    return arange(min, max+1, dtype=dtype, like=like)
+
 ### ###
 
 ### This set of functions use numpy ###
 
-def arange(min, max):
+def linspace_step(start, stop, step):
     '''
-    Sensible arange function
-    I hate the inbuilt numpy one with such fury that it frightens me
+    Create a linear-spaced array going from start->stop (inclusive) via step
+    The end point is included only if it falls exaclty on a step
+    TODO: Check this actually works with float division issues
     '''
-    from numpy import arange
-    return arange(min, max+1)
+    from numpy import linspace
+    num = 1+int((stop-start)/step)
+    new_stop = start+(num-1)*step
+    return linspace(start, new_stop, num)
 
 def logspace(xmin, xmax, nx):
     '''
@@ -314,5 +329,20 @@ def colour(i):
     Default colours (C0, C1, C2, ...)
     '''
     return 'C%d'%(i)
+
+def plot_curve_with_error_region(x, y, axis=0, alpha_fill=0.2, label=None, **kwargs):
+    '''
+    Plot a curve with a transparent error region behind it
+    The curve is taken to be the mean of the day (array y along 'axis')
+    The extent of the error region is taken to be the standard deviation (array y along 'axis')
+    @params
+        x (n array): x positions of the data
+        y (nxm array): y possitions of the data
+    '''
+    from matplotlib.pyplot import plot, fill_between
+    mean = y.mean(axis=axis)
+    std = y.std(axis=axis)
+    fill_between(x, mean-std, mean+std, alpha=alpha_fill, **kwargs)
+    plot(x, mean, label=label, **kwargs)
 
 ### ###

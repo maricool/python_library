@@ -165,6 +165,7 @@ def _jitter_data(df, feature_row, feature_col, fsig):
 
 def bootstrap_resample(df):
     '''
+    Resamples a dataframe via the bootstrap method
     '''
     df_bootstrap = df.sample(frac=1., replace=True, weights=None, 
                              random_state=None, 
@@ -177,37 +178,39 @@ def bootstrap_resample(df):
 
 ### Plotting ###
 
-def plot_feature_triangle(df, features, label, continuous_label=False, 
-                                          kde=True, 
-                                          alpha=1., 
-                                          figsize=(10,10), 
-                                          jitter=0.
-                                        ):
+def plot_feature_triangle(df, features, hue_column, continuous_label=False, 
+        kde=True, figsize=(10,10), jitter=0., histograms=True, 
+        mask_upper_triangle=True, **kwargs):
     '''
     Triangle plot of list of features split by some characteristic. 
     Histogram distributions along diagonal, correlations off diagonal.
-    df - pandas data frame
-    label - string, name of one column, usually the (discrete) 
-        label you are interested in predicting (e.g., species) 
-    features - list of strings corresponding to feature columns 
-        (e.g., petal length, petal width)
+    @params
+        df - pandas data frame
+        label - string, name of one column, usually the (discrete) 
+            label you are interested in predicting (e.g., species) 
+        features - list of strings corresponding to feature columns 
+            (e.g., petal length, petal width)
     TODO: Seed random numbers so they are the same for each jitter
+    TODO: Option for histogram
     '''
 
+    if not histograms:
+        raise ValueError('Currently no way to not plot diagonal histograms')
+
     # Initialise the plot
-    sns.set_theme(style='ticks')
+    sns.set_theme(style='white')
     n = len(features)
 
     # Figure out the hue of bars/points
-    if label is None:
+    if hue_column is None:
         hue_hist = None
         hue_scat = None
     else:
         if continuous_label:
             hue_hist = None
         else:
-            hue_hist = df[label]
-        hue_scat = df[label]
+            hue_hist = df[hue_column]
+        hue_scat = df[hue_column]
 
     # Make the big plot
     _, axs = plt.subplots(n, n, figsize=figsize)
@@ -217,10 +220,10 @@ def plot_feature_triangle(df, features, label, continuous_label=False,
             i += 1 # Add one to the plot number
             plt.subplot(n, n, i)
             feature_row = features[irow]; feature_col = features[icol]
-            if icol > irow:
+            if icol > irow and mask_upper_triangle:
                 axs[irow, icol].axis('off') # Ignore upper triangle
                 continue
-            if (icol == irow):
+            elif (icol == irow):
                 sns.histplot(df, x=feature_col, 
                                  hue=hue_hist, 
                                  stat='density', 
@@ -233,8 +236,8 @@ def plot_feature_triangle(df, features, label, continuous_label=False,
                                                   feature_col, jitter)
                 sns.scatterplot(x=data_col, y=data_row,
                                 hue=hue_scat,
-                                alpha=alpha,
                                 legend=None,
+                                **kwargs,
                                )
             # x-axis labels
             if irow == n-1: 
@@ -255,76 +258,9 @@ def plot_feature_triangle(df, features, label, continuous_label=False,
                 plt.ylabel(None)
                 plt.tick_params(axis='y', which='major', 
                                 left=True, labelleft=False)
+    #plt.tight_layout()
 
-    plt.tight_layout()
-    return plt
-
-def plot_feature_scatter_triangle(df, features, hue_col=None, style_col=None, continuous_label=False, 
-        alpha=1., figsize=(10,10), jitter=0.):
-    '''
-    Triangle plot of list of features split by some characteristic. 
-    Histogram distributions along diagonal, correlations off diagonal.
-    df - pandas data frame
-    label - string, name of one column, usually the (discrete) 
-        label you are interested in predicting (e.g., species) 
-    features - list of strings corresponding to feature columns 
-        (e.g., petal length, petal width)
-    '''
-
-    # Initialise the plot
-    sns.set_theme(style='ticks')
-    n = len(features)-1
-
-    # Figure out the hue/style of bars/points
-    if hue_col is None:
-        hue = None
-    else:
-        hue = df[hue_col]
-    if style_col is None:
-        style = None
-    else:
-        style = df[style_col]
-
-    # Make the big plot
-    _, axs = plt.subplots(n, n, figsize=figsize)
-    i = 0
-    for irow in range(n):
-        for icol in range(n):
-            i += 1 # Add one to the plot number
-            if icol > irow:
-                axs[irow, icol].axis('off') # Ignore upper triangle
-                continue
-            plt.subplot(n, n, i)
-            feature_col = features[icol]; feature_row = features[irow+1]
-            data_row, data_col = _jitter_data(df, feature_row, 
-                                              feature_col, jitter)
-            sns.scatterplot(x=data_col, y=data_row,
-                            hue=hue,
-                            style=style,
-                            alpha=alpha,
-                            legend=(not continuous_label and (icol==0) and (irow==0)),
-                            )
-
-            # x-axis labels
-            if (irow == n-1): 
-                plt.xlabel(feature_col)
-            else:
-                plt.xlabel(None)
-                plt.tick_params(axis='x', which='major', 
-                                bottom=True, labelbottom=False)
-
-            # y-axis labels
-            if (icol == 0):
-                plt.ylabel(feature_row)
-            else:
-                plt.ylabel(None)
-                plt.tick_params(axis='y', which='major', 
-                                left=True, labelleft=False)
-
-    plt.tight_layout()
-    return plt
-
-def plot_correlation_matrix(df, columns, figsize=(5,5), annot=True, errors=True, nbs=100,# fmt='.2g',
+def plot_correlation_matrix(df, columns, figsize=(8,8), annot=True, errors=True, nbs=100,# fmt='.2g',
         mask_diagonal=True, mask_upper_triangle=True):
     '''
     Create a plot of the correlation matrix for (continous) data columns 
@@ -372,6 +308,7 @@ def plot_correlation_matrix(df, columns, figsize=(5,5), annot=True, errors=True,
     if annot and errors:
         fmt = ''
     else:
+        fmt='.2g'
         notes = annot
 
     # Make the plot
@@ -387,7 +324,6 @@ def plot_correlation_matrix(df, columns, figsize=(5,5), annot=True, errors=True,
                    )
     # Centre y-axis ticks
     g.set_yticklabels(labels=g.get_yticklabels(), va='center') 
-    #return plt # TODO: Does this need to return anything?
 
 def _bootstrap_correlation_errors(df, columns, n=100):
     '''
@@ -425,7 +361,8 @@ def lineswarm(df, columns, ax, line_color='black', line_alpha=0.1, id_=None,
     **kwargs):
     '''
     Make a seaborn swarm plot with lines connecting the points in each swarm cluster
-    Solution from: https://stackoverflow.com/questions/51155396/plotting-colored-lines-connecting-individual-data-points-of-two-swarmplots
+    Solution from: 
+    https://stackoverflow.com/questions/51155396/plotting-colored-lines-connecting-individual-data-points-of-two-swarmplots
     '''
     # Make the standard swarm plot
     swarmplot(df, columns, ax=ax, id_=id_, x_label=x_label, y_label=y_label, 

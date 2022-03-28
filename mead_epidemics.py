@@ -2,15 +2,16 @@
 import numpy as np
 
 # Set of right-hand-side equations
-def SIR_equations(t, y, R0, G0, f, m):
+def _SIR_equations(t, y, R0, G0, f, m):
     '''
     Right-hand side of the SIR equations
-     t - time []; not necessary here, but might be for solve_ivp?
-     y - Array of values for solve_ivp
-    R0 - Symmetric R0 matrix between groups
-    G0 - Ratio of infected duration to recovered duration (usually << 1; 0 means lasting immunity)
-     f - Array of group fractions
-     m - Symmetric mixing matrix
+    Parameters:
+        t (array): not necessary here, but might be for solve_ivp?
+        y (3n array): Array of values for solve_ivp
+        R0 (nxn array): Symmetric R0 matrix between groups
+        G0 (float): Ratio of infected duration to recovered duration (usually << 1; 0 means lasting immunity)
+        f (n array): Group fractions (should sum to unity)
+        m (nxn array): Symmetric group mixing matrix
     '''
     # Check size of problem (n should be divisible by 3)
     n3 = len(y)
@@ -44,21 +45,27 @@ def SIR_equations(t, y, R0, G0, f, m):
     return dS.tolist()+dI.tolist()+dR.tolist()
 
 # Set of right-hand-side equations
-def basic_SIR_equations(t, y, R0t, G0=0., Vt=(lambda t, R: 0.)):
+def _basic_SIR_equations(t, y, R0, G0=0., Vt=(lambda t, R: 0.)):
     '''
     Right-hand side of the SIR equations
-    t - time array
-    y - Array of values for solve_ivp
-    R0t - R0 function
-    G0 - Ratio of infected duration to recovered duration (usually << 1; 0 means lasting immunity)
+    @params
+        t - time array
+        y - Array of values for solve_ivp
+        R0t - R0 function
+        G0 - Ratio of infected duration to recovered duration (usually << 1; 0 means lasting immunity)
     '''
     # Unpack y variables
     S = y[0]; I = y[1]; R = y[2]
     
     # Differential equations
-    dS = -R0t(t)*I*S+G0*R-Vt(t, R)
-    dI = R0t(t)*I*S-I
-    dR = I-G0*R+Vt(t, R)
+    if callable(R0):
+        dS = -R0(t)*I*S+G0*R-Vt(t, R)
+        dI = R0(t)*I*S-I
+        dR = I-G0*R+Vt(t, R)
+    else:
+        dS = -R0*I*S+G0*R-Vt(t, R)
+        dI = R0*I*S-I
+        dR = I-G0*R+Vt(t, R)
 
     # Return a list
     return [dS, dI, dR]
@@ -66,12 +73,13 @@ def basic_SIR_equations(t, y, R0t, G0=0., Vt=(lambda t, R: 0.)):
 def solve_basic_SIR(t, Ii, Ri, R0t, G0=0., Vt=(lambda t, R: 0.)):
     '''
     Routine to solve the SIR equations
-    t - Array of time values for solution [typical infectiousness duration]
-    Ii - Array of initial infected fraction for each group
-    Ri - Array of initial recovered fraction for each group (array of zeros for new diseases)
-    Rt - R0(t) function
-    G0 - Ratio of infected duration to recovered duration (usually << 1; 0 means immunity is forever)
-    Vt - Vaccination rate (fraction of population per infectiouness time)
+    @parmas
+        t - Array of time values for solution [typical infectiousness duration]
+        Ii - Array of initial infected fraction for each group
+        Ri - Array of initial recovered fraction for each group (array of zeros for new diseases)
+        Rt - R0(t) function
+        G0 - Ratio of infected duration to recovered duration (usually << 1; 0 means immunity is forever)
+        Vt - Vaccination rate (fraction of population per infectiouness time)
     '''
     from scipy.integrate import solve_ivp
 
@@ -84,7 +92,7 @@ def solve_basic_SIR(t, Ii, Ri, R0t, G0=0., Vt=(lambda t, R: 0.)):
             raise ValueError('Initial '+name+' fraction should be between zero and one')
 
     # Run the ODE solver
-    solution = solve_ivp(basic_SIR_equations, (t[0], t[-1]), [Si, Ii, Ri], 
+    solution = solve_ivp(_basic_SIR_equations, (t[0], t[-1]), [Si, Ii, Ri], 
                             method='RK45', 
                             t_eval=t, 
                             args=(R0t, G0, Vt), 
@@ -97,13 +105,14 @@ def solve_basic_SIR(t, Ii, Ri, R0t, G0=0., Vt=(lambda t, R: 0.)):
 def solve_SIR(t, Ii, Ri, R0_matrix, G0, group_fracs, mixing_matrix):
     '''
     Routine to solve the SIR equations
-    t - Array of time values for solution [typical infectiousness duration]
-    Ii - Array of initial infected fraction for each group
-    Ri - Array of initial recovered fraction for each group (array of zeros for new diseases)
-    R0_matrix - Interaction matrix of R0 between each group
-    G0 - Ratio of infected duration to recovered duration (usually << 1)
-    group_fracs - Fraction of people in each group
-    mixing_matrix - Mixing matrix between each group
+    @params
+        t - Array of time values for solution [typical infectiousness duration]
+        Ii - Array of initial infected fraction for each group
+        Ri - Array of initial recovered fraction for each group (array of zeros for new diseases)
+        R0_matrix - Interaction matrix of R0 between each group
+        G0 - Ratio of infected duration to recovered duration (usually << 1)
+        group_fracs - Fraction of people in each group
+        mixing_matrix - Mixing matrix between each group
     '''
     from scipy.integrate import solve_ivp
     from mead_vectors import check_symmetric
@@ -147,7 +156,7 @@ def solve_SIR(t, Ii, Ri, R0_matrix, G0, group_fracs, mixing_matrix):
             raise ValueError('Initial '+name+' fraction should be between zero and one')
 
     # Run the ODE solver
-    solution = solve_ivp(SIR_equations, (t[0], t[-1]), Si.tolist()+Ii.tolist()+Ri.tolist(), 
+    solution = solve_ivp(_SIR_equations, (t[0], t[-1]), Si.tolist()+Ii.tolist()+Ri.tolist(), 
                             method='RK45', 
                             t_eval=t, 
                             args=(R0_matrix, G0, group_fracs, mixing_matrix), 
@@ -165,12 +174,13 @@ def solve_SIR(t, Ii, Ri, R0_matrix, G0, group_fracs, mixing_matrix):
 def solve_discrete_SIR(Si, Ii, Ri, R0, Ti, n):
     '''
     Solves the discrete SIR model
-    Si - Initial number of susceptible people
-    Ii - Initial number of infected people
-    Ri - Initial number of recovered (and therefore immune) people
-    R0 - Average number of people an infected person infects in pool of susceptible people
-    Ti - Duration of infection [days]
-     n - Number of time steps [days]
+    @params
+        Si - Initial number of susceptible people
+        Ii - Initial number of infected people
+        Ri - Initial number of recovered (and therefore immune) people
+        R0 - Average number of people an infected person infects in pool of susceptible people
+        Ti - Duration of infection [days]
+        n - Number of time steps [days]
     '''
 
     # Empty lists for solution

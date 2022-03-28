@@ -143,43 +143,43 @@ def stacked_barplot(data, x, y, hue, normalize=False, hue_order=None, **kwargs):
         dpiv = dpiv[hue_order]
     dpiv.plot(kind='bar', stacked=True, **kwargs)
 
-def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix', cmap=plt.cm.Blues):
-    '''
-    Shamelessly stolen from Viviana Acquaviva
-    This function prints and plots the confusion matrix.
-    Normalization can be applied by setting `normalize=True`.
-    '''
-    if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        print('Normalized confusion matrix')
-    else:
-        print('Confusion matrix, without normalization')
-    if not normalize:
-        for i, thing in enumerate(classes):
-            print('True number of '+thing+':', np.sum(cm[i,:]))
+# def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix', cmap=plt.cm.Blues):
+#     '''
+#     Shamelessly stolen from Viviana Acquaviva
+#     This function prints and plots the confusion matrix.
+#     Normalization can be applied by setting `normalize=True`.
+#     '''
+#     if normalize:
+#         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+#         print('Normalized confusion matrix')
+#     else:
+#         print('Confusion matrix, without normalization')
+#     if not normalize:
+#         for i, thing in enumerate(classes):
+#             print('True number of '+thing+':', np.sum(cm[i,:]))
 
-    # Plot the matrix
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
-    plt.title(title)
-    tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=45)
-    plt.yticks(tick_marks, classes)
+#     # Plot the matrix
+#     plt.imshow(cm, interpolation='nearest', cmap=cmap)
+#     plt.title(title)
+#     tick_marks = np.arange(len(classes))
+#     plt.xticks(tick_marks, classes, rotation=45)
+#     plt.yticks(tick_marks, classes)
 
-    # Add test
-    fmt = '.2f' if normalize else 'd'
-    thresh = cm.max() / 2.
-    for i in range(cm.shape[0]):
-        for j in range(cm.shape[1]):
-            plt.text(j, i, format(cm[i, j], fmt),
-                horizontalalignment="center",
-                color='white' if cm[i, j]>thresh else 'black')
+#     # Add test
+#     fmt = '.2f' if normalize else 'd'
+#     thresh = cm.max() / 2.
+#     for i in range(cm.shape[0]):
+#         for j in range(cm.shape[1]):
+#             plt.text(j, i, format(cm[i, j], fmt),
+#                 horizontalalignment="center",
+#                 color='white' if cm[i, j]>thresh else 'black')
 
-    # Finalize
-    plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
+#     # Finalize
+#     plt.tight_layout()
+#     plt.ylabel('True label')
+#     plt.xlabel('Predicted label')
 
-def plot_confusion_matrix2(y_test, y_pred, labels=None, figsize=(11, 5)):
+def plot_confusion_matrix(y_test, y_pred, labels=None, figsize=(11, 5)):
     '''
     Plot a confusion matrix nicely
     '''
