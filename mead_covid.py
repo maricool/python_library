@@ -230,6 +230,8 @@ def read_Canada_vaccine_data(infile):
     df.sort_values(by=['prname', 'date'], ascending=[True, True], inplace=True)
     df['date'] = pd.to_datetime(df['date'])
     df['proptotal_additional'] = df['proptotal_additional'].fillna(0)
+    df.replace('<0.01', '0.00', inplace=True) # Some columns have '<0.01' in them which means column is read as string
+    df['proptotal_fully'] = df['proptotal_fully'].astype(float) # Convert the string column to a float
     return df
 
 def plot_Canada_data(df, df_hosp, death_fac=20, Nmax=None):
@@ -591,13 +593,14 @@ def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nm
                     end_day = dg.at[i+1, 'date']
                 except:
                     end_day = end_date
-                for _ in range(int(dg.at[i, 'proptotal_atleast1dose'])):
+                # TODO: Shouldn't need float(int(x)) here, problem is that columns are being read as strings
+                for _ in range(int(float(dg.at[i, 'proptotal_atleast1dose']))):
                     plt.axvspan(start_day, end_day, ymin=one_dose_min, ymax=one_dose_max, 
                         color=one_dose_color, alpha=alpha_vax, lw=0.)
-                for _ in range(int(dg.at[i, 'proptotal_fully'])):
+                for _ in range(int(float(dg.at[i, 'proptotal_fully']))):
                     plt.axvspan(start_day, end_day, ymin=two_dose_min, ymax=two_dose_max, 
                         color=two_dose_color, alpha=alpha_vax, lw=0.)
-                for _ in range(int(dg.at[i, 'proptotal_additional'])):
+                for _ in range(int(float(dg.at[i, 'proptotal_additional']))):
                     plt.axvspan(start_day, end_day, ymin=thr_dose_min, ymax=thr_dose_max, 
                         color=thr_dose_color, alpha=alpha_vax, lw=0.)
             labels = [

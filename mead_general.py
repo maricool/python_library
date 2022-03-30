@@ -3,6 +3,9 @@
 
 ### This set of functions use only basic Python ###
 
+import matplotlib
+
+
 def opposite_side(left_or_right):
     '''
     Returns the opposite of the strings: 'left' or 'right'
@@ -318,11 +321,17 @@ def covariance_matrix(sigmas, R):
 
 ### matplotlib ###
 
-def seq_color(i, n, cmap):
+
+def seq_color(i, n, cmap='viridis'):
     '''
     Sequential colors from i=0 to i=n-1 to select n colors from cmap
     '''
-    return cmap(i/(n-1))
+    from matplotlib.pyplot import get_cmap
+    if isinstance(cmap, str):
+        cmap_here = get_cmap(cmap)
+    else:
+        cmap_here = cmap
+    return cmap_here(i/(n-1))
 
 def colour(i):
     '''
