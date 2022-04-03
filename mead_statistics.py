@@ -29,7 +29,7 @@ def draw_from_distribution(x, Cx):
     C(x): array for cumulative probability
     '''
     r = np.random.uniform(Cx[0], Cx[-1])
-    xi = np.interp(r, Cx, x)    
+    xi = np.interp(r, Cx, x)
     return xi
 
 def moment(n, f, x1, x2, *args):
@@ -43,6 +43,12 @@ def moment(n, f, x1, x2, *args):
     norm = normalisation(f, x1, x2, *args)
     m, _ = quad(lambda x: (x**n)*f(x, *args)/norm, x1, x2)
     return m
+
+def mean(f, x1, x2, *args):
+    '''
+    Computes the mean of a continuous distribution via integration
+    '''
+    return moment(1, f, x1, x2, *args)
 
 def variance(f, x1, x2, *args):
     '''
@@ -64,7 +70,7 @@ def draw_from_1D(n, f, x1, x2, nx, *args):
     x1, x2: limits on x axis
     nx: number of points to use along x axis
     '''
-    x = np.linspace(x1, x2, nx)    
+    x = np.linspace(x1, x2, nx)
     C = cumulative(x, f, x1, *args)
     xi = np.zeros(n)
     for i in range(n):
@@ -115,7 +121,7 @@ def draw_from_2D(n, f, x1, x2, nx, y1, y2, ny):
         ys.append(yi)
 
     # Random numbers for inter-pixel displacement
-    dxs = np.random.uniform(-dx/2., dx/2., n) 
+    dxs = np.random.uniform(-dx/2., dx/2., n)
     dys = np.random.uniform(-dy/2., dy/2., n)
 
     # Apply uniform-random displacement within a pixel
