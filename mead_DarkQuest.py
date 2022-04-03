@@ -109,7 +109,7 @@ class cosmology():
         # Write primary parameters to screen
         print('Dark Quest primary parameters')
         print('omega_b: %1.4f' % (self.wb))
-        print('omega_c: %1.4f' % (self.wc))  
+        print('omega_c: %1.4f' % (self.wc))
         print('Omega_w: %1.4f' % (self.Om_w))
         print('As [1e9]: %1.4f' % (self.As*1e9))
         print('ns: %1.4f' % (self.ns))
@@ -124,11 +124,11 @@ class cosmology():
         # Write derived parameters to screen
         print('Dark Quest derived parameters')
         print('Omega_m: %1.4f' % (self.Om_m))
-        print('Omega_b: %1.4f' % (self.Om_b))      
+        print('Omega_b: %1.4f' % (self.Om_b))
         print('omega_m: %1.4f' % (self.wm))
-        print('h: %1.4f' % (self.h))      
+        print('h: %1.4f' % (self.h))
         print('Omega_c: %1.4f' % (self.Om_c))
-        print('Omega_nu: %1.4f' % (self.Om_nu))      
+        print('Omega_nu: %1.4f' % (self.Om_nu))
         print('m_nu [eV]: %1.4f' % (self.m_nu))
         print()
 
@@ -214,7 +214,7 @@ def convert_mead_cosmology(cosm):
     ns = cosm.ns
     w = cosm.w
     cpar = cosmology(wb=wb, wc=wc, Om_w=Om_w, lnAs=lnAs, ns=ns, w=w)
-    return  cpar
+    return cpar
 
 def init_emulator(cpar):
     '''
@@ -318,7 +318,7 @@ def Mass_nu(emu, nu, z):
     Ms_internal = emu.massfunc.Mlist
     sig0s_internal = emu.massfunc.sigs0
     sigs_internal = sig0s_internal*emu.Dgrowth_from_z(z)
-    nus_internal = dc/sigs_internal 
+    nus_internal = dc/sigs_internal
 
     # Make an interpolator for sigma(M)  
     if log_interp:
