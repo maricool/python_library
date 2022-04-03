@@ -419,8 +419,8 @@ def plot_Canadian_provinces_data(df, provinces, Nmax=100):
     # Finalize
     plt.tight_layout()
 
-def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nmax=5750, 
-    fake_hosp=False, fake_hosp_fac=0.01):
+def plot_Canadian_province_data(df, df_vax=None, df_world_cases=None, df_world_deaths=None, 
+    province='British Columbia', country='United Kingdom', Nmax=5750, fake_hosp=False, fake_hosp_fac=0.01):
 
     # Parameters
     dpi = 200
@@ -433,7 +433,7 @@ def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nm
     #y2label = 'New deaths/hospitalisations per day'
     y2label = 'New deaths per day'
     y2fac = 50
-    titx = 0.015; tity = 0.63
+    titx = 0.015#; tity = 0.63
     figx = 10.; figy = 4.
     use_seaborn = True
     rolling_offset = 3 # Number of days to offset rolling data
@@ -443,6 +443,22 @@ def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nm
     plot_waves = True
     plot_restrictions = True
     plot_vax = True
+    try_to_plot_country_cases = True
+    try_to_plot_country_deaths = True
+    alpha_country = 0.15
+
+    # Extras being plotted
+    plot_country_cases = try_to_plot_country_cases and (df_world_cases is not None)
+    plot_country_deaths = try_to_plot_country_deaths and (df_world_deaths is not None)
+
+    # Title
+    if plot_country_cases and plot_country_deaths:
+        tity = 0.50
+    elif plot_country_cases or plot_country_deaths:
+        tity = 0.565
+    else:
+        tity = 0.63
+    
 
     # Cases plot
     case_bar_color = 'cornflowerblue'
@@ -582,8 +598,28 @@ def plot_Canadian_province_data(df, df_vax=None, province='British Columbia', Nm
                     plt.axvspan(date_pair[0], date_pair[1], ymax=restriction_max,
                         alpha=restriction_alpha, color=restriction_color, lw=0., label=label)
 
+        # Another country in the world for comparison
+        if plot_country_cases:
+            # TODO: If just one label it should be grey rather than case colour
+            fac = population_Canadian_provinces[province]/population_countries[country]
+            if country == 'United Kingdom':
+                label = 'UK'
+            else:
+                label = country
+            sns.lineplot(data=df_world_cases.loc[country]*fac, label=label, 
+                alpha=alpha_country, color=case_line_color, zorder=0)
+        if plot_country_deaths:
+            fac = population_Canadian_provinces[province]/population_countries[country]*death_fac
+            if country == 'United Kingdom':
+                label = 'UK deaths'
+            else:
+                label = country+' deaths'
+            sns.lineplot(data=df_world_deaths.loc[country]*fac, label=None, 
+                alpha=alpha_country, color=death_line_color, zorder=0)
+
         # Vaccines
         if plot_vax and df_vax is not None:
+            plt.axvspan(start_date, end_date, ymin=thr_dose_min, ymax=one_dose_max, color='w', alpha=1., lw=0)
             ax.plot([0.,1.], [restriction_max,restriction_max], transform=ax.transAxes, lw=0.5, color='black')
             dg = df_vax[df_vax['prname']==province]
             dg.reset_index(level=None, drop=False, inplace=True)
@@ -733,6 +769,7 @@ def plot_world(df, countries, dftype='deaths'):
     figx = 18.; figy = 8.
     titx = 0.015; tity = 0.87
     dpi = 200
+    start_date = date(2020, 1, 1)
 
     plt.subplots(2, 1, figsize=(figx,figy), dpi=dpi)
 
@@ -752,7 +789,7 @@ def plot_world(df, countries, dftype='deaths'):
         plt.ylabel(ylab)
         plt.xlabel(None)
         plt.ylim(bottom=0.)
-        plt.xlim([date(2020, 1, 1), max(df.columns)+relativedelta(months=3)])
+        plt.xlim([start_date, max(df.columns)+relativedelta(months=3)])
         _, ymax = ax.get_ylim()
         if ymax >= 1e3:
             ax.get_yaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: format(int(x), ',')))
