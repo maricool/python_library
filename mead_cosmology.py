@@ -667,6 +667,7 @@ def Radius_M(M, Om_m):
     '''
     Radius of a sphere containing mass M in a homogeneous universe
     '''
+    print("test")
     return np.cbrt(3.*M/(4.*np.pi*comoving_matter_density(Om_m)))
 
 def Delta2(Power_k, k):

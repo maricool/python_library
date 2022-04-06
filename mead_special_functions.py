@@ -1,7 +1,7 @@
 import numpy as np
 
 # Parameters
-xmin_Tk = 1e-5
+xmin_Tk = 1e-10
 
 def Tophat_k(x):
     # Normalised tophat Fourier transform function such that T(x=0)=1
