@@ -43,7 +43,8 @@ ns_fid = 0.9645
 w_fid = -1.
 
 # Parameters
-log_interp_sigma = True
+# TODO: Setting this to True buggers things up, fix it!
+log_interp_sigma = False
 
 # Accuracy
 acc_hh = 0.04
@@ -396,7 +397,7 @@ def sigma_R(emu, R, z):
     '''
     Root-mean-square linear overdensity fluctuation when field smoothed on scale R [dimensionless]
     emu: An instance of DQ emulator
-    R: Radius [Mpc/h] (can this be a list?)
+    R: Radius [Mpc/h] (TODO: can this be a list?)
     z: redshift
     '''
     M = Mass_R(emu, R)
