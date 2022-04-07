@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import mead_general as mead
 
 # TODO: Should make a 'maze' class, with associated: grid, actions
-# TODO: Switch from x, y to rows, cols (because order is opposite)
 
 # Parameters
 gamma_def = 0.99
@@ -78,66 +77,69 @@ def enumerate_actions(maze):
     Enumerate all possible actions in each state (coordinate) in the maze
     Needs to account for walls, etc.
     '''
-    ny, nx = maze.shape
+    nr, nc = maze.shape
     actions = np.empty_like(maze, dtype=object)
-    for (iy, ix), tile in np.ndenumerate(maze):
+    for (ir, ic), tile in np.ndenumerate(maze):
         tile_actions = []
         if tile == maze_def.index('wall'):
             tile_actions.append('')
         elif tile == maze_def.index('exit'):
             tile_actions.append('E')
         else:
-            iR = mead.periodic_integer(ix+1, nx) # Tile to the right
-            iL = mead.periodic_integer(ix-1, nx) # Tile to the left
-            iU = mead.periodic_integer(iy+1, ny) # Tile above
-            iD = mead.periodic_integer(iy-1, ny) # Tile below
-            if maze[iy, iR] != maze_def.index('wall'): tile_actions.append('R')
-            if maze[iy, iL] != maze_def.index('wall'): tile_actions.append('L')
-            if maze[iU, ix] != maze_def.index('wall'): tile_actions.append('U')
-            if maze[iD, ix] != maze_def.index('wall'): tile_actions.append('D')
+            iU = mead.periodic_integer(ir+1, nr) # Tile above
+            iD = mead.periodic_integer(ir-1, nr) # Tile below
+            iR = mead.periodic_integer(ic+1, nc) # Tile to the right
+            iL = mead.periodic_integer(ic-1, nc) # Tile to the left
+            if maze[ir, iR] != maze_def.index('wall'): tile_actions.append('R')
+            if maze[ir, iL] != maze_def.index('wall'): tile_actions.append('L')
+            if maze[iU, ic] != maze_def.index('wall'): tile_actions.append('U')
+            if maze[iD, ic] != maze_def.index('wall'): tile_actions.append('D')
             #print('Coorindates:', ix, iy)
             #print('right, left, up down:', iR, iL, iU, iD)
-        actions[iy, ix] = tile_actions
+        actions[ir, ic] = tile_actions
     return actions
 
-def move(x, y, nx, ny, action):
+def _move(r, c, nr, nc, action):
     '''
     Result of moving according to an action
-    TODO: Do I really need the x_, y_ underscore variables?
+    TODO: Do I really need the r_, c_ underscore variables?
     '''
     if action == 'R': 
-        x_, y_ = mead.periodic_integer(x+1, nx), y
+        r_, c_ = r, mead.periodic_integer(c+1, nc)
     elif action == 'L': 
-        x_, y_ = mead.periodic_integer(x-1, nx), y
+        r_, c_ = r, mead.periodic_integer(c-1, nc)
     elif action == 'U': 
-        x_, y_ = x, mead.periodic_integer(y+1, ny)
+        r_, c_ = mead.periodic_integer(r+1, nr), c
     elif action == 'D': 
-        x_, y_ = x, mead.periodic_integer(y-1, ny)
+        r_, c_ = mead.periodic_integer(r-1, nr), c
     else:
-        print(action, x, y, nx, ny)
+        #print(action, r, c, nr, nc)
         print('Action:', action)
+        print('Row', r, 'of', nr)
+        print('Col', c, 'of', nc)
         raise ValueError('Action is not understood')
     #print(action, x, y, x_, y_, nx, ny)
-    return (x_, y_)
+    return (r_, c_)
 
-def enact(policy, start_x, start_y, max_steps=100):
+def enact(policy, start_c, start_r, max_steps=100): # TODO: Flip c <-> r
     '''
     Calculate the set of states (coordinates) associated with enacting a policy
     '''
-    x = start_x; y = start_y
-    xs = []; ys = []
-    ny, nx = policy.shape
+    r = start_r; c = start_c
+    rs = []; cs = []
+    nr, nc = policy.shape
     for _ in range(max_steps):
-        xs.append(x), ys.append(y)
-        action = policy[y, x]
+        rs.append(r), cs.append(c)
+        action = policy[r, c]
         if action == 'E': break
-        x, y = move(x, y, nx, ny, action)
-    return (xs, ys)
+        r, c = _move(r, c, nr, nc, action)
+    return (cs, rs) # TODO: Flip c <-> r
 
 def calculate_value(coords, rewards, gamma=gamma_def):
     '''
     Calculate the value of enacting a particular policy
     Note that the policy has a particular starting point
+    # TODO: Use r, c instead of x, y and flip
     '''
     value = 0.; step = -1
     for x, y in zip(*coords): # TODO: Slow loop
@@ -145,31 +147,31 @@ def calculate_value(coords, rewards, gamma=gamma_def):
         value += rewards[y, x]*gamma**step
     return value
 
-def random_search_escape(actions, rewards, nx, ny, start_x, start_y, 
+def random_search_escape(actions, rewards, nc, nr, start_c, start_r, # TODO: Flip c, r
     seed=None, num_attempts=num_attempts_random_search, max_steps=max_steps_random_search):
     '''
     Use crude random-search method to stumble upon the best route out of a maze
     '''
     import random
     random.seed(seed)
-    attempts_x = []; attempts_y = []
+    attempts_r = []; attempts_c = []
     for _ in range(num_attempts):
-        x = start_x; y = start_y
-        xs = []; ys = []
+        r = start_r; c = start_c
+        rs = []; cs = []
         for _ in range(max_steps):
-            xs.append(x); ys.append(y)
-            action = random.choice(actions[y, x])
+            rs.append(r); cs.append(c)
+            action = random.choice(actions[r, c])
             if action == 'E': break
-            x, y = move(x, y, nx, ny, action)
-        attempts_x.append(xs); attempts_y.append(ys)
+            r, c = _move(r, c, nr, nc, action)
+        attempts_r.append(rs); attempts_c.append(cs)
     values = []
-    for xs, ys in zip(attempts_x, attempts_y):
-        value = calculate_value((xs, ys), rewards)
+    for rs, cs in zip(attempts_r, attempts_c):
+        value = calculate_value((cs, rs), rewards) # TODO: Flip
         values.append(value)
     index = np.argmax(values)
     value = values[index]
-    xs = attempts_x[index]; ys = attempts_y[index]
-    return (xs, ys), value
+    rs = attempts_r[index]; cs = attempts_c[index]
+    return (cs, rs), value
 
 def create_random_policy(actions):
     '''
