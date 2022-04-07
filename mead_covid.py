@@ -453,7 +453,8 @@ def plot_Canadian_province_data(df, df_vax=None, df_world_cases=None, df_world_d
 
     # Title
     if plot_country_cases and plot_country_deaths:
-        tity = 0.50
+        #tity = 0.50
+        tity = 0.565
     elif plot_country_cases or plot_country_deaths:
         tity = 0.565
     else:
