@@ -1,10 +1,22 @@
 ### Functions ###
+
 # First set involve only basic Python, then numpy, then matplotlib
 
 ### This set of functions use only basic Python ###
 
-import matplotlib
+def periodic_integer(i, n):
+    '''
+    Ensure that integers can only exist on the range [0, 1, ..., n-1]
+    Solution from: https://stackoverflow.com/questions/43827464
+    '''
+    return ((i%n)+n)%n
 
+def periodic_float(x, L):
+    '''
+    Ensures that the float x can only exist on the interval [0, L)
+    NOTE: This is just the modulus operation, but I always forget this
+    '''
+    return x%L
 
 def opposite_side(left_or_right):
     '''
@@ -93,6 +105,13 @@ def bin_edges_for_integers(a, b=None):
     bin_edges = [bin_edge-0.5 for bin_edge in bin_edges] # Centre on integers
     return bin_edges
 
+def key_from_value(dict, value):
+    '''
+    Get a dictionary key from the value
+    From: https://stackoverflow.com/questions/8023306
+    This is often a bad idea, and is not really how dictionary should be used
+    '''
+    return list(dict.keys())[list(dict.values()).index(value)]
 
 ### ###
 
@@ -320,7 +339,6 @@ def covariance_matrix(sigmas, R):
 ### ###
 
 ### matplotlib ###
-
 
 def seq_color(i, n, cmap='viridis'):
     '''
