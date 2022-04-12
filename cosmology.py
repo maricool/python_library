@@ -6,9 +6,9 @@ import scipy.integrate as integrate
 from scipy.interpolate import interp1d
 
 # My imports
-import mead_constants as const
-import mead_general as mead
-import mead_interpolate as interpolate
+import constants as const
+import general as mead
+import interpolate as interpolate
 
 # Parameters
 AW10_future_punishment = 1e6
@@ -667,7 +667,6 @@ def Radius_M(M, Om_m):
     '''
     Radius of a sphere containing mass M in a homogeneous universe
     '''
-    print("test")
     return np.cbrt(3.*M/(4.*np.pi*comoving_matter_density(Om_m)))
 
 def Delta2(Power_k, k):

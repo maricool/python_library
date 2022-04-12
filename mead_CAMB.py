@@ -5,7 +5,7 @@ import numpy
 import camb
 
 # My imports
-import mead_cosmology as cosmo
+import cosmology as cosmo
 
 # Create my cosmological parameters from a CAMB set
 # TODO: I guessed at the names of the cosmological parameters here. Probably wrong.

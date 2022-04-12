@@ -4,7 +4,7 @@ import scipy.integrate as integrate
 import warnings
 
 # My imports
-import mead_cosmology as cosmo
+import utility_functions as utility
 
 # Constants
 Dv0 = 18.*np.pi**2 # Delta_v = ~178, EdS halo virial overdensity
@@ -226,7 +226,7 @@ def _get_nus(Ms, dc, Om_m, sigmas=None, sigma=None, Pk_lin=None):
     Calculate nu values from array of halo masses
     '''
     # Create arrays of R (Lagrangian) and nu values that correspond to the halo mass
-    Rs = cosmo.Radius_M(Ms, Om_m)
+    Rs = utility.Radius_M(Ms, Om_m)
 
     # Convert R values to nu via sigma(R)
     if sigmas is not None:
@@ -234,7 +234,7 @@ def _get_nus(Ms, dc, Om_m, sigmas=None, sigma=None, Pk_lin=None):
     elif sigma is not None:
         nus = dc/sigma(Rs) # ...otherwise evaluate the provided sigma(R) function or...
     elif Pk_lin is not None:
-        nus = cosmo.nu_R(Rs, Pk_lin, dc) # ...otherwise integrate the linear power.
+        nus = dc/utility.get_sigmaR(Rs,Pk_lin,integration_type='quad')
     else:
         raise ValueError('Error, you need to specify (at least) one of Pk_lin, sigma or sigmas') 
     return nus
@@ -243,7 +243,7 @@ def virial_radius(M, Dv, Om_m):
     '''
     Halo virial radius based on the halo mass and overdensity condition
     '''
-    return cosmo.Radius_M(M, Om_m)/np.cbrt(Dv)
+    return utility.Radius_M(M, Om_m)/np.cbrt(Dv)
 
 def dc_NakamuraSuto(Om_mz):
     '''
@@ -286,7 +286,7 @@ def mean_hm(hmod, Ms, fs, sigmas=None, sigma=None, Pk_lin=None):
     '''
     nus = _get_nus(Ms, hmod.dc, hmod.Om_m, sigmas, sigma, Pk_lin)
     integrand = (fs/Ms)*hmod.halo_mass_function(nus)
-    return halo_integration(integrand, nus)*cosmo.comoving_matter_density(hmod.Om_m)
+    return halo_integration(integrand, nus)*utility.comoving_matter_density(hmod.Om_m)
 
 def Pk_hm(hmod, Ms, ks, profs, Pk_lin, beta=None, sigmas=None, sigma=None, shot=False, discrete=True, verbose=False):
     '''
@@ -398,7 +398,7 @@ def _P_1h(hmod, Ms, nus, WuWv):
     '''
     integrand = WuWv*hmod.halo_mass_function(nus)/Ms
     P_1h = halo_integration(integrand, nus)
-    P_1h = P_1h*cosmo.comoving_matter_density(hmod.Om_m)
+    P_1h = P_1h*utility.comoving_matter_density(hmod.Om_m)
     return P_1h
 
 def _I_2h(hmod, Ms, nus, W, mass, A):
@@ -409,7 +409,7 @@ def _I_2h(hmod, Ms, nus, W, mass, A):
     I_2h = halo_integration(integrand, nus)
     if mass:
         I_2h += A*W[0]/Ms[0]
-    I_2h = I_2h*cosmo.comoving_matter_density(hmod.Om_m)
+    I_2h = I_2h*utility.comoving_matter_density(hmod.Om_m)
     return I_2h
 
 def _I_beta(hmod, beta, Ms, nus, Wu, Wv, massu, massv, A):
@@ -454,7 +454,7 @@ def _I_beta(hmod, beta, Ms, nus, Wu, Wv, massu, massv, A):
             b = hmod.linear_halo_bias(nu)
             integrand[iM] = beta[iM, 0]*W*g*b/M
         integral += (A*Wv[0]/Ms[0])*trapz(integrand, nus)
-    return integral*cosmo.comoving_matter_density(hmod.Om_m)**2
+    return integral*utility.comoving_matter_density(hmod.Om_m)**2
 
 def Pk_hm_hu(hmod, Mh, Ms, ks, profs, Pk_lin, beta=None, sigmas=None, sigma=None, verbose=True):
     '''
@@ -552,7 +552,7 @@ def _I_beta_hu(hmod, beta, Ms, nuh, nus, Wk, mass, A):
     integral = trapz(integrand, nus)
     if mass:
         integral += A*beta[0]*Wk[0]/Ms[0]
-    return bh*integral*cosmo.comoving_matter_density(hmod.Om_m)
+    return bh*integral*utility.comoving_matter_density(hmod.Om_m)
 
 ### ###
 
@@ -666,7 +666,7 @@ def Prho_NFW(r, rv, M, c):
     rs = rv/c
     return M*r/(NFW_factor(c)*(1.+r/rs)**2*rs**2)
 
-def Prho_UPP(r, r500, M, z, cosm):
+def Prho_UPP(r, r500, M, z, Om_r,Om_m,Om_w,Om_v):
     '''
     Universal pressure profile: UPP
     '''
@@ -683,8 +683,8 @@ def Prho_UPP(r, r500, M, z, cosm):
         f2 = (1.+y**alpha)**(beta-gamma)/alpha
         p = P0*(h/0.7)**(-3./2.)*f1*(r500/c500)**2/f2
         return p
-    a = cosmo.scale_factor_z(z)
-    H = cosmo.H(cosm, a)
+    a = utility.scale_factor_z(z)
+    H = utility.H(Om_r,Om_m,Om_w,Om_v, a)
     f1 = 1.65*(h/0.7)**2*H**(8./3.)
     f2 = (M/2.1e14)**(2./3.+alphap)
     return f1*f2*p(r/r500)*4.*np.pi
@@ -748,7 +748,7 @@ def profile_matter(ks, Ms, rvs, cs, Om_m):
     '''
     Pre-configured matter NFW profile
     '''
-    rhom = cosmo.comoving_matter_density(Om_m)
+    rhom = const.rhoc*Om_m
     Uk = np.zeros((len(Ms), len(ks)))
     for iM, (rv, c) in enumerate(zip(rvs, cs)):
         Uk[iM, :] = win_NFW(ks, rv, c)
