@@ -266,6 +266,13 @@ def Dv_BryanNorman(Om_mz):
 
 ### Halo model functions that take hmod as input ###
 
+def linear_halo_bias(hmod, Ms, sigmas=None, sigma=None, Pk_lin=None):
+    '''
+    Calculates the linear halo bias as a function of halo mass
+    '''
+    nus = _get_nus(Ms, hmod.dc, hmod.Om_m, sigmas, sigma, Pk_lin)
+    return hmod.linear_halo_bias(nus)
+
 def mean_hm(hmod, Ms, fs, sigmas=None, sigma=None, Pk_lin=None):
     '''
     Calculate the mean of some f(M) over halo mass <f>: int f(M)n(M)dM where n(M) = dn/dM in some notations
