@@ -328,7 +328,7 @@ def plot_correlation_matrix(df, columns, figsize=(8,8), annot=True, errors=True,
 def _bootstrap_correlation_errors(df, columns, n=100):
     '''
     Estimate an error on a correlation matrix via bootstrap
-    @ params
+    @params
         df - Pandas dataframe
         columns - Columns of dataframe to use
         n - Number of bootstrap realisations

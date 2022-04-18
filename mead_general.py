@@ -2,7 +2,14 @@
 
 # First set involve only basic Python, then numpy, then matplotlib
 
-### This set of functions use only basic Python ###
+### High level ###
+
+def module_info(mod):
+    print(mod.__name__, mod.__version__, mod.__file__)
+
+### ###
+
+### This of functions use only basic Python ###
 
 def periodic_integer(i, n):
     '''
