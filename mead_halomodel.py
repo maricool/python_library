@@ -286,13 +286,19 @@ def halo_multiplicity_function(hmod, Ms, sigmas=None, sigma=None, Pk_lin=None):
     '''
     Calculates M^2 n(M) / rhobar, the so-called halo multiplicity function
     Note that this is dimensionless
+    TODO: Add calculation of dnu_dlnm for sigmas
     '''
+    from mead_calculus import log_derivative
     nus = _get_nus(Ms, hmod.dc, hmod.Om_m, sigmas, sigma, Pk_lin)
     Rs = cosmo.Radius_M(Ms, hmod.Om_m)
     if Pk_lin is not None:
-        dnu_dlnm = -(nus/6.)*cosmo.dsigma_R(Rs, Pk_lin)
+        dlnsigma2_dlnR = cosmo.dlnsigma2_dlnR(Rs, Pk_lin)
+    elif sigma is not None:
+        eps = 1e-3; dRs = Rs*eps # Uses numerical derivative
+        dlnsigma2_dlnR = 2.*log_derivative(sigma, Rs, dRs)
     else:
-        raise ValueError('Error, this currently only works with Pk_lin specified')
+        raise ValueError('Error, this currently only works with either P(k) or sigma(R) functions')
+    dnu_dlnm = -(nus/6.)*dlnsigma2_dlnR
     return hmod.halo_mass_function(nus)*dnu_dlnm
 
 def mean_hm(hmod, Ms, fs, sigmas=None, sigma=None, Pk_lin=None):
