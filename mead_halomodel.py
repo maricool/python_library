@@ -29,6 +29,9 @@ halo_integration = integrate.trapezoid
 win_integration = integrate.romb # Needs 2^m+1 (integer m) evenly-spaced samples in R
 nr = 1+2**7 # Number of points in r
 
+# Mass function
+eps_deriv_mf = 1e-3 # R -> dR for numerical sigma derivative
+
 # Halo models for halo mass function and bias
 PS = 'Press & Schecter (1974)'
 ST = 'Sheth & Tormen (1999)'
@@ -294,7 +297,7 @@ def halo_multiplicity_function(hmod, Ms, sigmas=None, sigma=None, Pk_lin=None):
     if Pk_lin is not None:
         dlnsigma2_dlnR = cosmo.dlnsigma2_dlnR(Rs, Pk_lin)
     elif sigma is not None:
-        eps = 1e-3; dRs = Rs*eps # Uses numerical derivative
+        eps = eps_deriv_mf; dRs = Rs*eps # Uses numerical derivative
         dlnsigma2_dlnR = 2.*log_derivative(sigma, Rs, dRs)
     else:
         raise ValueError('Error, this currently only works with either P(k) or sigma(R) functions')
