@@ -692,7 +692,7 @@ def sigma_R(R, Power_k):
     # This is the function evaluated
     return sigma_func(R)
 
-def dsigma_R(R, Power_k):
+def dlnsigma2_dlnR(R, Power_k):
     '''
     Calculates d(ln sigma^2)/d(ln R) by integration
     '''
