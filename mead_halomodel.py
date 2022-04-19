@@ -273,6 +273,28 @@ def linear_halo_bias(hmod, Ms, sigmas=None, sigma=None, Pk_lin=None):
     nus = _get_nus(Ms, hmod.dc, hmod.Om_m, sigmas, sigma, Pk_lin)
     return hmod.linear_halo_bias(nus)
 
+def halo_mass_function(hmod, Ms, sigmas=None, sigma=None, Pk_lin=None):
+    '''
+    Calculates n(M), the halo mass function as a function of halo mass
+    n(M) is the comoving number-density of haloes per halo mass
+    '''
+    F = halo_multiplicity_function(hmod, Ms, sigmas, sigma, Pk_lin)
+    rho = cosmo.comoving_matter_density(hmod.Om_m)
+    return F*rho/Ms**2
+
+def halo_multiplicity_function(hmod, Ms, sigmas=None, sigma=None, Pk_lin=None):
+    '''
+    Calculates M^2 n(M) / rhobar, the so-called halo multiplicity function
+    Note that this is dimensionless
+    '''
+    nus = _get_nus(Ms, hmod.dc, hmod.Om_m, sigmas, sigma, Pk_lin)
+    Rs = cosmo.Radius_M(Ms, hmod.Om_m)
+    if Pk_lin is not None:
+        dnu_dlnm = -(nus/6.)*cosmo.dsigma_R(Rs, Pk_lin)
+    else:
+        raise ValueError('Error, this currently only works with Pk_lin specified')
+    return hmod.halo_mass_function(nus)*dnu_dlnm
+
 def mean_hm(hmod, Ms, fs, sigmas=None, sigma=None, Pk_lin=None):
     '''
     Calculate the mean of some f(M) over halo mass <f>: int f(M)n(M)dM where n(M) = dn/dM in some notations
