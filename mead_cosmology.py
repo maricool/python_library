@@ -680,20 +680,38 @@ def sigma_R(R, Power_k):
             from mead_special_functions import Tophat_k
             return Power_k(k)*(k**2)*Tophat_k(k*R)**2
 
-        # k range for integration (could be restricted if necessary)
-        kmin = 0.
-        kmax = np.inf
-
         # Evaluate the integral and convert to a nicer form
+        kmin = 0.; kmax = np.inf # Integration range
         sigma_squared, _ = integrate.quad(sigma_integrand, kmin, kmax)
         sigma = np.sqrt(sigma_squared/(2.*np.pi**2))
         return sigma
 
-    # Note that this is a function  
-    sigma_func = np.vectorize(sigma_R_vec, excluded=['Power_k']) 
+    # Note that this is a function
+    sigma_func = np.vectorize(sigma_R_vec, excluded=['Power_k'])
 
     # This is the function evaluated
-    return sigma_func(R) 
+    return sigma_func(R)
+
+def dsigma_R(R, Power_k):
+    '''
+    Calculates d(ln sigma^2)/d(ln R) by integration
+    '''
+    def dsigma_R_vec(R):
+        def dsigma_integrand(k):
+            from mead_special_functions import Tophat_k, dTophat_k
+            return Power_k(k)*(k**3)*Tophat_k(k*R)*dTophat_k(k*R)
+
+        # Evaluate the integral and convert to a nicer form
+        kmin = 0.; kmax = np.inf # Integration range
+        dsigma, _ = integrate.quad(dsigma_integrand, kmin, kmax)
+        dsigma = R*dsigma/(np.pi*sigma_R(R, Power_k))**2
+        return dsigma
+
+    # Note that this is a function
+    dsigma_func = np.vectorize(dsigma_R_vec, excluded=['Power_k'])
+
+    # This is the function evaluated
+    return dsigma_func(R)
 
 def nu_R(R, Power_k, dc=1.686):
     return dc/sigma_R(R, Power_k)
