@@ -10,6 +10,13 @@ def Tophat_k(x):
     xmin = xmin_Tk
     return np.where(np.abs(x)<xmin, 1.-x**2/10., (3./x**3)*(np.sin(x)-x*np.cos(x)))
 
+def dTophat_k(x):
+    '''
+    Derivative of the tophat Fourier transform function
+    '''
+    xmin = xmin_Tk
+    return np.where(np.abs(x)<xmin, -x/5.+x**3/70., (3./x**4)*((x**2-3.)*np.sin(x)+3.*x*np.cos(x)))
+
 def Gaussian(x, mu, sig):
     '''
     Gaussian function such that G(x=0)=1
