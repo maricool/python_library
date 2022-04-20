@@ -29,6 +29,9 @@ halo_integration = integrate.trapezoid
 win_integration = integrate.romb # Needs 2^m+1 (integer m) evenly-spaced samples in R
 nr = 1+2**7 # Number of points in r
 
+# Mass function
+eps_deriv_mf = 1e-3 # R -> dR for numerical sigma derivative
+
 # Halo models for halo mass function and bias
 PS = 'Press & Schecter (1974)'
 ST = 'Sheth & Tormen (1999)'
@@ -49,6 +52,8 @@ do_I12I21 = True # Low M1 or low M2 portion of the integral
 # TODO: Incorporate configuration-space profiles
 # TODO: Dedicated test suite against pyHMcode/pyHMx for different cosmologies/halo models/redshifts
 # TODO: Better demonstration notebooks
+# TODO: Calculate the virial radius/overdensity based on cosmology instead of using Dv 
+# TODO: Calculate the linear collapse threshold based on on cosmology instead of using the defoult value
 
 ### Class definition ###
 
@@ -266,6 +271,42 @@ def Dv_BryanNorman(Om_mz):
 
 ### Halo model functions that take hmod as input ###
 
+def linear_halo_bias(hmod, Ms, sigmas=None, sigma=None, Pk_lin=None):
+    '''
+    Calculates the linear halo bias as a function of halo mass
+    '''
+    nus = _get_nus(Ms, hmod.dc, hmod.Om_m, sigmas, sigma, Pk_lin)
+    return hmod.linear_halo_bias(nus)
+
+def halo_mass_function(hmod, Ms, sigmas=None, sigma=None, Pk_lin=None):
+    '''
+    Calculates n(M), the halo mass function as a function of halo mass
+    n(M) is the comoving number-density of haloes per halo mass
+    '''
+    F = halo_multiplicity_function(hmod, Ms, sigmas, sigma, Pk_lin)
+    rho = cosmo.comoving_matter_density(hmod.Om_m)
+    return F*rho/Ms**2
+
+def halo_multiplicity_function(hmod, Ms, sigmas=None, sigma=None, Pk_lin=None):
+    '''
+    Calculates M^2 n(M) / rhobar, the so-called halo multiplicity function
+    Note that this is dimensionless
+    TODO: Add calculation of dnu_dlnm for sigmas
+    '''
+    from calculus import log_derivative
+    nus = _get_nus(Ms, hmod.dc, hmod.Om_m, sigmas, sigma, Pk_lin)
+    Rs = cosmo.Radius_M(Ms, hmod.Om_m)
+    if Pk_lin is not None:
+        dlnsigma2_dlnR = cosmo.dlnsigma2_dlnR(Rs, Pk_lin)
+    elif sigma is not None:
+        eps = eps_deriv_mf; dRs = Rs*eps # Uses numerical derivative
+        dlnsigma2_dlnR = 2.*log_derivative(sigma, Rs, dRs)
+    else:
+        raise ValueError('Error, this currently only works with either P(k) or sigma(R) functions')
+    dnu_dlnm = -(nus/6.)*dlnsigma2_dlnR
+    return hmod.halo_mass_function(nus)*dnu_dlnm
+
+
 def mean_hm(hmod, Ms, fs, sigmas=None, sigma=None, Pk_lin=None):
     '''
     Calculate the mean of some f(M) over halo mass <f>: int f(M)n(M)dM where n(M) = dn/dM in some notations
@@ -418,7 +459,7 @@ def _I_beta(hmod, beta, Ms, nus, Wu, Wv, massu, massv, A):
     TODO: Loops probably horribly inefficient here
     '''
     from numpy import trapz
-    from mead_calculus import trapz2d
+    from calculus import trapz2d
     integrand = np.zeros((len(nus), len(nus)))
     for iM1, nu1 in enumerate(nus):
         for iM2, nu2 in enumerate(nus):
@@ -778,7 +819,7 @@ def conc_Duffy(M, z, halo_definition='M200'):
 
 ### HOD ###
 
-def HOD_Mead(M, Mmin, Msat, alpha):
+def HOD_simple(M, Mmin, Msat, alpha):
     '''
     Simple HOD model
     '''

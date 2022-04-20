@@ -5,9 +5,10 @@ import numpy as np
 from dark_emulator import darkemu
 
 # My imports
-import mead_constants as const
-import mead_general as mead
-import mead_cosmology as cosmo
+import constants as const
+# import general as general
+# import cosmology as cosmo
+import utility_functions as utility
 
 # Constants
 dc = 1.686      # Collapse threshold for nu definition
@@ -193,28 +194,28 @@ def named_cosmology(name):
     cpar = cosmology(wb=wb, wc=wc, Om_w=Om_w, lnAs=lnAs, ns=ns, w=w)
     return cpar
 
-def create_mead_cosmology(cpar, verbose=False):
-    '''
-    Create a set of Mead cosmological parameters from a Dark Quest set
-    '''
-    # Make a Mead cosmology
-    cosm = cosmo.cosmology(Om_m=cpar.Om_m, Om_b=cpar.Om_b, Om_w=cpar.Om_w, h=cpar.h, 
-                           As=cpar.As, ns=cpar.ns, w=cpar.w, m_nu=cpar.m_nu)
-    if verbose: cosm.print()
-    return cosm
+# def create_mead_cosmology(cpar, verbose=False):
+#     '''
+#     Create a set of Mead cosmological parameters from a Dark Quest set
+#     '''
+#     # Make a Mead cosmology
+#     cosm = cosmo.cosmology(Om_m=cpar.Om_m, Om_b=cpar.Om_b, Om_w=cpar.Om_w, h=cpar.h, 
+#                            As=cpar.As, ns=cpar.ns, w=cpar.w, m_nu=cpar.m_nu)
+#     if verbose: cosm.print()
+#     return cosm
 
-def convert_mead_cosmology(cosm):
-    '''
-    Convert Mead cosmology into a Dark Quest cosmology
-    '''
-    wb = cosm.w_b
-    wc = cosm.w_c
-    Om_w = cosm.Om_w
-    lnAs = np.log(cosm.As*1e10)
-    ns = cosm.ns
-    w = cosm.w
-    cpar = cosmology(wb=wb, wc=wc, Om_w=Om_w, lnAs=lnAs, ns=ns, w=w)
-    return  cpar
+# def convert_mead_cosmology(cosm):
+#     '''
+#     Convert Mead cosmology into a Dark Quest cosmology
+#     '''
+#     wb = cosm.w_b
+#     wc = cosm.w_c
+#     Om_w = cosm.Om_w
+#     lnAs = np.log(cosm.As*1e10)
+#     ns = cosm.ns
+#     w = cosm.w
+#     cpar = cosmology(wb=wb, wc=wc, Om_w=Om_w, lnAs=lnAs, ns=ns, w=w)
+#     return  cpar
 
 def init_emulator(cpar):
     '''
@@ -268,7 +269,7 @@ def comoving_matter_density(emu):
     Comoving matter density [(Msun/h)/(Mpc/h)^3]
     '''
     Om_m = emu.cosmo.get_Omega0()
-    rhom = cosmo.comoving_matter_density(Om_m)
+    rhom = utility.comoving_matter_density(Om_m)
     return rhom
 
 def nu_R(emu, R, z):
@@ -289,7 +290,7 @@ def Radius_M(emu, M):
     Lagrangian radius of a halo of mass M [Mpc/h]
     '''
     Om_m = emu.cosmo.get_Omega0()
-    return cosmo.Radius_M(M, Om_m)
+    return utility.Radius_M(M, Om_m)
 
 def virial_radius_M(emu, M):
     '''
@@ -302,7 +303,7 @@ def Mass_R(emu, R):
     Mass enclosed within comoving radius R [Msun/h]
     '''
     Om_m = emu.cosmo.get_Omega0()
-    return cosmo.Mass_R(R, Om_m)
+    return utility.Mass_R(R, Om_m)
 
 def Mass_nu(emu, nu, z):
 
@@ -704,7 +705,7 @@ def calculate_rescaling_params(emu_ori, emu_tgt, z_tgt, M1_tgt, M2_tgt):
     R1_tgt = Radius_M(emu_tgt, M1_tgt)
     R2_tgt = Radius_M(emu_tgt, M2_tgt)
 
-    s, sm, z = cosmo.calculate_AW10_rescaling_parameters(z_tgt, R1_tgt, R2_tgt, 
+    s, sm, z = utility.calculate_AW10_rescaling_parameters(z_tgt, R1_tgt, R2_tgt, 
                                                          lambda Ri, zi: sigma_R(emu_ori, Ri, zi),
                                                          lambda Ri, zi: sigma_R(emu_tgt, Ri, zi),
                                                          emu_ori.cosmo.get_Omega0(),

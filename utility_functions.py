@@ -13,6 +13,13 @@ def Tophat_k(x):
     xmin = xmin_Tk
     return np.where(np.abs(x)<xmin, 1.-x**2/10., (3./x**3)*(np.sin(x)-x*np.cos(x)))
 
+def dTophat_k(x):
+    '''
+    Derivative of the tophat Fourier transform function
+    '''
+    xmin = xmin_Tk
+    return np.where(np.abs(x)<xmin, -x/5.+x**3/70., (3./x**4)*((x**2-3.)*np.sin(x)+3.*x*np.cos(x)))
+
 
 def get_sigmaR(Rs,Pk_lin,kmin=1e-5,kmax=1e5,nk=1e5,integration_type='brute'):
     # 
@@ -82,6 +89,26 @@ def sigma_R_camb(R, results, kmin=0.0, kmax=1e5):
 	return sigmaRs
 
 
+def dlnsigma2_dlnR(R, Power_k):
+    '''
+    Calculates d(ln sigma^2)/d(ln R) by integration
+    '''
+    def dsigma_R_vec(R):
+        def dsigma_integrand(k):
+            return Power_k(k)*(k**3)*Tophat_k(k*R)*dTophat_k(k*R)
+
+        # Evaluate the integral and convert to a nicer form
+        kmin = 0.; kmax = np.inf # Integration range
+        dsigma, _ = integrate.quad(dsigma_integrand, kmin, kmax)
+        dsigma = R*dsigma/(np.pi*sigma_R(R, Power_k))**2
+        return dsigma
+
+    # Note that this is a function
+    dsigma_func = np.vectorize(dsigma_R_vec, excluded=['Power_k'])
+
+    # This is the function evaluated
+    return dsigma_func(R)
+
 
 def Radius_M(M, Om_m):
 	'''
@@ -89,6 +116,11 @@ def Radius_M(M, Om_m):
 	'''
 	return np.cbrt(3.*M/(4.*np.pi*comoving_matter_density(Om_m)))
 
+def Mass_R(R, Om_m):
+	'''
+	Mass contained within a sphere of radius 'R' in a homogeneous universe
+	'''
+	return Mass_R(R, Om_m)
 
 def comoving_matter_density(Om_m):
 	'''
@@ -139,48 +171,34 @@ def X_de(ide, a, w=None, wa=None,nw=None):
 	else:
 		raise ValueError('ide not recognised')
 
-# This is wrong needs to be fixed
-# def sigma_R_gauleg(R, Power_k, kmin=0.0, kmax=1e5,nk=1e4, nG=20):
-	# from scipy.special import roots_legendre
-	# from scipy.signal import argrelextrema
-# 	[x,w] = roots_legendre(nG+1)
 
-# 	lower_bound =kmin
-# 	upper_bound =kmax
-# 	nargs=int(nk)
+def calculate_AW10_rescaling_parameters(z_tgt, R1_tgt, R2_tgt, sigma_Rz_ogn, sigma_Rz_tgt, Om_m_ogn, Om_m_tgt):
 
-# 	#   Do we need to define boundaries?
-# 	#   check how the integrand looks like 
-# 	arg = np.logspace(np.log10(lower_bound),np.log10(upper_bound),nargs)
+    from scipy.optimize import fmin
 
-# 	def sigma_integrand(k):
-# 	    return Power_k(0,k)*(k**2)*Tophat_k(k*R)**2
+    def rescaling_cost_function(s, z, z_tgt, R1_tgt, R2_tgt, sigma_Rz_ogn, sigma_Rz_tgt):
 
-# 	integrand = sigma_integrand
-# 	table  = integrand(arg,1)
-# 	maxima = argrelextrema(table,np.greater)
-# 	minima = argrelextrema(table,np.less)
-# 	exterma =  np.concatenate((minima, maxima), axis=None)
-# 	if(len(exterma)>2):
-# 	#   do piecewise integration
-# 	    min_arg = np.min(exterma)
-# 	    extra_points = np.linspace(0,min_arg-1,20)
-# 	    args_limits  = np.sort(np.concatenate((exterma, extra_points.astype(int)), axis=None))
-# 	    integ_limits = arg[args_limits]
-# 	    a_arr = integ_limits[:-1]
-# 	    b_arr = integ_limits[1::]
+        # Severely punish negative z
+        if (z < 0.):
+            return AW10_future_punishment
 
-# 	def legendre_integral(R):
-# 	#     get the roots and weights for a 2nG+1 polynomial defined between -1 and 1
-# 		def integral_a_b(a,b):
-# 			y_all=0.5*(b-a)*x+0.5*(b+a)
-# 			y=y_all[y_all>=0.]
-# 			return (b-a)*0.5*sum(w[y_all>=0.]*integrand(y,R))
-# 		integral_func = np.vectorize(integral_a_b)
-# 		return sum(integral_func(a_arr/R,b_arr/R))
+        def integrand(R):
+            return (1./R)*(1.-sigma_Rz_ogn(R/s, z)/sigma_Rz_tgt(R, z_tgt))**2
 
-# 	sigma_func = np.vectorize(legendre_integral, excluded=['Power_k']) 
-# 	return sigma_func(R)
+        integral, _ = integrate.quad(integrand, R1_tgt, R2_tgt)
+        cost = integral/np.log(R2_tgt/R1_tgt)
+        return cost
 
+    s0 = 1.
+    z0 = z_tgt
+
+    s, z = fmin(lambda x: rescaling_cost_function(x[0], x[1], z_tgt, R1_tgt, R2_tgt, sigma_Rz_ogn, sigma_Rz_tgt), [s0, z0])
+    sm = (Om_m_tgt/Om_m_ogn)*s**3
+
+    # Warning
+    if z < 0.:
+        print('Warning: Rescaling redshift is in the future for the original cosmology')
+
+    return s, sm, z
 
 

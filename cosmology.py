@@ -7,13 +7,13 @@ from scipy.interpolate import interp1d
 
 # My imports
 import constants as const
-import general as mead
+import general as general
 import interpolate as interpolate
 
 # Parameters
 AW10_future_punishment = 1e6
 
-# Mead cosmology class, roughly analagous to that I use in Fortran
+# cosmology class
 # TODO: Normalisation As vs. sigma_8 etc.
 # TODO: How to include power spectra. Should I even do this? Probably I should use CAMB instead.
 class cosmology():
@@ -119,7 +119,7 @@ class cosmology():
         amin = 1e-5
         amax = 1.
         na = 64
-        a_tab = mead.logspace(amin, amax, na)
+        a_tab = general.logspace(amin, amax, na)
 
         ###
 
@@ -221,7 +221,7 @@ class cosmology():
         amin = 1e-5
         amax = 1.
         na = 64
-        a_tab = mead.logspace(amin, amax, na)
+        a_tab = general.logspace(amin, amax, na)
 
         # Set initial conditions for the ODE integration
         #d_init = a_lintab_nozero[0]
@@ -427,7 +427,7 @@ class cosmology():
         amax = 1.
         na = 129
         a_lintab = np.linspace(amin, amax, na)
-        a_logtab = mead.logspace(amin, amax, na)
+        a_logtab = general.logspace(amin, amax, na)
         
         plt.figure(1, figsize=(20, 6))
 
@@ -485,7 +485,7 @@ class cosmology():
         amax = 1.
         na = 128
         a_lin = np.linspace(amin, amax, na)
-        a_log = mead.logspace(amin, amax, na)
+        a_log = general.logspace(amin, amax, na)
 
         # Plot cosmic distance (dimensionless) vs. a on linear scale
         plt.subplot(121)
@@ -514,7 +514,7 @@ class cosmology():
         amax = 1.
         na = 128
         a_lin = np.linspace(amin, amax, na)
-        a_log = mead.logspace(amin, amax, na)
+        a_log = general.logspace(amin, amax, na)
 
         # Linear scale
         plt.subplot(121)
@@ -677,7 +677,7 @@ def sigma_R(R, Power_k):
     def sigma_R_vec(R):
 
         def sigma_integrand(k):
-            from mead_special_functions import Tophat_k
+            from utility_functions import Tophat_k
             return Power_k(k)*(k**2)*Tophat_k(k*R)**2
 
         # k range for integration (could be restricted if necessary)
@@ -694,6 +694,27 @@ def sigma_R(R, Power_k):
 
     # This is the function evaluated
     return sigma_func(R) 
+
+def dlnsigma2_dlnR(R, Power_k):
+    '''
+    Calculates d(ln sigma^2)/d(ln R) by integration
+    '''
+    def dsigma_R_vec(R):
+        def dsigma_integrand(k):
+            from utility_functions import Tophat_k, dTophat_k
+            return Power_k(k)*(k**3)*Tophat_k(k*R)*dTophat_k(k*R)
+
+        # Evaluate the integral and convert to a nicer form
+        kmin = 0.; kmax = np.inf # Integration range
+        dsigma, _ = integrate.quad(dsigma_integrand, kmin, kmax)
+        dsigma = R*dsigma/(np.pi*sigma_R(R, Power_k))**2
+        return dsigma
+
+    # Note that this is a function
+    dsigma_func = np.vectorize(dsigma_R_vec, excluded=['Power_k'])
+
+    # This is the function evaluated
+    return dsigma_func(R)
 
 def nu_R(R, Power_k, dc=1.686):
     return dc/sigma_R(R, Power_k)
